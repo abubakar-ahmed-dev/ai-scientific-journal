@@ -246,3 +246,116 @@ export async function fetchObservationVersions(observationId: string, params: { 
 export async function fetchObservationVersion(observationId: string, versionId: string) {
   return api<ObservationVersion>(`/observations/${observationId}/versions/${versionId}`);
 }
+
+// Conversation types & API
+export interface Conversation {
+  id: string;
+  ownerId: string;
+  projectId: string | null;
+  title: string | null;
+  contextType: "general" | "observation" | "project" | "research";
+  contextId: string | null;
+  messageCount: number;
+  status: "active" | "archived";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Message {
+  id: string;
+  ownerId: string;
+  conversationId: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  sequence: number;
+  model?: string;
+  metadata?: {
+    latencyMs?: number;
+    tokenUsage?: {
+      promptTokens?: number;
+      candidatesTokens?: number;
+      totalTokens?: number;
+    };
+    finishReason?: string;
+  };
+  createdAt: string;
+}
+
+export async function fetchConversations(
+  params: {
+    limit?: number;
+    cursor?: string;
+    status?: string;
+    projectId?: string;
+    contextType?: string;
+  } = {}
+) {
+  const query = new URLSearchParams();
+  if (params.limit) query.set("limit", String(params.limit));
+  if (params.cursor) query.set("cursor", params.cursor);
+  if (params.status) query.set("status", params.status);
+  if (params.projectId) query.set("projectId", params.projectId);
+  if (params.contextType) query.set("contextType", params.contextType);
+  const qStr = query.toString();
+  return api<Conversation[]>(`/conversations${qStr ? `?${qStr}` : ""}`);
+}
+
+export async function fetchConversation(conversationId: string) {
+  return api<Conversation>(`/conversations/${conversationId}`);
+}
+
+export async function createConversation(data: {
+  title?: string | null;
+  projectId?: string | null;
+  contextType: "general" | "observation" | "project" | "research";
+  contextId?: string | null;
+}) {
+  return api<Conversation>("/conversations", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateConversation(
+  conversationId: string,
+  patch: { title?: string; status?: "active" | "archived" }
+) {
+  return api<Conversation>(`/conversations/${conversationId}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function deleteConversation(conversationId: string) {
+  const token = await tokenProvider();
+  const res = await fetch(`${API_BASE}/conversations/${conversationId}`, {
+    method: "DELETE",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    throw new ApiRequestError("INTERNAL_ERROR", "Failed to delete conversation", undefined, res.status);
+  }
+}
+
+export async function fetchMessages(
+  conversationId: string,
+  params: { limit?: number; cursor?: string } = {}
+) {
+  const query = new URLSearchParams();
+  if (params.limit) query.set("limit", String(params.limit));
+  if (params.cursor) query.set("cursor", params.cursor);
+  const qStr = query.toString();
+  return api<Message[]>(`/conversations/${conversationId}/messages${qStr ? `?${qStr}` : ""}`);
+}
+
+export async function sendMessage(conversationId: string, content: string) {
+  return api<{ userMessage: Message; assistantMessage: Message }>(
+    `/conversations/${conversationId}/messages`,
+    {
+      method: "POST",
+      body: JSON.stringify({ content }),
+    }
+  );
+}

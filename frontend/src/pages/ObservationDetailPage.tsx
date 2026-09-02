@@ -4,9 +4,11 @@ import {
   fetchObservation,
   fetchObservationVersions,
   deleteObservation,
+  createConversation,
 } from "../lib/api";
 import type { Observation, ObservationVersion } from "../lib/api";
 import { Layout } from "../components/Layout";
+import { Sparkles } from "lucide-react";
 
 export default function ObservationDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +20,7 @@ export default function ObservationDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [showVersions, setShowVersions] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -48,6 +51,22 @@ export default function ObservationDetailPage() {
     }
   }
 
+  async function handleDiscussWithAI() {
+    if (!observation) return;
+    setStartingChat(true);
+    try {
+      const res = await createConversation({
+        title: `Discussion: ${observation.title}`,
+        contextType: "observation",
+        contextId: observation.id,
+      });
+      navigate(`/conversations?id=${res.data.id}`);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to start AI discussion");
+      setStartingChat(false);
+    }
+  }
+
   async function handleDelete() {
     if (!id || !window.confirm("Are you sure you want to delete this observation? This action cannot be undone.")) {
       return;
@@ -70,6 +89,14 @@ export default function ObservationDetailPage() {
             &larr; Back to Observations
           </Link>
           <div className="flex items-center space-x-3">
+            <button
+              onClick={handleDiscussWithAI}
+              disabled={startingChat || !observation}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition shadow-xs disabled:opacity-50"
+            >
+              <Sparkles className="w-4 h-4" />
+              {startingChat ? "Opening Chat..." : "Discuss with AI"}
+            </button>
             <Link
               to={`/observations/${id}/edit`}
               className="px-3.5 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition"
