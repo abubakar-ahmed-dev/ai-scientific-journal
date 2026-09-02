@@ -9,6 +9,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const navLinks = [
     { to: "/dashboard", label: "Dashboard" },
     { to: "/observations", label: "Observations" },
+    { to: "/conversations", label: "AI Chat" },
     { to: "/projects", label: "Projects" },
     { to: "/settings", label: "Settings" },
   ];

@@ -3,6 +3,7 @@ import { requireAuth } from "../middleware/authMiddleware";
 import { meRouter } from "./me";
 import { projectsRouter } from "./projects";
 import { observationsRouter } from "./observations";
+import { conversationsRouter } from "./conversations";
 
 export const apiV1Router = Router();
 
@@ -16,3 +17,4 @@ apiV1Router.use(requireAuth);
 apiV1Router.use("/me", meRouter);
 apiV1Router.use("/projects", projectsRouter);
 apiV1Router.use("/observations", observationsRouter);
+apiV1Router.use("/conversations", conversationsRouter);

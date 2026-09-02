@@ -5,6 +5,8 @@ import DashboardPage from "../pages/DashboardPage";
 import ObservationsPage from "../pages/ObservationsPage";
 import ObservationDetailPage from "../pages/ObservationDetailPage";
 import ObservationFormPage from "../pages/ObservationFormPage";
+import { ConversationsPage } from "../pages/ConversationsPage";
+import { Layout } from "../components/Layout";
 import ProjectsPage from "../pages/ProjectsPage";
 import ProjectDetailPage from "../pages/ProjectDetailPage";
 import SettingsPage from "../pages/SettingsPage";
@@ -28,6 +30,14 @@ export default function App() {
       <Route path="/observations/new" element={<ObservationFormPage />} />
       <Route path="/observations/:id" element={<ObservationDetailPage />} />
       <Route path="/observations/:id/edit" element={<ObservationFormPage />} />
+      <Route
+        path="/conversations"
+        element={
+          <Layout>
+            <ConversationsPage />
+          </Layout>
+        }
+      />
       <Route path="/projects" element={<ProjectsPage />} />
       <Route path="/projects/:id" element={<ProjectDetailPage />} />
       <Route path="/settings" element={<SettingsPage />} />
