@@ -206,7 +206,7 @@ Every protected operation should answer:
 
 # 5. Firestore Data Model
 
-Canonical structure (per `DATABASE_SCHEMA.md` / ADR-013, ADR-014, ADR-015, ADR-017):
+Canonical structure (per `DATABASE_SCHEMA.md` / ADR-013, ADR-014, ADR-015, ADR-017, ADR-021):
 
 ```text
 users/{uid}                                   ← ownership boundary (Firebase UID)
@@ -1045,7 +1045,7 @@ User profile (users/{uid})
 Cascade rules (approved model):
 
 * **Observation deletion** cascades to its versions, media (metadata + storage objects), and derived index entry. **Analyses referencing the observation are retained** — they are append-only historical records whose references become dangling; consumers must handle missing sources gracefully.
-* **Project deletion** never deletes observations or other records — their `projectId` becomes `null` ("unfiled").
+* **Project deletion** never deletes records — observations, conversations, and research tasks are re-filed to `projectId: null` ("unfiled"); **analyses retain their `projectId` unchanged** (ADR-021 — append-only artifacts are never mutated by project deletion).
 * **Conversation deletion** cascades to messages; analyses sourced from it are retained.
 
 Deletion must not leave unintended orphaned private data.

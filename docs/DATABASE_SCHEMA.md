@@ -1,6 +1,6 @@
 # Database Schema
 
-**Status:** Canonical (aligned with ADR-013 – ADR-017)
+**Status:** Canonical (aligned with ADR-013 – ADR-017, ADR-021)
 **Last updated:** 2026-09-02
 
 > **Note on scope:** This document defines the Firestore data model only. API endpoints are specified in `API.md`; security rules in `SECURITY.md`. Where earlier documents conflict with this schema, this schema and the referenced ADRs prevail.
@@ -293,7 +293,7 @@ The fundamental user-created record (**ADR-013**). User-flat, not nested under p
 
 * `projectId: null` is the default; a non-null value must reference an existing project owned by the same user (rules `get()` + backend check).
 * `status: "analyzed"` is a convenience flag set by the backend when an analysis references this observation; AI output can never modify any other Observation field.
-* `location.precision: "hidden"` indicates the user has withdrawn location display; backends/UI must honor it.
+* `location.precision` controls **disclosure**, not retention: `exact` → coordinates stored and displayed as recorded; `approximate` → coordinates stored, UI renders an approximated position; `hidden` → coordinates remain stored (for the user's own scientific record and authorized access) but are **never displayed** and are excluded from any AI context, export, or other disclosure surface. Backends/UI must honor the precision in every response. Deleting the coordinates entirely is a separate user action (clearing the `location` field), not a `precision` value.
 
 ### Subcollections
 
@@ -392,6 +392,8 @@ Metadata for evidence files attached to an observation (**ADR-016**). Binary fil
 ```text
 gs://<bucket>/users/{uid}/observations/{observationId}/{mediaId}
 ```
+
+> **Path disambiguation (do not confuse):** the **Firestore metadata** subcollection is `…/observations/{observationId}/media/{mediaId}` (with a `media/` segment), while the **Cloud Storage binary** path has **no** `media/` segment: `users/{uid}/observations/{observationId}/{mediaId}` (ADR-016). Implementations must derive the storage object path exactly as specified here — never by mirroring the Firestore subcollection layout.
 
 ## Example
 
@@ -621,6 +623,10 @@ The schema deliberately lets the UI distinguish:
 
 An analysis without valid required fields is rejected before persistence.
 
+### Field applicability across types (forward-compatibility note)
+
+All fields above are **required (possibly empty)** for every generatable type — this is a deliberate ADR-015 property: a single uniform envelope keeps validation, rendering, and the API contract simple while only three types are generatable. When the reserved types (`hypothesis`, `classification`) gain generation workflows, a **new ADR** may introduce type-specific payload shapes if a uniform field set proves awkward; until then no split is made, and per-capability prompts simply populate the fields each type actually uses (e.g., a summary leaves `hypotheses[]` empty).
+
 ---
 
 # 13. Research Tasks
@@ -713,8 +719,8 @@ users/{uid}/observationSearch/{observationId}
 
 ## Lifecycle
 
-* **Written/updated** whenever the source observation is written.
-* **Deleted** when the source observation is deleted (prevents stale-index retrieval).
+* **Written/updated asynchronously after** the source observation is created or updated. The canonical observation write **never depends on successful indexing** (PRD NFR-02: core journal functionality is independent of derived data); indexing is retryable and eventually consistent, and a missing/stale index entry is repaired by retry — never by blocking the observation.
+* **Deleted when the source observation is deleted** (prevents stale-index retrieval). Where asynchronous deletion fails, the retrieval pipeline's re-check against canonical observations is the correctness backstop: a deleted observation must never surface regardless of index state.
 * Embedding regeneration is required when `embeddingVersion` changes.
 * Retrieval queries this subcollection **by user path only**; retrieved content is always treated as untrusted input for prompts.
 
@@ -762,7 +768,7 @@ createdAt, updatedAt, indexedAt, editedAt, lastLoginAt
 ```
 
 * Reduces manipulation by malicious clients.
-* Provides consistent ordering for cursor pagination (`updatedAt DESC`, `createdAt ASC`, `sequence ASC`) — see the timestamp-semantics table below.
+* Provides the ordering keys for **default** pagination cursors (`updatedAt DESC`, `createdAt ASC`, `sequence ASC`) — see the timestamp-semantics contract below.
 * `observedAt` (when the phenomenon happened) is client-supplied but validated (present, valid date, not absurdly in the future); it is a scientific fact, not an ordering guarantee.
 
 ### Timestamp semantics (approved decision)
@@ -770,9 +776,13 @@ createdAt, updatedAt, indexedAt, editedAt, lastLoginAt
 | Timestamp | Managed by | Meaning | Use |
 | --------- | ---------- | ------- | --- |
 | `observedAt` | Client-supplied, server-validated | When the real-world/scientific event occurred | **Scientific chronology**: display, filtering, scientific sorting |
-| `createdAt` / `updatedAt` | Server (Firestore server timestamps) | Record creation / last modification | **Cursor pagination and change tracking** — stable, manipulation-resistant ordering |
+| `createdAt` / `updatedAt` | Server (Firestore server timestamps) | Record creation / last modification | **Default pagination ordering, sync, and change tracking** — stable, manipulation-resistant |
 
-Cursor pagination, sync, and change detection must rely on server-managed timestamps (`createdAt`/`updatedAt`/`sequence`), never on `observedAt`, which reflects user-asserted event time and may differ between records. Scientific views may sort or filter by `observedAt` where chronology of the event matters; those queries are distinct from pagination cursors.
+**Cursor pagination rule (aligned with `API.md` §5.3):** a cursor always encodes the **same ordering fields as the query it paginates** — a Firestore cursor cannot span a different `ORDER BY` than its query.
+
+* **Default lists (`sort=updated`):** order and page on `updatedAt DESC` — stable, manipulation-resistant; used for sync, change detection, and background processes.
+* **Chronology views (`sort=observed`):** order and page on `observedAt DESC` with a deterministic tie-breaker (document ID) for equal timestamps. These cursors are **bound to the `sort=observed` choice** and are display-ordering cursors only — never used for sync or change detection.
+* Cursors are opaque tokens bound to the query's sort/filter set; mixing sorts or filters between cursor pages is rejected (`API.md` §5). `observedAt` reflects user-asserted event time and may differ between records — which is exactly why `sort=observed` cursors are quarantined to display use.
 
 ---
 
@@ -808,7 +818,7 @@ Indexes exist to serve actual within-user queries (ADR-014). Single-field indexe
 
 Notes:
 
-* The `observedAt DESC` composites serve **scientific-chronology views** (filtering/sorting by when the event occurred, per §16). **Cursor pagination** on these lists uses `updatedAt DESC` as the stable server-timestamp cursor; if a paginated view is also chronology-sorted, the two are distinguished per the timestamp-semantics contract in §16.
+* The `observedAt DESC` composites serve **scientific-chronology views** (`sort=observed`): ordering *and* pagination both use `observedAt DESC` (plus a deterministic tie-breaker), per the cursor-pagination rule in §16. **Default lists (`sort=updated`)** order and page on `updatedAt DESC`; the two cursor flavors are never mixed (`API.md` §5.3).
 * **No collectionGroup queries or indexes are required** — a direct benefit of the user-flat model (ADR-014).
 * Additional composite indexes are added only when a real query requires them.
 
@@ -838,8 +848,11 @@ Delete users/{uid}/observations/{observationId}
 ```text
 Delete users/{uid}/projects/{projectId}
   → observations with projectId == deleted: set projectId = null ("unfiled")
-  → conversations / analyses / researchTasks with projectId == deleted:
-       set projectId = null
+  → conversations / researchTasks with projectId == deleted: set projectId = null
+  → analyses with projectId == deleted: RETAINED unchanged (ADR-021 — analyses are
+       append-only historical records and are never mutated by project deletion;
+       the dangling projectId is rendered as "deleted project", like dangling
+       observation references)
   → Observations and other records are NOT deleted by project deletion.
 ```
 
@@ -875,7 +888,7 @@ gs://<bucket>/users/{uid}/**
 Firebase Auth user record
 ```
 
-Deletion must not leave orphaned private data. If deletion is asynchronous, the process is communicated to the user.
+**Firestore implementation requirement:** deleting a parent document does **not** automatically delete its subcollections — `delete users/{uid}` alone is insufficient. Account deletion must **recursively enumerate and delete every descendant document** (each list above) and the associated Cloud Storage objects, or use an equivalent recursive-delete mechanism. Deletion must not leave orphaned private data. If deletion is asynchronous, the process is communicated to the user.
 
 ---
 
@@ -932,7 +945,7 @@ Location data is stored only at the precision the user selected (`location.preci
 3. **Observation is the single fundamental record**; freeform journaling is an Observation with optional fields unpopulated (ADR-013).
 4. **Projects organize, never gate** — `projectId` is optional everywhere (ADR-014).
 5. **Derived data is clearly separated** from source-of-truth data and is never an authorization source (ADR-017).
-6. **AI artifacts are append-only, provenance-stamped, and validated before persistence**; they never mutate user content (ADR-015, ADR-009).
+6. **AI artifacts are append-only, provenance-stamped, and validated before persistence**; they never mutate user content — including when their referenced project is deleted (dangling `projectId` retained per ADR-021) (ADR-015, ADR-009, ADR-021).
 7. **Media binaries live in observation-scoped Cloud Storage paths derived by the backend** (ADR-016).
 8. **Use server timestamps for authoritative events.**
 9. **Validate all data before persistence, server-side.**

@@ -1,6 +1,6 @@
 # AI Architecture
 
-**Status:** Canonical for AI design (aligned with ADR-003, ADR-009, ADR-010, ADR-013 – ADR-018 and the canonical `DATABASE_SCHEMA.md`, `API.md`)
+**Status:** Canonical for AI design (aligned with ADR-003, ADR-009, ADR-010, ADR-013 – ADR-018, ADR-021 and the canonical `DATABASE_SCHEMA.md`, `API.md`)
 **Last updated:** 2026-09-02
 **Product:** AI Scientific Journal
 
@@ -127,7 +127,7 @@ Explicit rules:
 
 * **Firestore is the source of truth.** The index is **derived** data — rebuildable, never authoritative, and **never an authorization mechanism** (ADR-017, SECURITY.md §10). Authorization is decided from canonical ownership before and independently of retrieval.
 * **Retrieval is user-scoped**: queries run against `users/{uid}/observationSearch` directly by path; there is no global or cross-user retrieval surface (a root-level index was considered and rejected — ADR-017).
-* **Derived-index handling:** the index entry is written/updated when the observation is written and **deleted with the observation**; embedding changes are handled via `embeddingVersion` invalidation and rebuild. `/ai/search` re-checks candidates against canonical observations so changed/deleted records never appear.
+* **Derived-index handling:** the index entry is written/updated **asynchronously after** the observation is written (indexing is retryable and eventually consistent — the canonical observation write never depends on it, PRD NFR-02) and **deleted with the observation** (with the canonical re-check below as the correctness backstop for any deletion-race); embedding changes are handled via `embeddingVersion` invalidation and rebuild. `/ai/search` re-checks candidates against canonical observations so changed/deleted records never appear.
 * **Retrieved content is untrusted model input** (§7): it may influence answers; it never carries instructions the application must follow.
 * No specific embedding model or vector database is selected here; the schema's `embeddingReference`/`embeddingVersion` fields deliberately keep storage flexible (ADR-020 defers the analogous storage decision; a concrete choice, when made, gets its own ADR).
 
@@ -289,8 +289,8 @@ conversations/messages                          │  (after user acceptance)
 ```
 
 * **Authoritative observations** are the root record; editing is user-controlled (version snapshots per ADR-016 when enabled).
-* **Derived index** follows the observation lifecycle exactly: created/updated on observation write, deleted with the observation; never authoritative.
-* **Analyses** are append-only AI artifacts referencing sources by ID. **RETAIN semantics (approved):** when a source observation is deleted, analyses are **never cascade-deleted**; their references become dangling and consumers must render missing sources gracefully (`API.md` §7.2). Existence is always resolved against canonical observations.
+* **Derived index** follows the observation lifecycle: created/updated **asynchronously after** the observation write (retryable, eventually consistent — never a dependency of the canonical write), deleted with the observation; never authoritative.
+* **Analyses** are append-only AI artifacts referencing sources by ID. **RETAIN semantics (approved; extended by ADR-021):** when a source observation is deleted, analyses are **never cascade-deleted**; when their referenced project is deleted, analyses **retain their `projectId`** unchanged (append-only artifacts are never mutated by project deletion). References become dangling and consumers must render missing sources gracefully (`API.md` §7.2). Existence is always resolved against canonical data.
 * **Conversations/messages** are user-owned interaction history; deleting a conversation cascades to its messages, while analyses sourced from it are retained.
 * **Research tasks** are user-owned records regardless of origin; deleting a task touches nothing else.
 

@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document records important architectural decisions for Personal Gemini Journal.
+This document records important architectural decisions for the AI Scientific Journal.
 
 The purpose of an Architecture Decision Record (ADR) is to document:
 
@@ -901,6 +901,41 @@ The reconciliation identified two implementation-level choices that do not affec
 ### Negative
 
 * SECURITY.md must gain a Maps-key note when the choice lands.
+
+---
+
+# ADR-021: Analyses Are Never Mutated by Project Deletion
+
+**Status:** Accepted
+**Date:** 2026-09-02
+
+## Context
+
+The deletion-cascade model (`DATABASE_SCHEMA.md` §19) required project deletion to set `projectId = null` on every referencing record, including analyses. This directly mutates **append-only AI artifacts** (ADR-015): an analysis would be edited after creation by an operation that has nothing to do with its provenance. ADR-015's rule is unconditional — *"regeneration creates a new analysis; nothing is overwritten"* — and `AI_ARCHITECTURE.md` §13 repeats that analyses are never edited after creation. The observation-deletion cascade already established the correct precedent for historical AI records: references dangle, sources resolve against canonical data, consumers render a graceful missing-source state (approved RETAIN decision).
+
+## Decision
+
+1. When a project is deleted, **analyses retain their `projectId` unchanged** as a dangling historical reference. Project deletion never mutates an analysis.
+2. Observations, conversations, and research tasks continue to be **re-filed to `projectId = null`** on project deletion — they are user-owned, mutable organizational records (unchanged behavior).
+3. Consumers (API/UI) treat an analysis's non-null `projectId` exactly like its soft `observationIds[]` references: **possibly missing**, resolved against the canonical `projects` collection, rendered as a graceful "deleted project" state (`API.md` §7.2 pattern).
+
+## Alternatives Considered
+
+* Keep re-filing analyses to `projectId: null` — rejected: contradicts append-only semantics (ADR-015), silently rewrites AI-artifact provenance, and is inconsistent with the established observation-RETAIN precedent.
+* Block project deletion while analyses reference it — rejected: traps users; organizational deletion must not be gated by historical AI records.
+
+## Consequences
+
+### Positive
+
+* Append-only semantics hold unconditionally across every deletion path.
+* Consistent dangling-reference model: one pattern (soft reference + canonical resolution) covers observations, projects, and conversations as analysis sources.
+* Analyses remain accurate historical provenance (which project they were produced under).
+
+### Negative
+
+* API consumers must handle a second dangling-reference case (`projectId`) alongside `observationIds[]`/`conversationId`.
+* The analyses list filter `?projectId=` only matches analyses whose project still exists; analyses from deleted projects surface via unfiltered reads.
 
 ---
 

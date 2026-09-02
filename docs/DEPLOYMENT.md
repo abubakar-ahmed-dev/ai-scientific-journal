@@ -1,6 +1,6 @@
 # Deployment Guide
 
-**Status:** Canonical for deployment (aligned with ADR-005, ADR-008, ADR-013 – ADR-020 and the canonical `DATABASE_SCHEMA.md`, `API.md`, `SECURITY.md`, `TECHNICAL_ARCHITECTURE.md`)
+**Status:** Canonical for deployment (aligned with ADR-005, ADR-008, ADR-013 – ADR-020, ADR-021 and the canonical `DATABASE_SCHEMA.md`, `API.md`, `SECURITY.md`, `TECHNICAL_ARCHITECTURE.md`)
 **Last updated:** 2026-09-02
 **Product:** AI Scientific Journal
 

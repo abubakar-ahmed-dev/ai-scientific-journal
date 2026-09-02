@@ -38,7 +38,7 @@ AI is the intelligence layer — never the source of truth, never the authorizat
 ## Key Capabilities
 
 * **Observations** — create, edit, list, archive, and delete structured records with optional measurements, hypothesis, tags, location (with user-controlled precision), and evidence media; optionally grouped into projects. Freeform journal notes are the same resource with the scientific fields unpopulated.
-* **Projects (optional)** — organize observations, conversations, analyses, and tasks into research efforts; nothing requires a project, and deleting one re-files its records rather than deleting them.
+* **Projects (optional)** — organize observations, conversations, analyses, and tasks into research efforts; nothing requires a project, and deleting one re-files its records rather than deleting them (AI analyses retain their historical project reference — never mutated).
 * **Conversational AI** — persistent multi-turn conversations with Gemini, including context-linked discussions of a specific observation or project.
 * **AI analyses** — summarization, observation analysis, and research suggestions as validated, append-only documents (`type`: `summary`, `analysis`, `research_suggestions`), each stamped with model and prompt version.
 * **Research suggestions → tasks** — Gemini suggests next investigations; a research task exists only after you explicitly accept a suggestion.

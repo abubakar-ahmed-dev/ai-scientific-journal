@@ -168,7 +168,8 @@ projects, and the user profile — the durable core that everything else enriche
 **Major features/components:**
 
 * Full `projects` endpoints (API.md §6.3–6.4) including the delete → re-file-to-null
-  semantics (never cascade-delete user content).
+  semantics (never cascade-delete user content; analyses retain their `projectId` as a
+  dangling historical reference per ADR-021).
 * Full `observations` endpoints (§6.5): create/read/list/filter/paginate (cursor pagination,
   `sort=updated|observed` cursor separation), update with `expectedVersion` optimistic
   locking (`409`), delete with the full §19 cascade (versions/media/search entry; analyses
