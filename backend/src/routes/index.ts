@@ -1,8 +1,14 @@
 import { Router } from "express";
+import { requireAuth } from "../middleware/authMiddleware";
+import { meRouter } from "./me";
 
-// Phase 2+: auth middleware, /me, projects, observations, conversations, /ai/* (API.md §6)
 export const apiV1Router = Router();
 
 apiV1Router.get("/", (_req, res) => {
   res.status(200).json({ data: { service: "ai-scientific-journal", apiVersion: "v1" } });
 });
+
+// Require authentication for all business endpoints beneath /api/v1 (API.md §2)
+apiV1Router.use(requireAuth);
+
+apiV1Router.use("/me", meRouter);

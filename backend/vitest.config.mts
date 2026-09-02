@@ -1,0 +1,11 @@
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  test: {
+    environment: "node",
+    env: {
+      NODE_ENV: "test",
+      FIREBASE_PROJECT_ID: "demo-test",
+    },
+  },
+});
