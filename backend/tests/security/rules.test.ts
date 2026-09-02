@@ -73,8 +73,13 @@ describe("Firestore Security Rules", () => {
 
   it("unauthenticated requests are denied everywhere", async () => {
     if (!testEnv) {
-      console.warn("Skipping rules test: Firestore emulator is not running at " + EMULATOR_HOST);
-      return;
+      // Security tests fail closed: a missing emulator must fail the suite,
+      // never silently skip it (TESTING.md §1: security boundaries are tests,
+      // not aspirations).
+      throw new Error(
+        `Firestore emulator is not running at ${EMULATOR_HOST}. ` +
+          "Start it with: npx firebase-tools emulators:exec --only firestore \"npm --prefix backend run test:security\""
+      );
     }
     const unauthDb = testEnv.unauthenticatedContext().firestore();
     await assertFails(unauthDb.doc(`users/${USER_A.uid}`).get());
@@ -84,7 +89,7 @@ describe("Firestore Security Rules", () => {
   });
 
   it("User A can create, read, update, and delete their own user document with valid schema", async () => {
-    if (!testEnv) return;
+    if (!testEnv) throw new Error("Firestore emulator is not running — security rules tests must fail closed (see test file header).");
     const aliceDb = testEnv.authenticatedContext(USER_A.uid).firestore();
     const userRef = aliceDb.doc(`users/${USER_A.uid}`);
 
@@ -115,7 +120,7 @@ describe("Firestore Security Rules", () => {
   });
 
   it("User A cannot create user document with role admin or accountStatus suspended", async () => {
-    if (!testEnv) return;
+    if (!testEnv) throw new Error("Firestore emulator is not running — security rules tests must fail closed (see test file header).");
     const aliceDb = testEnv.authenticatedContext(USER_A.uid).firestore();
     const userRef = aliceDb.doc(`users/${USER_A.uid}`);
 
@@ -141,7 +146,7 @@ describe("Firestore Security Rules", () => {
   });
 
   it("User A cannot alter role, accountStatus, or ownerId on update", async () => {
-    if (!testEnv) return;
+    if (!testEnv) throw new Error("Firestore emulator is not running — security rules tests must fail closed (see test file header).");
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await context.firestore().doc(`users/${USER_A.uid}`).set({
         ownerId: USER_A.uid,
@@ -160,7 +165,7 @@ describe("Firestore Security Rules", () => {
   });
 
   it("User A can manage projects and observations; client cannot write versions or analyses", async () => {
-    if (!testEnv) return;
+    if (!testEnv) throw new Error("Firestore emulator is not running — security rules tests must fail closed (see test file header).");
     const aliceDb = testEnv.authenticatedContext(USER_A.uid).firestore();
 
     // Create project
@@ -203,7 +208,7 @@ describe("Firestore Security Rules", () => {
   });
 
   it("User B cannot access or modify User A's data", async () => {
-    if (!testEnv) return;
+    if (!testEnv) throw new Error("Firestore emulator is not running — security rules tests must fail closed (see test file header).");
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await context.firestore().doc(`users/${USER_A.uid}`).set({
         ownerId: USER_A.uid,
@@ -231,7 +236,7 @@ describe("Firestore Security Rules", () => {
   });
 
   it("projectId integrity: observation referencing foreign project is denied", async () => {
-    if (!testEnv) return;
+    if (!testEnv) throw new Error("Firestore emulator is not running — security rules tests must fail closed (see test file header).");
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await context.firestore().doc(`users/${USER_B.uid}/projects/proj-b`).set({
         ownerId: USER_B.uid,

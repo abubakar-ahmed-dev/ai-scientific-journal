@@ -12,11 +12,15 @@ service cloud.firestore {
       return request.resource.data.ownerId == request.auth.uid;
     }
 
-    // Optional projectId must be null/unset or reference a project under
-    // the same uid (ADR-014 item 6). get() avoids missing-field errors.
+    // Optional projectId must be absent/null ("unfiled") or reference a
+    // project under the same uid (ADR-014 item 6). Rules Map.get() rejects a
+    // null default, so absence is detected via keys() and an explicit null
+    // value via == null; non-string values are denied by the `is string` guard.
     function validProjectRef(uid) {
-      return request.resource.data.get('projectId', null) == null
-        || exists(/databases/$(database)/documents/users/$(uid)/projects/$(request.resource.data.get('projectId')));
+      return !request.resource.data.keys().hasAny(['projectId'])
+        || request.resource.data.get('projectId', '') == null
+        || (request.resource.data.get('projectId', '') is string
+            && exists(/databases/$(database)/documents/users/$(uid)/projects/$(request.resource.data.get('projectId', ''))));
     }
 
     // ---- User document ----

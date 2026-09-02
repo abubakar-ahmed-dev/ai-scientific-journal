@@ -21,10 +21,11 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm test
+      # Security suites (rules + isolation) are emulator-backed and fail closed
+      # without it — TESTING.md §15: security tests are PR gates, not optional.
+      - name: Run tests (Firestore emulator for security suites)
+        run: npx firebase-tools emulators:exec --only firestore --project demo-test "npm test"
       - run: npm run build
-
-  frontend:
     runs-on: ubuntu-latest
     defaults:
       run:
