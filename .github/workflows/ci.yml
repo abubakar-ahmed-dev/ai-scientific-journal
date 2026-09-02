@@ -23,6 +23,11 @@ jobs:
       - run: npm run typecheck
       # Security suites (rules + isolation) are emulator-backed and fail closed
       # without it — TESTING.md §15: security tests are PR gates, not optional.
+      # firebase-tools requires JDK 21+; runners ship older defaults.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
       - name: Run tests (Firestore emulator for security suites)
         run: npx firebase-tools emulators:exec --only firestore --project demo-test "npm test"
       - run: npm run build
