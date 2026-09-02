@@ -5,6 +5,7 @@ import { decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginatio
 import { projectRepository } from "./projectRepository";
 import { observationRepository } from "./observationRepository";
 import { AppError } from "../types/errors";
+import { serializeTimestamps } from "../lib/serialize";
 
 export interface ConversationDocument {
   id: string;
@@ -63,7 +64,7 @@ export class ConversationRepository {
 
     await docRef.set(newConversation);
     const snap = await docRef.get();
-    return { id: docRef.id, ...(snap.data() as Omit<ConversationDocument, "id">) };
+    return { id: docRef.id, ...serializeTimestamps(snap.data() as Omit<ConversationDocument, "id">) };
   }
 
   async list(
@@ -104,7 +105,7 @@ export class ConversationRepository {
 
     const data: ConversationDocument[] = resultDocs.map((d) => ({
       id: d.id,
-      ...(d.data() as Omit<ConversationDocument, "id">),
+      ...serializeTimestamps(d.data() as Omit<ConversationDocument, "id">),
     }));
 
     let nextCursor: string | null = null;
@@ -130,7 +131,7 @@ export class ConversationRepository {
   async findById(uid: string, conversationId: string): Promise<ConversationDocument | null> {
     const snap = await this.getCollection(uid).doc(conversationId).get();
     if (!snap.exists) return null;
-    return { id: snap.id, ...(snap.data() as Omit<ConversationDocument, "id">) };
+    return { id: snap.id, ...serializeTimestamps(snap.data() as Omit<ConversationDocument, "id">) };
   }
 
   async update(uid: string, conversationId: string, patch: UpdateConversationDTO): Promise<ConversationDocument> {
@@ -150,7 +151,7 @@ export class ConversationRepository {
 
     await docRef.update(updateData);
     const updatedSnap = await docRef.get();
-    return { id: updatedSnap.id, ...(updatedSnap.data() as Omit<ConversationDocument, "id">) };
+    return { id: updatedSnap.id, ...serializeTimestamps(updatedSnap.data() as Omit<ConversationDocument, "id">) };
   }
 
   async incrementMessageCount(uid: string, conversationId: string, delta: number = 1): Promise<void> {

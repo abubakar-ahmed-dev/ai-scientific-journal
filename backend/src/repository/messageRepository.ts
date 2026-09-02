@@ -1,6 +1,8 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirebaseFirestore } from "../lib/firebaseAdmin";
 import { decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
+import { serializeTimestamps } from "../lib/serialize";
+import { AppError } from "../types/errors";
 
 export interface MessageDocument {
   id: string;
@@ -33,6 +35,7 @@ export class MessageRepository {
       sequence: number;
       model?: string;
       metadata?: Record<string, unknown>;
+      idempotencyKey?: string;
     }
   ): Promise<MessageDocument> {
     const docRef = this.getCollection(uid, conversationId).doc();
@@ -49,10 +52,42 @@ export class MessageRepository {
 
     if (data.model) newMsg.model = data.model;
     if (data.metadata) newMsg.metadata = data.metadata;
+    if (data.idempotencyKey) newMsg.idempotencyKey = data.idempotencyKey;
 
     await docRef.set(newMsg);
     const snap = await docRef.get();
-    return { id: docRef.id, ...(snap.data() as Omit<MessageDocument, "id">) };
+    return { id: docRef.id, ...serializeTimestamps(snap.data() as Omit<MessageDocument, "id">) };
+  }
+
+  /**
+   * API.md §4.2: an Idempotency-Key retry after AI failure must regenerate the
+   * missing assistant turn without duplicating the user message. We detect the
+   * retry by looking up the caller's earlier user message stored with the same
+   * key (keys are scoped per user+conversation, privacy-safe, never logged).
+   */
+  async findByUserKey(
+    uid: string,
+    conversationId: string,
+    idempotencyKey: string
+  ): Promise<MessageDocument | null> {
+    const snapshot = await this.getCollection(uid, conversationId)
+      .where("ownerId", "==", uid)
+      .where("idempotencyKey", "==", idempotencyKey)
+      .limit(2)
+      .get();
+
+    if (snapshot.empty) return null;
+    const docs = snapshot.docs;
+    // A duplicate key with different content is a conflict per API.md §4.2;
+    // surface both matches so the route can decide.
+    if (docs.length > 1) {
+      const [first, second] = docs;
+      if (first!.data().content !== second!.data().content) {
+        throw new AppError("CONFLICT", "Idempotency-Key was already used with a different request body.");
+      }
+    }
+    const doc = docs[0]!;
+    return { id: doc.id, ...serializeTimestamps(doc.data() as Omit<MessageDocument, "id">) };
   }
 
   async list(
@@ -78,7 +113,7 @@ export class MessageRepository {
 
     const data: MessageDocument[] = resultDocs.map((d) => ({
       id: d.id,
-      ...(d.data() as Omit<MessageDocument, "id">),
+      ...serializeTimestamps(d.data() as Omit<MessageDocument, "id">),
     }));
 
     let nextCursor: string | null = null;
@@ -110,7 +145,7 @@ export class MessageRepository {
     const docs = (snapshot.docs || []).slice().reverse();
     return docs.map((d) => ({
       id: d.id,
-      ...(d.data() as Omit<MessageDocument, "id">),
+      ...serializeTimestamps(d.data() as Omit<MessageDocument, "id">),
     }));
   }
 

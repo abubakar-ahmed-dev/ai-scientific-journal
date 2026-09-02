@@ -174,16 +174,49 @@ conversationsRouter.post("/:conversationId/messages", chatRateLimiter, async (re
       throw new AppError("VALIDATION_ERROR", "Cannot send messages to an archived conversation");
     }
 
-    // Step 1: Persist user message first (PRD AI-10: user message is durable before model call)
-    const userSequence = await messageRepository.getNextSequence(req.user!.uid, conversationId);
-    const userMessage = await messageRepository.create(req.user!.uid, conversationId, {
-      role: "user",
-      content: parseResult.data.content,
-      sequence: userSequence,
-    });
-    await conversationRepository.incrementMessageCount(req.user!.uid, conversationId, 1);
+    // API.md §4.2: Idempotency-Key — a retry with the same key (same user +
+    // endpoint) must not duplicate the user message. If the key matches an
+    // earlier user message in this conversation whose assistant turn is
+    // missing (previous attempt failed), resume generation for it instead.
+    const idempotencyKey = req.header("Idempotency-Key");
+    let userMessage;
 
-    // Step 2: Assemble bounded context
+    const existingUserMessage = idempotencyKey
+      ? await messageRepository.findByUserKey(req.user!.uid, conversationId, idempotencyKey)
+      : null;
+
+    if (existingUserMessage) {
+      const messages = await messageRepository.listRecent(req.user!.uid, conversationId, 1);
+      const lastMessage = messages[0];
+      if (lastMessage && lastMessage.role === "assistant") {
+        // The original request fully completed — return its stored result
+        // without re-executing (§4.2: original result, HTTP semantics aside).
+        res.status(200).json({
+          data: {
+            userMessage: existingUserMessage,
+            assistantMessage: lastMessage,
+          },
+        });
+        return;
+      }
+      // Assistant turn missing: retry resumes generation for the stored
+      // user message; the conversation's next sequence is after the last.
+      userMessage = existingUserMessage;
+    } else {
+      // Step 1: Persist user message first (PRD AI-10: user message is
+      // durable before any model call).
+      const userSequence = await messageRepository.getNextSequence(req.user!.uid, conversationId);
+      userMessage = await messageRepository.create(req.user!.uid, conversationId, {
+        role: "user",
+        content: parseResult.data.content,
+        sequence: userSequence,
+        ...(idempotencyKey ? { idempotencyKey } : {}),
+      });
+      await conversationRepository.incrementMessageCount(req.user!.uid, conversationId, 1);
+    }
+
+    // Step 2: Assemble bounded context — recent history excluding the current
+    // user message (on retry, the stored message plays the same role).
     const recentMessages = await messageRepository.listRecent(req.user!.uid, conversationId, 20);
     const priorHistory = recentMessages.filter((m) => m.id !== userMessage.id);
 
@@ -193,7 +226,7 @@ conversationsRouter.post("/:conversationId/messages", chatRateLimiter, async (re
       contextType: conversation.contextType,
       contextId: conversation.contextId,
       history: priorHistory,
-      currentUserMessage: parseResult.data.content,
+      currentUserMessage: userMessage.content,
     });
 
     // Step 3: Invoke AI Service
@@ -205,8 +238,11 @@ conversationsRouter.post("/:conversationId/messages", chatRateLimiter, async (re
       throw new AppError("AI_INVALID_RESPONSE", "Generated reply was empty or invalid");
     }
 
-    // Step 5: Persist assistant message
-    const assistantSequence = userSequence + 1;
+    // Step 5: Persist assistant message — sequence follows the last message
+    // in the conversation (on an idempotent retry this is after the stored
+    // user message; on a fresh send, right after it).
+    const lastMessage = (await messageRepository.listRecent(req.user!.uid, conversationId, 1))[0];
+    const assistantSequence = (lastMessage ? lastMessage.sequence : userMessage.sequence) + 1;
     const assistantMessage = await messageRepository.create(req.user!.uid, conversationId, {
       role: "assistant",
       content: generationResult.content,
