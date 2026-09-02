@@ -3,7 +3,7 @@ import { loadEnv } from "../../src/config/env";
 
 describe("loadEnv", () => {
   it("applies development defaults", () => {
-    expect(loadEnv({})).toMatchObject({ NODE_ENV: "development", PORT: 8080 });
+    expect(loadEnv({})).toMatchObject({ NODE_ENV: "development", PORT: 8081 });
   });
 
   it("fails fast on an invalid PORT (TA §44)", () => {

@@ -50,3 +50,40 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<ApiE
   }
   return body as ApiEnvelope<T>;
 }
+
+export async function fetchMe() {
+  return api<{
+    ownerId: string;
+    displayName: string;
+    email: string;
+    photoURL?: string;
+    role: string;
+    accountStatus: string;
+    preferences: {
+      theme: string;
+      timezone: string;
+      locationEnabled: boolean;
+      aiSuggestionsEnabled: boolean;
+    };
+  }>("/me");
+}
+
+export async function updateMe(patch: Record<string, unknown>) {
+  return api<{
+    ownerId: string;
+    displayName: string;
+    email: string;
+    photoURL?: string;
+    role: string;
+    accountStatus: string;
+    preferences: {
+      theme: string;
+      timezone: string;
+      locationEnabled: boolean;
+      aiSuggestionsEnabled: boolean;
+    };
+  }>("/me", {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}

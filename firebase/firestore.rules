@@ -1,13 +1,95 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Phase 2 replaces this with the UID-isolation model (SECURITY.md §6):
-    //   match /users/{uid}/{document=**} {
-    //     allow read, write: if request.auth != null && request.auth.uid == uid;
-    //   }
-    // Secure by default until then (SECURITY.md §32): deny everything.
-    match /{document=**} {
-      allow read, write: if false;
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Valid on create AND update: request.resource.data is the full
+    // post-write document state in both cases.
+    function ownerSet() {
+      return request.resource.data.ownerId == request.auth.uid;
+    }
+
+    // Optional projectId must be absent/null ("unfiled") or reference a
+    // project under the same uid (ADR-014 item 6). Rules Map.get() rejects a
+    // null default, so absence is detected via keys() and an explicit null
+    // value via == null; non-string values are denied by the `is string` guard.
+    function validProjectRef(uid) {
+      return !request.resource.data.keys().hasAny(['projectId'])
+        || request.resource.data.get('projectId', '') == null
+        || (request.resource.data.get('projectId', '') is string
+            && exists(/databases/$(database)/documents/users/$(uid)/projects/$(request.resource.data.get('projectId', ''))));
+    }
+
+    // ---- User document ----
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && ownerSet()
+        && request.resource.data.role == "user"
+        && request.resource.data.accountStatus == "active";
+      allow update: if isOwner(uid)
+        && ownerSet()
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.accountStatus == resource.data.accountStatus
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isOwner(uid);
+
+      // ---- Projects ----
+      match /projects/{projectId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && ownerSet();
+      }
+
+      // ---- Observations (fundamental record; user-flat per ADR-014) ----
+      match /observations/{observationId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && ownerSet() && validProjectRef(uid);
+
+        // Versions: immutable, backend-created (ADR-016; API.md §8)
+        match /versions/{versionId} {
+          allow read: if isOwner(uid);
+          allow write: if false;
+        }
+
+        match /media/{mediaId} {
+          allow read, delete: if isOwner(uid);
+          allow create, update: if isOwner(uid) && ownerSet();
+        }
+      }
+
+      // ---- Conversations (optional projectId -> validProjectRef) ----
+      match /conversations/{conversationId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && ownerSet() && validProjectRef(uid);
+
+        match /messages/{messageId} {
+          allow read, delete: if isOwner(uid);
+          allow create, update: if isOwner(uid) && ownerSet();
+        }
+      }
+
+      // ---- Analyses: client-READ-only (API.md §8; ADR-009/015).
+      // Created exclusively by the backend AI pipeline via Admin SDK. ----
+      match /analyses/{analysisId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      // ---- Research tasks (optional projectId -> validProjectRef) ----
+      match /researchTasks/{taskId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && ownerSet() && validProjectRef(uid);
+      }
+
+      // ---- Derived search index (ADR-017): path-isolated like all
+      // user data; the backend maintains it on observation writes. ----
+      match /observationSearch/{observationId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && ownerSet();
+      }
     }
   }
 }

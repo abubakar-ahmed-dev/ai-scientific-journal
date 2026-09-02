@@ -46,3 +46,5 @@ export function createApp(): express.Express {
   app.use(errorHandler);
   return app;
 }
+
+export const app = createApp();

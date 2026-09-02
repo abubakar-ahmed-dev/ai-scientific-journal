@@ -12,7 +12,7 @@ describe("GET /api/health", () => {
 
 describe("unknown routes", () => {
   it("returns the canonical error envelope with a requestId", async () => {
-    const res = await request(createApp()).get("/api/v1/does-not-exist");
+    const res = await request(createApp()).get("/does-not-exist");
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe("NOT_FOUND");
     expect(res.body.error.requestId).toBeDefined();

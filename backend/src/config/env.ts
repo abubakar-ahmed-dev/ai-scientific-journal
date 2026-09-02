@@ -4,6 +4,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(8081),
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
+  FIREBASE_PROJECT_ID: z.string().min(1).default(process.env.NODE_ENV === "test" ? "demo-test" : undefined as unknown as string),
 });
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env) {
