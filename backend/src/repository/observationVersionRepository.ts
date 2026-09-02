@@ -2,6 +2,7 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirebaseFirestore } from "../lib/firebaseAdmin";
 import { MeasurementDTO } from "../schemas/observationSchema";
 import { decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
+import { serializeTimestamps } from "../lib/serialize";
 
 export interface ObservationVersionDocument {
   id: string;
@@ -75,7 +76,7 @@ export class ObservationVersionRepository {
 
     const data: ObservationVersionDocument[] = resultDocs.map((d) => ({
       id: d.id,
-      ...(d.data() as Omit<ObservationVersionDocument, "id">),
+      ...serializeTimestamps(d.data() as Omit<ObservationVersionDocument, "id">),
     }));
 
     let nextCursor: string | null = null;
@@ -105,7 +106,7 @@ export class ObservationVersionRepository {
   ): Promise<ObservationVersionDocument | null> {
     const snap = await this.getCollection(uid, observationId).doc(versionId).get();
     if (!snap.exists) return null;
-    return { id: snap.id, ...(snap.data() as Omit<ObservationVersionDocument, "id">) };
+    return { id: snap.id, ...serializeTimestamps(snap.data() as Omit<ObservationVersionDocument, "id">) };
   }
 }
 

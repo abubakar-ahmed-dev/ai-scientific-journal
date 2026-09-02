@@ -12,6 +12,7 @@ import { observationSearchRepository } from "./observationSearchRepository";
 import { observationVersionRepository } from "./observationVersionRepository";
 import { projectRepository } from "./projectRepository";
 import { AppError } from "../types/errors";
+import { serializeTimestamps } from "../lib/serialize";
 
 export interface ObservationDocument {
   id: string;
@@ -90,7 +91,7 @@ export class ObservationRepository {
     });
 
     const snap = await docRef.get();
-    return { id: docRef.id, ...(snap.data() as Omit<ObservationDocument, "id">) };
+    return { id: docRef.id, ...serializeTimestamps(snap.data() as Omit<ObservationDocument, "id">) };
   }
 
   async list(
@@ -123,54 +124,105 @@ export class ObservationRepository {
 
     const cursor = decodeCursor(query.cursor);
     if (cursor) {
+      // API.md §5.3: cursors are bound to the sort they were minted with —
+      // mixing sorts between pages is a VALIDATION_ERROR, never a silent
+      // mis-ordered page.
+      if (cursor.sortField !== sortField) {
+        throw new AppError(
+          "VALIDATION_ERROR",
+          "Cursor does not match the requested sort. Restart the list from the first page."
+        );
+      }
       const cursorDoc = await this.getCollection(uid).doc(cursor.id).get();
       if (cursorDoc.exists) {
         dbQuery = dbQuery.startAfter(cursorDoc);
       }
     }
 
-    const snapshot = await dbQuery.limit(limit + 1).get();
-    const docs = snapshot.docs;
+    // q is a server-side text prefilter (API.md §6.5). It must not depend on
+    // page position: without the loop, an in-memory filter AFTER limit
+    // silently truncates (returns < limit matches while more exist). We
+    // therefore keep fetching Firestore pages until `limit` documents match
+    // or the collection is exhausted. The bound below caps the work per
+    // request; the derived index powers quality retrieval later (Phase 6).
+    const qLower = query.q ? query.q.toLowerCase() : null;
+    const MAX_SCAN = 500;
 
-    // Optional text query filter in memory if q provided
-    const hasMore = docs.length > limit;
-    let resultDocs = hasMore ? docs.slice(0, limit) : docs;
+    const data: ObservationDocument[] = [];
+    let hasMore = false;
+    let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+    let scanned = 0;
+    let exhausted = false;
 
-    if (query.q) {
-      const qLower = query.q.toLowerCase();
-      resultDocs = resultDocs.filter((d) => {
-        const data = d.data();
-        const searchable = [
-          data.title,
-          data.description,
-          data.notes,
-          data.hypothesis,
-          ...(data.tags || []),
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        return searchable.includes(qLower);
-      });
+    while (data.length < limit && !exhausted && scanned < MAX_SCAN) {
+      const pageQuery: FirebaseFirestore.Query = lastDoc
+        ? dbQuery.startAfter(lastDoc)
+        : dbQuery;
+      const pageSize = qLower ? Math.max(limit, 50) : limit + 1;
+      const snapshot: FirebaseFirestore.QuerySnapshot = await pageQuery.limit(pageSize).get();
+      const docs = snapshot.docs;
+      scanned += docs.length;
+
+      if (docs.length === 0) {
+        exhausted = true;
+        break;
+      }
+
+      for (const d of docs) {
+        if (qLower) {
+          const docData = d.data();
+          const searchable = [
+            docData.title,
+            docData.description,
+            docData.notes,
+            docData.hypothesis,
+            ...((docData.tags as string[] | undefined) ?? []),
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+          if (!searchable.includes(qLower)) continue;
+        }
+        if (data.length === limit) {
+          // One match beyond the page — there is more after this page.
+          hasMore = true;
+          break;
+        }
+        data.push({
+          id: d.id,
+          ...serializeTimestamps(d.data() as Omit<ObservationDocument, "id">),
+        });
+      }
+
+      if (docs.length < pageSize) {
+        exhausted = true;
+      }
+      lastDoc = docs[docs.length - 1]!;
     }
 
-    const data: ObservationDocument[] = resultDocs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<ObservationDocument, "id">),
-    }));
+    // With q absent the loop is a single fetch; hasMore was set by the
+    // limit+1 match above. With q present, "more" means we stopped with a
+    // queued match or the scan cap hit while the source had more pages.
+    if (qLower && !hasMore && scanned >= MAX_SCAN && !exhausted) {
+      hasMore = true;
+    }
+
+    const resultDocs = data;
 
     let nextCursor: string | null = null;
     if (hasMore && resultDocs.length > 0) {
-      const lastDoc = resultDocs[resultDocs.length - 1]!;
+      const lastResult = resultDocs[resultDocs.length - 1]!;
       nextCursor = encodeCursor({
-        id: lastDoc.id,
+        id: lastResult.id,
         sortField,
-        sortValue: lastDoc.get(sortField) ? String(lastDoc.get(sortField)) : "",
+        sortValue: lastResult[sortField as keyof ObservationDocument]
+          ? String(lastResult[sortField as keyof ObservationDocument])
+          : "",
       });
     }
 
     return {
-      data,
+      data: resultDocs,
       meta: {
         nextCursor,
         hasMore,
@@ -182,7 +234,7 @@ export class ObservationRepository {
   async findById(uid: string, observationId: string): Promise<ObservationDocument | null> {
     const snap = await this.getCollection(uid).doc(observationId).get();
     if (!snap.exists) return null;
-    return { id: snap.id, ...(snap.data() as Omit<ObservationDocument, "id">) };
+    return { id: snap.id, ...serializeTimestamps(snap.data() as Omit<ObservationDocument, "id">) };
   }
 
   async update(
@@ -269,7 +321,7 @@ export class ObservationRepository {
       measurements: updatedData.measurements,
     });
 
-    return { id: updatedSnap.id, ...updatedData };
+    return { id: updatedSnap.id, ...serializeTimestamps(updatedData) };
   }
 
   async delete(uid: string, observationId: string): Promise<void> {
