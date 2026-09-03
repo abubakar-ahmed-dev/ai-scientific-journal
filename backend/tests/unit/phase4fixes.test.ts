@@ -3,19 +3,24 @@ import { Timestamp } from "firebase-admin/firestore";
 import { CreateConversationSchema } from "../../src/schemas/conversationSchema";
 import { serializeTimestamps } from "../../src/lib/serialize";
 
-describe("F1 regression: research contextType honestly deferred (API.md §6.10)", () => {
-  it("rejects contextType 'research' with 400-class validation error", () => {
+describe("research contextType (superseded in Phase 5: analyses exist, resolution implemented)", () => {
+  // Phase 4 fix deferred `research` context until the analyses collection
+  // existed. Phase 5 shipped analyses and the Phase 5 fixes lift the
+  // deferral — the schema passes it through and the repository resolves
+  // the analysis ownership-checked (see contextBuilder/conversationRepository).
+  it("accepts contextType 'research' with a contextId at the schema level", () => {
     const result = CreateConversationSchema.safeParse({ contextType: "research", contextId: "anl_123" });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues.some((i) => i.path.includes("contextType"))).toBe(true);
-    }
+    expect(result.success).toBe(true);
   });
 
   it("still accepts general, observation, project contexts", () => {
     expect(CreateConversationSchema.safeParse({ contextType: "general" }).success).toBe(true);
     expect(CreateConversationSchema.safeParse({ contextType: "observation", contextId: "obs_1" }).success).toBe(true);
     expect(CreateConversationSchema.safeParse({ contextType: "project", contextId: "proj_1" }).success).toBe(true);
+  });
+
+  it("still rejects general context with a contextId", () => {
+    expect(CreateConversationSchema.safeParse({ contextType: "general", contextId: "x" }).success).toBe(false);
   });
 });
 

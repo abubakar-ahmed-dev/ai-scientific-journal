@@ -83,6 +83,41 @@ vi.mock("../../src/lib/firebaseAdmin", () => {
                   ...getDocHandler(fullPath),
                 };
               },
+          where: (field: string, op: string, value: unknown) => {
+            const matches = () => {
+              const prefix = `${rootColl}/${uid}/${subColl}/`;
+              let docs: Array<{ id?: string; path?: string; ref?: { path?: string; id?: string }; data: () => Record<string, unknown>; get: (f: string) => unknown }> = [];
+              inMemoryDb.forEach((val, key) => {
+                if (key.startsWith(prefix)) {
+                  const docId = key.split("/").pop() as string;
+                  docs.push({
+                    id: docId,
+                    path: key,
+                    ref: { path: key, id: docId },
+                    data: () => val,
+                    get: (f: string) => val[f],
+                  });
+                }
+              });
+              if (field === "__name__" && op === "in" && Array.isArray(value)) {
+                const wanted = new Set(value as string[]);
+                docs = docs.filter((d) => wanted.has(d.id as string));
+              }
+              return docs;
+            };
+            return {
+              get: async () => {
+                const docs = matches();
+                return { empty: docs.length === 0, docs };
+              },
+              limit: (lim: number) => ({
+                get: async () => {
+                  const docs = matches();
+                  return { empty: docs.length === 0, docs: docs.slice(0, lim) };
+                },
+              }),
+            };
+          },
               orderBy: () => ({
                 limit: (lim: number) => ({
                   get: async () => {
@@ -106,8 +141,29 @@ vi.mock("../../src/lib/firebaseAdmin", () => {
         }),
         batch: () => ({
           delete: () => {},
-          update: (docRef: { update: (val: Record<string, unknown>) => Promise<void> }, val: Record<string, unknown>) => {
-            docRef.update(val);
+          update: (
+            docRef: { update?: (val: Record<string, unknown>) => Promise<void>; path?: string; id?: string },
+            val: Record<string, unknown>
+          ) => {
+            if (docRef && typeof docRef.update === "function") {
+              docRef.update(val);
+              return;
+            }
+            // Query-document snapshots (from where().get()) carry data + id, not update():
+            // locate the doc in the in-memory store by id suffix (their `path` is the doc id).
+            const docId = docRef?.path ?? docRef?.id;
+            if (docId) {
+              let matched = false;
+              inMemoryDb.forEach((stored, key) => {
+                if (key.endsWith(`/${docId}`) || key === docId) {
+                  inMemoryDb.set(key, { ...stored, ...val });
+                  matched = true;
+                }
+              });
+              if (!matched && process.env.DEBUG_MOCKS === "1") {
+                console.error("mock: no store key matched batch docId", docId);
+              }
+            }
           },
           commit: async () => {},
         }),
