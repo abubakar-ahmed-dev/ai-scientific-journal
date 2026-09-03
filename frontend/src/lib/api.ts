@@ -1,84 +1,143 @@
-const API_BASE: string = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
+import { auth } from "./firebase/config";
 
-export type ApiEnvelope<T> = { data: T; meta?: { nextCursor?: string | null; hasMore?: boolean; limit?: number } };
-export type ApiErrorBody = { error?: { code: string; message: string; requestId: string } };
+const API_BASE = "/api/v1";
+
+export interface ApiResponse<T> {
+  data: T;
+  meta?: {
+    total?: number;
+    limit?: number;
+    nextCursor?: string | null;
+    hasMore?: boolean;
+    serverTime?: string;
+  };
+}
+
+export interface ApiError {
+  error: {
+    code: string;
+    message: string;
+    requestId?: string;
+    details?: Array<{ field?: string; message: string; code?: string }>;
+  };
+}
 
 export class ApiRequestError extends Error {
-  readonly code: string;
-  readonly requestId?: string;
-  readonly status?: number;
+  code: string;
+  status: number;
+  details?: Array<{ field?: string; message: string; code?: string }>;
+  requestId?: string;
 
-  constructor(code: string, message: string, requestId?: string, status?: number) {
+  constructor(
+    code: string,
+    message: string,
+    details?: Array<{ field?: string; message: string; code?: string }>,
+    status: number = 500,
+    requestId?: string
+  ) {
     super(message);
     this.name = "ApiRequestError";
     this.code = code;
-    this.requestId = requestId;
     this.status = status;
+    this.details = details;
+    this.requestId = requestId;
   }
 }
 
-let tokenProvider: () => Promise<string | null> = async () => null;
-export function setAuthTokenProvider(provider: () => Promise<string | null>): void {
+let tokenProvider = async (): Promise<string | null> => {
+  const user = auth.currentUser;
+  if (!user) return null;
+  return user.getIdToken();
+};
+
+export function setAuthTokenProvider(provider: () => Promise<string | null>) {
   tokenProvider = provider;
 }
 
-export async function api<T>(path: string, init: RequestInit = {}): Promise<ApiEnvelope<T>> {
+export const setTokenProvider = setAuthTokenProvider;
+
+export async function api<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
   const token = await tokenProvider();
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...init.headers,
-    },
+
+  const headers = new Headers(options.headers || {});
+  headers.set("Content-Type", "application/json");
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers,
   });
 
-  const body = (await res.json().catch(() => null)) as
-    | ApiEnvelope<unknown>
-    | ApiErrorBody
-    | null;
+  const contentType = response.headers.get("content-type");
+  const isJson = contentType && contentType.includes("application/json");
 
-  if (!res.ok) {
-    const err = (body as ApiErrorBody | null)?.error;
-    throw new ApiRequestError(
-      err?.code ?? "INTERNAL_ERROR",
-      err?.message ?? "Request failed.",
-      err?.requestId,
-      res.status
-    );
+  if (!response.ok) {
+    if (isJson) {
+      const errBody: ApiError = await response.json();
+      throw new ApiRequestError(
+        errBody.error?.code || "UNKNOWN_ERROR",
+        errBody.error?.message || "An unexpected error occurred",
+        errBody.error?.details,
+        response.status,
+        errBody.error?.requestId
+      );
+    } else {
+      throw new ApiRequestError(
+        "HTTP_ERROR",
+        `Request failed with status ${response.status}`,
+        undefined,
+        response.status
+      );
+    }
   }
-  return body as ApiEnvelope<T>;
+
+  if (response.status === 204) {
+    return { data: null as unknown as T };
+  }
+
+  return response.json();
 }
 
-// User types & API
+// User Profile types & API
+export interface UserPreferences {
+  theme?: "light" | "dark" | "system";
+  timezone?: string;
+  locationEnabled?: boolean;
+  aiSuggestionsEnabled?: boolean;
+}
+
 export interface UserProfile {
-  ownerId: string;
-  displayName: string;
-  email: string;
+  uid: string;
+  ownerId?: string;
+  email: string | null;
+  displayName: string | null;
   photoURL?: string | null;
-  role: string;
-  accountStatus: string;
-  preferences: {
-    theme: "light" | "dark" | "system";
-    timezone: string;
-    locationEnabled: boolean;
-    aiSuggestionsEnabled: boolean;
-  };
-  createdAt?: string;
-  updatedAt?: string;
-  lastLoginAt?: string;
+  institution?: string | null;
+  fieldOfStudy?: string | null;
+  role?: string;
+  accountStatus?: "active" | "suspended" | "deleted";
+  preferences?: UserPreferences;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export async function fetchMe() {
   return api<UserProfile>("/me");
 }
 
-export async function updateMe(patch: Partial<UserProfile>) {
+export const fetchCurrentUser = fetchMe;
+
+export async function updateMe(data: Partial<UserProfile>) {
   return api<UserProfile>("/me", {
     method: "PATCH",
-    body: JSON.stringify(patch),
+    body: JSON.stringify(data),
   });
 }
+
+export const updateCurrentUser = updateMe;
 
 // Project types & API
 export interface Project {
@@ -91,7 +150,6 @@ export interface Project {
   tags: string[];
   createdAt: string;
   updatedAt: string;
-  archivedAt: string | null;
 }
 
 export async function fetchProjects(params: { limit?: number; cursor?: string; status?: string } = {}) {
@@ -107,7 +165,7 @@ export async function fetchProject(projectId: string) {
   return api<Project>(`/projects/${projectId}`);
 }
 
-export async function createProject(data: { title: string; description?: string | null; field?: string | null; tags?: string[] }) {
+export async function createProject(data: Partial<Project>) {
   return api<Project>("/projects", {
     method: "POST",
     body: JSON.stringify(data),
@@ -140,16 +198,14 @@ export interface Measurement {
   name: string;
   value: number;
   unit: string;
-  observedAt?: string | null;
   notes?: string | null;
 }
 
 export interface ObservationLocation {
   latitude: number;
   longitude: number;
-  accuracyMeters?: number | null;
+  precision?: "exact" | "approximate" | "hidden";
   label?: string | null;
-  precision: "exact" | "approximate" | "hidden";
 }
 
 export interface Observation {
@@ -158,14 +214,13 @@ export interface Observation {
   projectId: string | null;
   title: string;
   description: string;
-  notes: string | null;
-  hypothesis: string | null;
   observedAt: string;
-  location: ObservationLocation | null;
+  hypothesis: string | null;
+  notes: string | null;
   tags: string[];
+  status: "draft" | "recorded" | "analyzed";
   measurements: Measurement[];
-  status: "draft" | "observed" | "analyzed" | "archived";
-  mediaCount: number;
+  location?: ObservationLocation | null;
   version: number;
   createdAt: string;
   updatedAt: string;
@@ -358,4 +413,175 @@ export async function sendMessage(conversationId: string, content: string) {
       body: JSON.stringify({ content }),
     }
   );
+}
+
+// AI Analyses types & API
+export interface Hypothesis {
+  statement: string;
+  confidence: "low" | "medium" | "high";
+  supportingObservationIds: string[];
+}
+
+export interface Analysis {
+  id: string;
+  ownerId: string;
+  projectId: string | null;
+  observationIds: string[];
+  conversationId: string | null;
+  type: "summary" | "analysis" | "hypothesis" | "classification" | "research_suggestions";
+  summary: string;
+  keyFindings: string[];
+  hypotheses: Hypothesis[];
+  uncertainties: string[];
+  suggestedQuestions: string[];
+  openQuestions: string[];
+  suggestedNextSteps: string[];
+  model: string;
+  promptVersion: string;
+  createdAt: string;
+  sourceSummaries?: Array<{
+    observationId: string;
+    found: boolean;
+    title?: string;
+    status?: string;
+  }>;
+}
+
+export async function generateSummary(body: {
+  conversationId?: string;
+  observationIds?: string[];
+  projectId?: string;
+}) {
+  return api<Analysis>("/ai/summarize", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function generateAnalysis(body: {
+  observationIds: string[];
+  projectId?: string;
+}) {
+  return api<Analysis>("/ai/analyze", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function generateResearchSuggestions(body: {
+  observationIds?: string[];
+  analysisId?: string;
+  projectId?: string;
+}) {
+  return api<Analysis>("/ai/suggest-research", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchAnalyses(params: {
+  limit?: number;
+  cursor?: string;
+  type?: string;
+  observationId?: string;
+  conversationId?: string;
+  projectId?: string;
+} = {}) {
+  const query = new URLSearchParams();
+  if (params.limit) query.set("limit", String(params.limit));
+  if (params.cursor) query.set("cursor", params.cursor);
+  if (params.type) query.set("type", params.type);
+  if (params.observationId) query.set("observationId", params.observationId);
+  if (params.conversationId) query.set("conversationId", params.conversationId);
+  if (params.projectId) query.set("projectId", params.projectId);
+  const qStr = query.toString();
+  return api<Analysis[]>(`/analyses${qStr ? `?${qStr}` : ""}`);
+}
+
+export async function fetchAnalysis(analysisId: string, includeSources: boolean = false) {
+  return api<Analysis>(`/analyses/${analysisId}${includeSources ? "?includeSources=summary" : ""}`);
+}
+
+// Research Tasks types & API
+export interface ResearchTask {
+  id: string;
+  ownerId: string;
+  projectId: string | null;
+  title: string;
+  description: string;
+  source: "user" | "gemini";
+  sourceAnalysisId: string | null;
+  status: "suggested" | "planned" | "in_progress" | "completed" | "dismissed";
+  relatedObservationIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchResearchTasks(params: {
+  limit?: number;
+  cursor?: string;
+  status?: string;
+  projectId?: string;
+} = {}) {
+  const query = new URLSearchParams();
+  if (params.limit) query.set("limit", String(params.limit));
+  if (params.cursor) query.set("cursor", params.cursor);
+  if (params.status) query.set("status", params.status);
+  if (params.projectId) query.set("projectId", params.projectId);
+  const qStr = query.toString();
+  return api<ResearchTask[]>(`/research-tasks${qStr ? `?${qStr}` : ""}`);
+}
+
+export async function fetchResearchTask(taskId: string) {
+  return api<ResearchTask>(`/research-tasks/${taskId}`);
+}
+
+export async function createResearchTask(
+  data:
+    | {
+        source: "user";
+        title: string;
+        description: string;
+        projectId?: string | null;
+        relatedObservationIds?: string[];
+      }
+    | {
+        source: "gemini";
+        sourceAnalysisId: string;
+        suggestionIndex: number;
+        projectId?: string | null;
+      }
+) {
+  return api<ResearchTask>("/research-tasks", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateResearchTask(
+  taskId: string,
+  patch: {
+    title?: string;
+    description?: string;
+    status?: "suggested" | "planned" | "in_progress" | "completed" | "dismissed";
+    relatedObservationIds?: string[];
+  }
+) {
+  return api<ResearchTask>(`/research-tasks/${taskId}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function deleteResearchTask(taskId: string) {
+  const token = await tokenProvider();
+  const res = await fetch(`${API_BASE}/research-tasks/${taskId}`, {
+    method: "DELETE",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    throw new ApiRequestError("INTERNAL_ERROR", "Failed to delete task", undefined, res.status);
+  }
 }

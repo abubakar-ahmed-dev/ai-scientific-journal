@@ -11,6 +11,8 @@ import ProjectsPage from "../pages/ProjectsPage";
 import ProjectDetailPage from "../pages/ProjectDetailPage";
 import SettingsPage from "../pages/SettingsPage";
 
+import { ResearchTasksPage } from "../pages/ResearchTasksPage";
+
 export default function App() {
   const { currentUser, loading } = useAuth();
 
@@ -30,6 +32,14 @@ export default function App() {
       <Route path="/observations/new" element={<ObservationFormPage />} />
       <Route path="/observations/:id" element={<ObservationDetailPage />} />
       <Route path="/observations/:id/edit" element={<ObservationFormPage />} />
+      <Route
+        path="/tasks"
+        element={
+          <Layout>
+            <ResearchTasksPage />
+          </Layout>
+        }
+      />
       <Route
         path="/conversations"
         element={

@@ -4,6 +4,7 @@ import { CreateConversationDTO, UpdateConversationDTO, ListConversationsQueryDTO
 import { decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
 import { projectRepository } from "./projectRepository";
 import { observationRepository } from "./observationRepository";
+import { analysisRepository } from "./analysisRepository";
 import { AppError } from "../types/errors";
 import { serializeTimestamps } from "../lib/serialize";
 
@@ -44,6 +45,12 @@ export class ConversationRepository {
       const proj = await projectRepository.findById(uid, data.contextId);
       if (!proj) {
         throw new AppError("VALIDATION_ERROR", `Referenced project '${data.contextId}' does not exist.`);
+      }
+    } else if (data.contextType === "research" && data.contextId) {
+      // Research context references a caller-owned analysis (API.md §6.10)
+      const analysis = await analysisRepository.findById(uid, data.contextId);
+      if (!analysis) {
+        throw new AppError("VALIDATION_ERROR", `Referenced analysis '${data.contextId}' does not exist.`);
       }
     }
 

@@ -1,3 +1,5 @@
+import { StructuredAnalysisOutput } from "./parsers/analysisOutputSchema";
+
 export interface ChatMessageContext {
   role: "user" | "assistant" | "system";
   content: string;
@@ -36,6 +38,28 @@ export interface ChatGenerationResult {
   };
 }
 
+export interface AnalysisPromptPayload {
+  systemInstruction: string;
+  promptVersion: string;
+  contextText: string;
+  taskInstruction: string;
+}
+
+export interface StructuredAnalysisResult {
+  output: StructuredAnalysisOutput;
+  model: string;
+  promptVersion: string;
+  metadata: {
+    latencyMs: number;
+    tokenUsage?: {
+      promptTokens?: number;
+      candidatesTokens?: number;
+      totalTokens?: number;
+    };
+  };
+}
+
 export interface IAIService {
   generateChatReply(context: ChatContextPayload): Promise<ChatGenerationResult>;
+  generateStructuredAnalysis(payload: AnalysisPromptPayload): Promise<StructuredAnalysisResult>;
 }
