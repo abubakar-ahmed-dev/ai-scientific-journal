@@ -14,6 +14,8 @@ import { projectRepository } from "./projectRepository";
 import { AppError } from "../types/errors";
 import { serializeTimestamps } from "../lib/serialize";
 import { logger } from "../lib/logger";
+import { getStorageService } from "../storage/storageService";
+import { observationStoragePrefix } from "../storage/storagePaths";
 
 export interface ObservationDocument {
   id: string;
@@ -355,6 +357,21 @@ export class ObservationRepository {
       const batch = getFirebaseFirestore().batch();
       mediaSnap.docs.forEach((d) => batch.delete(d.ref));
       await batch.commit();
+    }
+
+    // 2b. Delete associated Cloud Storage objects (ADR-016 / §19 cascade).
+    // Metadata is already committed above, so binaries are cleaned best-effort:
+    // a transient storage failure must never fail the canonical delete. Skipped
+    // entirely when mediaCount is 0 (no objects can exist under the prefix).
+    const mediaCount = (existing.data()?.mediaCount as number | undefined) ?? 0;
+    if (mediaCount > 0) {
+      try {
+        await getStorageService().deletePrefix(
+          observationStoragePrefix(uid, observationId)
+        );
+      } catch (err) {
+        logger.warn({ err, uid, observationId }, "Failed to delete observation storage objects");
+      }
     }
 
     // 3. Delete search index document (ADR-017) — best effort, never fails canonical delete

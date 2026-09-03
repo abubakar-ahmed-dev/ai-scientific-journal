@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
+import { MulterError } from "multer";
 import { AppError } from "../types/errors";
 import { logger } from "../lib/logger";
 
@@ -44,6 +45,29 @@ export function errorHandler(
       error: {
         code: "PAYLOAD_TOO_LARGE",
         message: "Request body exceeds the configured size limit.",
+        requestId: req.requestId,
+      },
+    });
+    return;
+  }
+
+  // Multer upload failures → registry codes (mediaUpload middleware runs
+  // before route handlers, so route-level try/catch never sees these).
+  if (err instanceof MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      res.status(413).json({
+        error: {
+          code: "PAYLOAD_TOO_LARGE",
+          message: "Uploaded file exceeds the configured size limit.",
+          requestId: req.requestId,
+        },
+      });
+      return;
+    }
+    res.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: `File upload failed: ${err.code}.`,
         requestId: req.requestId,
       },
     });

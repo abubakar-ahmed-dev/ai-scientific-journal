@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../lib/firebase/authContext";
 import LandingPage from "../pages/LandingPage";
@@ -13,6 +14,12 @@ import SettingsPage from "../pages/SettingsPage";
 
 import { ResearchTasksPage } from "../pages/ResearchTasksPage";
 import { AskMyJournalPage } from "../pages/AskMyJournalPage";
+
+// Leaflet + its assets are heavy; split them out of the initial bundle so
+// only map routes pay the download cost.
+const ResearchMapPage = lazy(() =>
+  import("../pages/ResearchMapPage").then((m) => ({ default: m.ResearchMapPage }))
+);
 
 export default function App() {
   const { currentUser, loading } = useAuth();
@@ -33,6 +40,20 @@ export default function App() {
       <Route path="/observations/new" element={<ObservationFormPage />} />
       <Route path="/observations/:id" element={<ObservationDetailPage />} />
       <Route path="/observations/:id/edit" element={<ObservationFormPage />} />
+      <Route
+        path="/map"
+        element={
+          <Layout>
+            <Suspense
+              fallback={
+                <div className="p-12 text-center text-sm text-slate-400">Loading research map…</div>
+              }
+            >
+              <ResearchMapPage />
+            </Suspense>
+          </Layout>
+        }
+      />
       <Route
         path="/ask"
         element={

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import {
@@ -13,6 +13,13 @@ import {
 } from "../lib/api";
 import type { Observation, ObservationVersion, Analysis, SearchResponseItem } from "../lib/api";
 import { AnalysisViewer } from "../components/AnalysisViewer";
+import { MediaGallery } from "../components/MediaGallery";
+
+// Leaflet stays out of the detail-page chunk; the mini map loads only when a
+// located observation is actually rendered.
+const ObservationMiniMap = lazy(() =>
+  import("../components/ObservationMiniMap").then((m) => ({ default: m.ObservationMiniMap }))
+);
 import { Sparkles, MessageSquare, Lightbulb, ListChecks, BookOpen } from "lucide-react";
 
 export default function ObservationDetailPage() {
@@ -329,6 +336,27 @@ export default function ObservationDetailPage() {
                 </div>
               )}
 
+              {/* Location Card */}
+              {observation.location && (
+                <div className="space-y-2 pt-4 border-t border-slate-100">
+                  <h2 className="text-sm font-semibold text-slate-700">Geographic Location</h2>
+                  <Suspense
+                    fallback={
+                      <div className="h-44 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-xs text-slate-400">
+                        Loading map…
+                      </div>
+                    }
+                  >
+                    <ObservationMiniMap
+                      latitude={observation.location.latitude}
+                      longitude={observation.location.longitude}
+                      precision={observation.location.precision || "exact"}
+                      label={observation.location.label}
+                    />
+                  </Suspense>
+                </div>
+              )}
+
               {/* Tags Footer */}
               {observation.tags.length > 0 && (
                 <div className="pt-4 border-t border-slate-100 flex gap-1.5">
@@ -339,6 +367,11 @@ export default function ObservationDetailPage() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Evidence Media Gallery Section */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 sm:p-8">
+              <MediaGallery observationId={id!} />
             </div>
 
             {/* Related Observations Section */}

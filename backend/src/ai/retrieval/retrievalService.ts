@@ -2,6 +2,7 @@ import { getFirebaseFirestore } from "../../lib/firebaseAdmin";
 import { observationRepository, ObservationDocument } from "../../repository/observationRepository";
 import { env } from "../../config/env";
 import { logger } from "../../lib/logger";
+import { sanitizeLocation } from "../../lib/locationPrivacy";
 
 export interface RetrievedObservation {
   observationId: string;
@@ -11,6 +12,11 @@ export interface RetrievedObservation {
   score: number; // lexical relevance (0-1)
   searchableText: string;
   snippet?: string;
+  location?: {
+    label: string | null;
+    precision: "exact" | "approximate" | "hidden";
+    coordinates?: { latitude: number; longitude: number };
+  } | null;
 }
 
 export interface RetrievalResult {
@@ -237,6 +243,27 @@ export class RetrievalService {
           ? canonical.observedAt
           : canonical.observedAt?.toDate?.().toISOString() || new Date().toISOString();
 
+      // Privacy enforcement via the shared sanitizer (SECURITY §14): hidden
+      // coordinates are omitted entirely; approximate are fuzzed to 1 decimal.
+      let safeLocation: {
+        label: string | null;
+        precision: "exact" | "approximate" | "hidden";
+        coordinates?: { latitude: number; longitude: number };
+      } | null = null;
+      if (canonical.location) {
+        const s = sanitizeLocation(canonical.location);
+        if (s) {
+          safeLocation =
+            s.latitude === undefined || s.longitude === undefined
+              ? { label: s.label, precision: s.precision }
+              : {
+                  label: s.label,
+                  precision: s.precision,
+                  coordinates: { latitude: s.latitude, longitude: s.longitude },
+                };
+        }
+      }
+
       verifiedCandidates.push({
         observationId: canonical.id,
         title: canonical.title,
@@ -245,6 +272,7 @@ export class RetrievalService {
         score: item.score,
         searchableText: item.searchableText,
         snippet: buildSnippet(item.searchableText, queryTokens),
+        location: safeLocation,
       });
 
       if (verifiedCandidates.length >= opts.limit) {

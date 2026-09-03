@@ -23,6 +23,11 @@ const envSchema = z.object({
   AI_RAG_MIN_SCORE: z.coerce.number().default(0.05),
   AI_RAG_MAX_CONTEXT_OBSERVATIONS: z.coerce.number().int().positive().default(5),
   AI_RAG_CONTEXT_CHAR_BUDGET: z.coerce.number().int().positive().default(12000),
+  STORAGE_BUCKET: z.string().default("ai-scientific-journal-media"),
+  MEDIA_MAX_IMAGE_SIZE_BYTES: z.coerce.number().int().positive().default(10 * 1024 * 1024),
+  MEDIA_MAX_AUDIO_SIZE_BYTES: z.coerce.number().int().positive().default(25 * 1024 * 1024),
+  MEDIA_MAX_VIDEO_SIZE_BYTES: z.coerce.number().int().positive().default(100 * 1024 * 1024),
+  MEDIA_SIGNED_URL_TTL_MINUTES: z.coerce.number().int().positive().default(15),
 });
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env) {

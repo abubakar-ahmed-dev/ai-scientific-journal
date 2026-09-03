@@ -49,3 +49,26 @@ export const aiRateLimiter = rateLimit({
     });
   },
 });
+
+export const mediaRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 30, // 30 uploads per hour (API.md §4.1 media tier)
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: {
+    ip: false,
+    xForwardedForHeader: false,
+  },
+  keyGenerator: (req: Request): string => {
+    return req.user?.uid || (req.ip ? ipKeyGenerator(req.ip) : "unknown");
+  },
+  handler: (_req: Request, res: Response) => {
+    res.status(429).json({
+      error: {
+        code: "RATE_LIMIT_EXCEEDED",
+        message: "Too many media uploads. Please try again later.",
+        requestId: (res.getHeader("x-request-id") as string) || "req_rate_limit",
+      },
+    });
+  },
+});
