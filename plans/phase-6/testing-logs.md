@@ -211,3 +211,31 @@ grounding validation, isolation, or persistence semantics; the live suite (11/11
 passed after the one env fix. F2–F5 are small polish/coverage items, none blocking merge.
 Recommended order: F1 (env default + `.env.example` note) → F2/F3 (small code fixes +
 regression tests) → F4 (unit coverage) → F5 (test fixture rename).
+
+---
+
+## 8. Post-Verification Fix Implementation & Final Quality Gate
+
+All findings (F1–F5) identified during verification have been resolved and verified.
+
+### 8.1 Resolution Summary
+
+| ID | Severity | File(s) | Fix Applied | Result |
+| :--- | :--- | :--- | :--- | :--- |
+| **F1** | 🟠 Warning | `backend/src/config/env.ts`, `backend/.env.example`, `backend/tests/unit/env.test.ts` | Updated default `AI_MODEL` to `gemini-3.6-flash` (the live-verified model recommended by the Gemini API in E2E #3/#11). Documented in `.env.example` with `tsx watch` restart note. Added regression assertion in `env.test.ts`. | ✅ Verified |
+| **F2** | 🟡 Polish | `backend/src/routes/ai.ts` | Removed secondary `Math.round(c.score * 100) / 100` rounding in `/ai/search` handler. Pass through the 3-decimal-place normalized score from `retrievalService` directly, preventing small positive scores from rounding to 0. | ✅ Verified |
+| **F3** | 🟡 Edge Case | `backend/src/ai/prompts/askGroundedAnswerPrompt.ts` | Added character budget truncation for oversized first context blocks (`body.slice(0, availableForBody) + "…[truncated]"`), ensuring strict adherence to `AI_RAG_CONTEXT_CHAR_BUDGET` (AI_ARCHITECTURE §6). | ✅ Verified |
+| **F4** | 🟡 Coverage | `backend/tests/unit/retrievePipeline.test.ts` | Added 8 unit tests covering `RetrievalService.retrieve()`: empty query handling, canonical re-check (dropping deleted observations), `projectId` filtering, `unfiled` filtering, `limit` truncation, canonical title/observedAt precedence, score descending order, and `minScore` threshold filtering. | ✅ 8/8 Passed |
+| **F5** | ⚪ Cleanup | `frontend/src/pages/AskMyJournalPage.test.tsx` | Updated model name in test fixtures and assertions from `gemini-2.5-flash` to neutral `test-model`. | ✅ 4/4 Passed |
+
+### 8.2 Final Quality Gate Results
+
+- **Backend Unit & Integration Tests**: 21 test files, 119/119 tests passed.
+- **Backend Typecheck (`tsc`)**: Passed (0 errors).
+- **Backend Lint (`eslint`)**: Clean (0 errors, 0 warnings).
+- **Frontend Vitest Tests**: 5 test files, 8/8 tests passed.
+- **Frontend Typecheck (`tsc -b`)**: Passed (0 errors).
+- **Frontend Lint (`oxlint`)**: Clean (0 errors).
+- **Backend Build (`tsc -p tsconfig.build.json`)**: Succeeded.
+- **Frontend Build (`vite build`)**: Succeeded (built in 2.21s).
+
