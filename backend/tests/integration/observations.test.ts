@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import request from "supertest";
 import { app } from "../../src/app";
 import { USER_A, USER_B, MOCK_ID_TOKEN_USER_A, MOCK_ID_TOKEN_USER_B } from "../fixtures/userFixtures";
+import { observationSearchRepository } from "../../src/repository/observationSearchRepository";
 
 // In-memory mock store
 const inMemoryStore = new Map<string, Record<string, unknown>>();
@@ -251,5 +252,42 @@ describe("Observations API (/api/v1/observations)", () => {
 
     expect(getRes.status).toBe(404);
     expect(getRes.body.error.code).toBe("NOT_FOUND");
+  });
+
+  it("observation create, update, and delete succeed even if search index fails (ADR-017 best-effort)", async () => {
+    const spyUpsert = vi.spyOn(observationSearchRepository, "upsert").mockRejectedValue(new Error("Index write failure"));
+    const spyDelete = vi.spyOn(observationSearchRepository, "delete").mockRejectedValue(new Error("Index delete failure"));
+
+    // 1. Create succeeds despite index error
+    const createRes = await request(app)
+      .post("/api/v1/observations")
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
+      .send({
+        title: "Resilient Observation",
+        description: "Should succeed despite search index failure.",
+      });
+
+    expect(createRes.status).toBe(201);
+    const obsId = createRes.body.data.id;
+
+    // 2. Update succeeds despite index error
+    const updateRes = await request(app)
+      .patch(`/api/v1/observations/${obsId}`)
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
+      .send({
+        title: "Updated Resilient Observation",
+      });
+
+    expect(updateRes.status).toBe(200);
+
+    // 3. Delete succeeds despite index error
+    const deleteRes = await request(app)
+      .delete(`/api/v1/observations/${obsId}`)
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`);
+
+    expect(deleteRes.status).toBe(204);
+
+    spyUpsert.mockRestore();
+    spyDelete.mockRestore();
   });
 });
