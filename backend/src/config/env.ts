@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+// Load backend/.env before validation (development convenience). Real
+// environment variables take precedence over file values, and a missing
+// file is fine (CI/production inject real env vars instead).
+try {
+  process.loadEnvFile();
+} catch {
+  // No .env file present — rely on the actual environment.
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(8081),
