@@ -8,6 +8,7 @@ import {
 } from "../lib/api";
 import type { Project, Measurement } from "../lib/api";
 import { Layout } from "../components/Layout";
+import { MapPin, Loader2, Info } from "lucide-react";
 
 export default function ObservationFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,10 +24,10 @@ export default function ObservationFormPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState<string>("");
-  const [hypothesis, setHypothesis] = useState("");
-  const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<"draft" | "observed" | "archived">("observed");
   const [observedAt, setObservedAt] = useState(new Date().toISOString().slice(0, 16));
+  const [hypothesis, setHypothesis] = useState("");
+  const [notes, setNotes] = useState("");
 
   // Location State
   const [hasLocation, setHasLocation] = useState(false);
@@ -34,6 +35,36 @@ export default function ObservationFormPage() {
   const [longitude, setLongitude] = useState<number>(0);
   const [locationLabel, setLocationLabel] = useState("");
   const [precision, setPrecision] = useState<"exact" | "approximate" | "hidden">("exact");
+  const [fetchingGps, setFetchingGps] = useState(false);
+  const [gpsMessage, setGpsMessage] = useState<{ text: string; isError: boolean } | null>(null);
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setGpsMessage({ text: "Geolocation is not supported by your browser.", isError: true });
+      return;
+    }
+    setFetchingGps(true);
+    setGpsMessage(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(parseFloat(position.coords.latitude.toFixed(6)));
+        setLongitude(parseFloat(position.coords.longitude.toFixed(6)));
+        setFetchingGps(false);
+        setGpsMessage({
+          text: `Captured GPS coordinates (±${Math.round(position.coords.accuracy || 10)}m accuracy).`,
+          isError: false,
+        });
+      },
+      (err) => {
+        setFetchingGps(false);
+        setGpsMessage({
+          text: `Location access denied or unavailable: ${err.message}. You may enter coordinates manually.`,
+          isError: true,
+        });
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
 
   // Measurements State
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
@@ -322,67 +353,114 @@ export default function ObservationFormPage() {
 
             {/* Location Section */}
             <div className="space-y-3 pt-2 border-t border-slate-200">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="hasLocation"
-                  checked={hasLocation}
-                  onChange={(e) => setHasLocation(e.target.checked)}
-                  className="h-4 w-4 text-indigo-600 border-slate-300 rounded"
-                />
-                <label htmlFor="hasLocation" className="text-sm font-semibold text-slate-800">
-                  Attach Geographic Location
-                </label>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="hasLocation"
+                    checked={hasLocation}
+                    onChange={(e) => setHasLocation(e.target.checked)}
+                    className="h-4 w-4 text-indigo-600 border-slate-300 rounded"
+                  />
+                  <label htmlFor="hasLocation" className="text-sm font-semibold text-slate-800">
+                    Attach Geographic Location
+                  </label>
+                </div>
+
+                {hasLocation && (
+                  <button
+                    type="button"
+                    onClick={handleGetCurrentLocation}
+                    disabled={fetchingGps}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded transition disabled:opacity-50"
+                  >
+                    {fetchingGps ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Querying GPS...</span>
+                      </>
+                    ) : (
+                      <>
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>Get Current Location</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
 
               {hasLocation && (
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-md border border-slate-200">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Latitude</label>
-                    <input
-                      type="number"
-                      step="any"
-                      min={-90}
-                      max={90}
-                      value={latitude}
-                      onChange={(e) => setLatitude(parseFloat(e.target.value) || 0)}
-                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Longitude</label>
-                    <input
-                      type="number"
-                      step="any"
-                      min={-180}
-                      max={180}
-                      value={longitude}
-                      onChange={(e) => setLongitude(parseFloat(e.target.value) || 0)}
-                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Location Label</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Field Station A"
-                      value={locationLabel}
-                      onChange={(e) => setLocationLabel(e.target.value)}
-                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Precision</label>
-                    <select
-                      value={precision}
-                      onChange={(e) => setPrecision(e.target.value as any)}
-                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm bg-white"
+                <div className="space-y-3 bg-slate-50 p-4 rounded-md border border-slate-200">
+                  {gpsMessage && (
+                    <div
+                      className={`text-xs p-2 rounded flex items-start gap-1.5 ${
+                        gpsMessage.isError
+                          ? "bg-amber-50 border border-amber-200 text-amber-800"
+                          : "bg-emerald-50 border border-emerald-200 text-emerald-800"
+                      }`}
                     >
-                      <option value="exact">Exact Coordinates</option>
-                      <option value="approximate">Approximate</option>
-                      <option value="hidden">Hidden</option>
-                    </select>
+                      <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>{gpsMessage.text}</span>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Latitude</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min={-90}
+                        max={90}
+                        value={latitude}
+                        onChange={(e) => setLatitude(parseFloat(e.target.value) || 0)}
+                        className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Longitude</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min={-180}
+                        max={180}
+                        value={longitude}
+                        onChange={(e) => setLongitude(parseFloat(e.target.value) || 0)}
+                        className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Location Label</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Field Station A"
+                        value={locationLabel}
+                        onChange={(e) => setLocationLabel(e.target.value)}
+                        className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Precision</label>
+                      <select
+                        value={precision}
+                        onChange={(e) => setPrecision(e.target.value as "exact" | "approximate" | "hidden")}
+                        className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm bg-white"
+                      >
+                        <option value="exact">Exact Coordinates</option>
+                        <option value="approximate">Approximate (Fuzzed)</option>
+                        <option value="hidden">Hidden (Private)</option>
+                      </select>
+                    </div>
                   </div>
+
+                  <p className="text-[11px] text-slate-500">
+                    {precision === "exact" &&
+                      "Exact: Coordinates are preserved and plotted precisely on your Research Map."}
+                    {precision === "approximate" &&
+                      "Approximate: Coordinates are fuzzed (~11 km) on maps to protect sensitive field sites or wildlife habitats."}
+                    {precision === "hidden" &&
+                      "Hidden: Coordinates remain securely archived in your journal but are NEVER rendered on maps or passed to AI prompts."}
+                  </p>
                 </div>
               )}
             </div>

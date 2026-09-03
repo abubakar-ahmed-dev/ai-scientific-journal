@@ -60,7 +60,9 @@ export async function api<T>(endpoint: string, options: RequestInit = {}): Promi
   const token = await tokenProvider();
 
   const headers = new Headers(options.headers || {});
-  headers.set("Content-Type", "application/json");
+  if (!(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
 
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
@@ -632,3 +634,58 @@ export async function searchObservations(
   });
   return res.data;
 }
+
+// Media types & API (Phase 7 - PRD FR-11, API.md §6.8)
+export interface ObservationMedia {
+  id: string;
+  ownerId: string;
+  observationId: string;
+  type: "image" | "audio" | "video";
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  caption: string | null;
+  createdAt: string;
+  url?: string;
+}
+
+export async function uploadObservationMedia(
+  observationId: string,
+  file: File,
+  caption?: string
+): Promise<ObservationMedia> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (caption) {
+    formData.append("caption", caption);
+  }
+
+  const res = await api<ObservationMedia>(`/observations/${observationId}/media`, {
+    method: "POST",
+    body: formData,
+  });
+  return res.data;
+}
+
+export async function fetchObservationMedia(observationId: string): Promise<ObservationMedia[]> {
+  const res = await api<ObservationMedia[]>(`/observations/${observationId}/media`);
+  return res.data;
+}
+
+export async function fetchMediaDetail(
+  observationId: string,
+  mediaId: string
+): Promise<ObservationMedia> {
+  const res = await api<ObservationMedia>(`/observations/${observationId}/media/${mediaId}`);
+  return res.data;
+}
+
+export async function deleteObservationMedia(
+  observationId: string,
+  mediaId: string
+): Promise<void> {
+  await api<void>(`/observations/${observationId}/media/${mediaId}`, {
+    method: "DELETE",
+  });
+}
+
