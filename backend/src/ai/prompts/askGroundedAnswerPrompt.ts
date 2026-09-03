@@ -43,7 +43,26 @@ You must respond with valid JSON matching this schema:
   const includedCandidates: RetrievedObservation[] = [];
 
   for (const cand of candidates) {
-    const header = `[observationId="${cand.observationId}" | title="${cand.title}" | observedAt="${cand.observedAt}"]`;
+    let locStr = "";
+    if (cand.location) {
+      if (cand.location.precision === "hidden") {
+        // Privacy rule: strictly never include coordinates for hidden precision (SECURITY §14)
+        if (cand.location.label) {
+          locStr = ` | location="${cand.location.label}"`;
+        }
+      } else if (cand.location.precision === "approximate") {
+        const coords = cand.location.coordinates
+          ? ` (${cand.location.coordinates.latitude}, ${cand.location.coordinates.longitude})`
+          : "";
+        const label = cand.location.label || "Region";
+        locStr = ` | location="${label}${coords} [approximate]"`;
+      } else if (cand.location.coordinates) {
+        const label = cand.location.label ? `${cand.location.label} ` : "";
+        locStr = ` | location="${label}(${cand.location.coordinates.latitude}, ${cand.location.coordinates.longitude})"`;
+      }
+    }
+
+    const header = `[observationId="${cand.observationId}" | title="${cand.title}" | observedAt="${cand.observedAt}"${locStr}]`;
     let body = cand.searchableText;
     const blockShell = `<context_data>\n${header}\nContent: \n</context_data>`;
     let block = `<context_data>\n${header}\nContent: ${body}\n</context_data>`;
