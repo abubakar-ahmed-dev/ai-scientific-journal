@@ -1,5 +1,6 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { getFirebaseFirestore } from "../lib/firebaseAdmin";
+import { serializeTimestamps } from "../lib/serialize";
 
 export interface UserPreferences {
   theme: "light" | "dark" | "system";
@@ -62,13 +63,17 @@ export class UserRepository {
 
       await userRef.set(newUser);
       const createdDoc = await userRef.get();
-      return createdDoc.data() as UserDocument;
+      return serializeTimestamps(
+        createdDoc.data() as UserDocument & Record<string, unknown>
+      );
     } else {
       await userRef.update({
         lastLoginAt: FieldValue.serverTimestamp(),
       });
       const updatedDoc = await userRef.get();
-      return updatedDoc.data() as UserDocument;
+      return serializeTimestamps(
+        updatedDoc.data() as UserDocument & Record<string, unknown>
+      );
     }
   }
 
@@ -93,7 +98,9 @@ export class UserRepository {
 
     await userRef.update(updateData);
     const updatedDoc = await userRef.get();
-    return updatedDoc.data() as UserDocument;
+    return serializeTimestamps(
+      updatedDoc.data() as UserDocument & Record<string, unknown>
+    );
   }
 }
 
