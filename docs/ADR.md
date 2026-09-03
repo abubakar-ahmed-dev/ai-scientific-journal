@@ -987,6 +987,68 @@ At personal journal scale (hundreds to low thousands of entries per user), full-
 
 ---
 
+# ADR-023: Firebase Admin Storage Client for Observation Media
+
+**Status:** Accepted
+**Date:** 2026-09-03
+**Context source:** `plans/phase-7/plan.md` (resolving storage client deferral from ADR-020)
+
+## Context
+
+Phase 7 implements private observation-scoped evidence media (`users/{uid}/observations/{observationId}/media/{mediaId}`) with binary storage in Cloud Storage. ADR-020 deferred the storage client choice between `firebase-admin/storage` and the standalone `@google-cloud/storage` SDK.
+
+## Decision
+
+Use `firebase-admin/storage` via `getStorage(getFirebaseAdminApp()).bucket(env.STORAGE_BUCKET)`.
+
+1. **Storage Path Derivation:** Storage paths are derived server-side as `users/{uid}/observations/{observationId}/{mediaId}` (omitting `media/` segment per ADR-016).
+2. **Access Control:** Storage paths are internal-only and never exposed in API responses. Authorized read access is granted via short-lived signed URLs (TTL ≤ 15 minutes).
+3. **Emulator Integration:** Automatically integrates with `FIREBASE_STORAGE_EMULATOR_HOST` for offline local development and deterministic integration testing without external cloud credentials.
+4. **Service Abstraction:** Storage operations are encapsulated in `IStorageService` (`FirebaseStorageService` and in-memory `MockStorageService`).
+
+## Consequences
+
+### Positive
+* Single credential lifecycle matching Firebase Authentication and Cloud Firestore Admin.
+* Zero external API key or billing required for local development and test runs.
+* Seamless signed URL generation and prefix deletion cascades.
+
+### Negative
+* Binary uploads pass through the application server memory (bounded by strict size limits: images ≤ 10 MB, audio ≤ 25 MB, video ≤ 100 MB).
+
+---
+
+# ADR-024: Leaflet and OpenStreetMap for Research Map
+
+**Status:** Accepted
+**Date:** 2026-09-03
+**Context source:** `plans/phase-7/plan.md` (resolving maps provider deferral from ADR-020)
+
+## Context
+
+Phase 7 implements an interactive geographic dashboard for user observations (`/map`, PRD FR-13). ADR-020 deferred the map provider choice between commercial map providers (e.g. Google Maps Platform, Mapbox) and open-source alternatives (Leaflet with OpenStreetMap).
+
+## Decision
+
+Adopt Leaflet (`leaflet`, `react-leaflet`) with OpenStreetMap standard tiles for the interactive Research Map and observation detail mini-maps.
+
+1. **Free Tier & Zero Cost:** Requires **zero API keys**, requires no credit card, and incurs zero billing costs.
+2. **Privacy Protection:** Does not track users or transmit user behavior to commercial advertising networks.
+3. **Privacy Rule Enforcement:** Observations marked `precision: "hidden"` are completely excluded from map rendering; `precision: "approximate"` observations are fuzzed or displayed with circle markers.
+4. **Offline / Test Resilient:** Can render in test environments and headless browsers without network-blocked third-party scripts.
+
+## Consequences
+
+### Positive
+* 100% free and open source with no API keys or quota management.
+* High privacy compliance aligned with scientific research ethics.
+* Lightweight bundle with standard CSS and modular components.
+
+### Negative
+* Satellite imagery is not included by default (standard vector/raster OSM tile layers only).
+
+---
+
 # ADR Maintenance
 
 New ADRs should be added when a decision:
