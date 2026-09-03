@@ -8,8 +8,12 @@ import {
 } from "../schemas/observationSchema";
 import { PaginationQuerySchema } from "../schemas/paginationSchema";
 import { AppError } from "../types/errors";
+import { mediaRouter } from "./media";
 
 export const observationsRouter = Router();
+
+// Subcollection routes: /api/v1/observations/:observationId/media (API.md §6.8)
+observationsRouter.use("/:observationId/media", mediaRouter);
 
 // POST /api/v1/observations
 observationsRouter.post("/", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
