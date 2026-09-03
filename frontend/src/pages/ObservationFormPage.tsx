@@ -68,7 +68,7 @@ export default function ObservationFormPage() {
             setLatitude(obs.location.latitude);
             setLongitude(obs.location.longitude);
             setLocationLabel(obs.location.label || "");
-            setPrecision(obs.location.precision);
+            setPrecision(obs.location.precision || "exact");
           }
         })
         .catch((err) => {
