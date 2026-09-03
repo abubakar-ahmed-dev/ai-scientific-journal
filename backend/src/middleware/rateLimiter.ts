@@ -1,4 +1,4 @@
-import { rateLimit } from "express-rate-limit";
+import { rateLimit, ipKeyGenerator } from "express-rate-limit";
 import { Request, Response } from "express";
 
 export const chatRateLimiter = rateLimit({
@@ -11,7 +11,10 @@ export const chatRateLimiter = rateLimit({
     xForwardedForHeader: false,
   },
   keyGenerator: (req: Request): string => {
-    return req.user?.uid || req.ip || "unknown";
+    // ipKeyGenerator normalizes IPv6 addresses (subnet-masking) so limits
+    // cannot be bypassed via address rotation (express-rate-limit v8
+    // ERR_ERL_KEY_GEN_IPV6 validation). UID keying is unaffected.
+    return req.user?.uid || (req.ip ? ipKeyGenerator(req.ip) : "unknown");
   },
   handler: (_req: Request, res: Response) => {
     res.status(429).json({
