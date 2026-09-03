@@ -44,11 +44,21 @@ You must respond with valid JSON matching this schema:
 
   for (const cand of candidates) {
     const header = `[observationId="${cand.observationId}" | title="${cand.title}" | observedAt="${cand.observedAt}"]`;
-    const body = cand.searchableText;
-    const block = `<context_data>\n${header}\nContent: ${body}\n</context_data>`;
+    let body = cand.searchableText;
+    const blockShell = `<context_data>\n${header}\nContent: \n</context_data>`;
+    let block = `<context_data>\n${header}\nContent: ${body}\n</context_data>`;
 
-    if (totalChars + block.length > maxBudget && blocks.length > 0) {
-      break;
+    if (totalChars + block.length > maxBudget) {
+      if (blocks.length > 0) {
+        // Already have at least one block — stop adding more
+        break;
+      }
+      // First block exceeds budget — truncate body to fit within remaining budget
+      const availableForBody = maxBudget - blockShell.length;
+      if (availableForBody > 0) {
+        body = body.slice(0, availableForBody) + "…[truncated]";
+        block = `<context_data>\n${header}\nContent: ${body}\n</context_data>`;
+      }
     }
 
     blocks.push(block);

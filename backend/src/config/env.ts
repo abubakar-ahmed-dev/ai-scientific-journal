@@ -15,7 +15,7 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
   FIREBASE_PROJECT_ID: z.string().min(1).default(process.env.NODE_ENV === "test" ? "demo-test" : undefined as unknown as string),
   GEMINI_API_KEY: z.string().default(process.env.NODE_ENV === "test" ? "mock-gemini-key" : "test-key"),
-  AI_MODEL: z.string().default("gemini-2.5-flash"),
+  AI_MODEL: z.string().default("gemini-3.6-flash"),
   AI_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
   AI_MAX_CONTEXT_MESSAGES: z.coerce.number().int().positive().default(20),
   AI_SEARCH_MAX_CANDIDATES: z.coerce.number().int().positive().default(500),
