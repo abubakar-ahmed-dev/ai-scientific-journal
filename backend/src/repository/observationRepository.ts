@@ -13,6 +13,7 @@ import { observationVersionRepository } from "./observationVersionRepository";
 import { projectRepository } from "./projectRepository";
 import { AppError } from "../types/errors";
 import { serializeTimestamps } from "../lib/serialize";
+import { logger } from "../lib/logger";
 
 export interface ObservationDocument {
   id: string;
@@ -80,15 +81,19 @@ export class ObservationRepository {
 
     await docRef.set(newObservation);
 
-    // Sync derived search index entry (ADR-017)
-    await observationSearchRepository.upsert(uid, docRef.id, {
-      title: data.title,
-      description: data.description,
-      notes: data.notes,
-      hypothesis: data.hypothesis,
-      tags: data.tags,
-      measurements: measurementsWithIds,
-    });
+    // Sync derived search index entry (ADR-017) — best effort, never fails canonical write
+    try {
+      await observationSearchRepository.upsert(uid, docRef.id, {
+        title: data.title,
+        description: data.description,
+        notes: data.notes,
+        hypothesis: data.hypothesis,
+        tags: data.tags,
+        measurements: measurementsWithIds,
+      });
+    } catch (err) {
+      logger.warn({ err, uid, observationId: docRef.id }, "Failed to update observation search index on create");
+    }
 
     const snap = await docRef.get();
     return { id: docRef.id, ...serializeTimestamps(snap.data() as Omit<ObservationDocument, "id">) };
@@ -311,15 +316,19 @@ export class ObservationRepository {
     const updatedSnap = await docRef.get();
     const updatedData = updatedSnap.data() as Omit<ObservationDocument, "id">;
 
-    // Update derived search index
-    await observationSearchRepository.upsert(uid, observationId, {
-      title: updatedData.title,
-      description: updatedData.description,
-      notes: updatedData.notes,
-      hypothesis: updatedData.hypothesis,
-      tags: updatedData.tags,
-      measurements: updatedData.measurements,
-    });
+    // Update derived search index — best effort, never fails canonical write
+    try {
+      await observationSearchRepository.upsert(uid, observationId, {
+        title: updatedData.title,
+        description: updatedData.description,
+        notes: updatedData.notes,
+        hypothesis: updatedData.hypothesis,
+        tags: updatedData.tags,
+        measurements: updatedData.measurements,
+      });
+    } catch (err) {
+      logger.warn({ err, uid, observationId }, "Failed to update observation search index on update");
+    }
 
     return { id: updatedSnap.id, ...serializeTimestamps(updatedData) };
   }
@@ -348,11 +357,33 @@ export class ObservationRepository {
       await batch.commit();
     }
 
-    // 3. Delete search index document (ADR-017)
-    await observationSearchRepository.delete(uid, observationId);
+    // 3. Delete search index document (ADR-017) — best effort, never fails canonical delete
+    try {
+      await observationSearchRepository.delete(uid, observationId);
+    } catch (err) {
+      logger.warn({ err, uid, observationId }, "Failed to delete observation search index entry");
+    }
 
     // 4. Delete the observation document
     await docRef.delete();
+  }
+
+  async findByIds(uid: string, ids: string[]): Promise<ObservationDocument[]> {
+    if (!ids || ids.length === 0) return [];
+    const uniqueIds = Array.from(new Set(ids));
+    const results: ObservationDocument[] = [];
+    const CHUNK_SIZE = 30;
+
+    for (let i = 0; i < uniqueIds.length; i += CHUNK_SIZE) {
+      const chunk = uniqueIds.slice(i, i + CHUNK_SIZE);
+      const snap = await this.getCollection(uid)
+        .where(FieldPath.documentId(), "in", chunk)
+        .get();
+      for (const doc of snap.docs) {
+        results.push({ id: doc.id, ...serializeTimestamps(doc.data() as Omit<ObservationDocument, "id">) });
+      }
+    }
+    return results;
   }
 
   async markAsAnalyzed(uid: string, observationIds: string[]): Promise<void> {
@@ -361,14 +392,13 @@ export class ObservationRepository {
     // and write-back must not fail the whole batch (the analysis is already
     // persisted — RETAIN semantics tolerate the dangling reference; the
     // write-back must not turn success into an inconsistent partial state).
-    const existingSnapshot = await this.getCollection(uid)
-      .where(FieldPath.documentId(), "in", observationIds)
-      .get();
-    if (existingSnapshot.empty) return;
+    const existingDocs = await this.findByIds(uid, observationIds);
+    if (existingDocs.length === 0) return;
 
     const batch = getFirebaseFirestore().batch();
-    for (const doc of existingSnapshot.docs) {
-      batch.update(doc.ref, {
+    for (const doc of existingDocs) {
+      const ref = this.getCollection(uid).doc(doc.id);
+      batch.update(ref, {
         status: "analyzed",
         updatedAt: FieldValue.serverTimestamp(),
       });
