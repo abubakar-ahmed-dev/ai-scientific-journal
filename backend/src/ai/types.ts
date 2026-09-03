@@ -59,7 +59,35 @@ export interface StructuredAnalysisResult {
   };
 }
 
+export interface GroundedAnswerPayload {
+  systemInstruction: string;
+  promptVersion: string;
+  contextText: string;
+  question: string;
+}
+
+export interface GroundedAnswerOutput {
+  answer: string;
+  evidence: Array<{ observationId: string; note?: string }>;
+  uncertainties: string[];
+}
+
+export interface GroundedAnswerResult {
+  output: GroundedAnswerOutput;
+  model: string;
+  promptVersion: string;
+  metadata: {
+    latencyMs: number;
+    tokenUsage?: {
+      promptTokens?: number;
+      candidatesTokens?: number;
+      totalTokens?: number;
+    };
+  };
+}
+
 export interface IAIService {
   generateChatReply(context: ChatContextPayload): Promise<ChatGenerationResult>;
   generateStructuredAnalysis(payload: AnalysisPromptPayload): Promise<StructuredAnalysisResult>;
+  generateGroundedAnswer(payload: GroundedAnswerPayload): Promise<GroundedAnswerResult>;
 }

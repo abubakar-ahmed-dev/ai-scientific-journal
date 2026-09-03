@@ -26,3 +26,26 @@ export const chatRateLimiter = rateLimit({
     });
   },
 });
+
+export const aiRateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10, // 10 requests per 5 minutes (API.md §4.1 AI tier)
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: {
+    ip: false,
+    xForwardedForHeader: false,
+  },
+  keyGenerator: (req: Request): string => {
+    return req.user?.uid || (req.ip ? ipKeyGenerator(req.ip) : "unknown");
+  },
+  handler: (_req: Request, res: Response) => {
+    res.status(429).json({
+      error: {
+        code: "RATE_LIMIT_EXCEEDED",
+        message: "Too many AI operations. Please slow down and try again.",
+        requestId: (res.getHeader("x-request-id") as string) || "req_rate_limit",
+      },
+    });
+  },
+});

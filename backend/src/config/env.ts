@@ -15,9 +15,14 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
   FIREBASE_PROJECT_ID: z.string().min(1).default(process.env.NODE_ENV === "test" ? "demo-test" : undefined as unknown as string),
   GEMINI_API_KEY: z.string().default(process.env.NODE_ENV === "test" ? "mock-gemini-key" : "test-key"),
-  AI_MODEL: z.string().default("gemini-2.5-flash"),
+  AI_MODEL: z.string().default("gemini-3.6-flash"),
   AI_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
   AI_MAX_CONTEXT_MESSAGES: z.coerce.number().int().positive().default(20),
+  AI_SEARCH_MAX_CANDIDATES: z.coerce.number().int().positive().default(500),
+  AI_SEARCH_DEFAULT_LIMIT: z.coerce.number().int().positive().default(10),
+  AI_RAG_MIN_SCORE: z.coerce.number().default(0.05),
+  AI_RAG_MAX_CONTEXT_OBSERVATIONS: z.coerce.number().int().positive().default(5),
+  AI_RAG_CONTEXT_CHAR_BUDGET: z.coerce.number().int().positive().default(12000),
 });
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env) {
