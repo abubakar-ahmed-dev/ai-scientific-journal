@@ -10,6 +10,7 @@ import { analysisRepository } from "./analysisRepository";
 import { projectRepository } from "./projectRepository";
 import { observationRepository } from "./observationRepository";
 import { AppError } from "../types/errors";
+import { serializeTimestamps } from "../lib/serialize";
 
 export interface ResearchTaskDocument {
   id: string;
@@ -38,7 +39,22 @@ export class ResearchTaskRepository {
     return getFirebaseFirestore().collection("users").doc(uid).collection("researchTasks");
   }
 
-  async create(uid: string, data: CreateResearchTaskDTO): Promise<ResearchTaskDocument> {
+  /**
+   * API.md §6.14: Idempotency-Key prevents double-accepting a suggestion.
+   * Keys are stored on the task, scoped per user (privacy-safe, never logged).
+   */
+  async findByIdempotencyKey(uid: string, idempotencyKey: string): Promise<ResearchTaskDocument | null> {
+    const snapshot = await this.getCollection(uid)
+      .where("ownerId", "==", uid)
+      .where("idempotencyKey", "==", idempotencyKey)
+      .limit(1)
+      .get();
+    if (snapshot.empty) return null;
+    const doc = snapshot.docs[0]!;
+    return { id: doc.id, ...serializeTimestamps(doc.data() as Omit<ResearchTaskDocument, "id">) };
+  }
+
+  async create(uid: string, data: CreateResearchTaskDTO, idempotencyKey?: string): Promise<ResearchTaskDocument> {
     const docRef = this.getCollection(uid).doc();
     const now = FieldValue.serverTimestamp();
 
@@ -61,7 +77,7 @@ export class ResearchTaskRepository {
         }
       }
 
-      const taskRecord = {
+      const taskRecord: Record<string, unknown> = {
         ownerId: uid,
         projectId: data.projectId ?? null,
         title: data.title,
@@ -73,10 +89,11 @@ export class ResearchTaskRepository {
         createdAt: now,
         updatedAt: now,
       };
+      if (idempotencyKey) taskRecord.idempotencyKey = idempotencyKey;
 
       await docRef.set(taskRecord);
       const snap = await docRef.get();
-      return { id: docRef.id, ...(snap.data() as Omit<ResearchTaskDocument, "id">) };
+      return { id: docRef.id, ...serializeTimestamps(snap.data() as Omit<ResearchTaskDocument, "id">) };
     } else {
       // source: "gemini" -> acceptance of an AI suggestion
       const analysis = await analysisRepository.findById(uid, data.sourceAnalysisId);
@@ -95,7 +112,7 @@ export class ResearchTaskRepository {
       const stepText = suggestions[data.suggestionIndex]!;
       const targetProjectId = data.projectId ?? analysis.projectId;
 
-      const taskRecord = {
+      const taskRecord: Record<string, unknown> = {
         ownerId: uid,
         projectId: targetProjectId,
         title: stepText.length > 200 ? stepText.substring(0, 197) + "..." : stepText,
@@ -107,10 +124,11 @@ export class ResearchTaskRepository {
         createdAt: now,
         updatedAt: now,
       };
+      if (idempotencyKey) taskRecord.idempotencyKey = idempotencyKey;
 
       await docRef.set(taskRecord);
       const snap = await docRef.get();
-      return { id: docRef.id, ...(snap.data() as Omit<ResearchTaskDocument, "id">) };
+      return { id: docRef.id, ...serializeTimestamps(snap.data() as Omit<ResearchTaskDocument, "id">) };
     }
   }
 
@@ -148,7 +166,7 @@ export class ResearchTaskRepository {
 
     const data: ResearchTaskDocument[] = resultDocs.map((d) => ({
       id: d.id,
-      ...(d.data() as Omit<ResearchTaskDocument, "id">),
+      ...serializeTimestamps(d.data() as Omit<ResearchTaskDocument, "id">),
     }));
 
     let nextCursor: string | null = null;
@@ -174,7 +192,7 @@ export class ResearchTaskRepository {
   async findById(uid: string, taskId: string): Promise<ResearchTaskDocument | null> {
     const snap = await this.getCollection(uid).doc(taskId).get();
     if (!snap.exists) return null;
-    return { id: snap.id, ...(snap.data() as Omit<ResearchTaskDocument, "id">) };
+    return { id: snap.id, ...serializeTimestamps(snap.data() as Omit<ResearchTaskDocument, "id">) };
   }
 
   async update(uid: string, taskId: string, patch: UpdateResearchTaskDTO): Promise<ResearchTaskDocument> {
@@ -209,7 +227,7 @@ export class ResearchTaskRepository {
 
     await docRef.update(updateData);
     const updatedSnap = await docRef.get();
-    return { id: updatedSnap.id, ...(updatedSnap.data() as Omit<ResearchTaskDocument, "id">) };
+    return { id: updatedSnap.id, ...serializeTimestamps(updatedSnap.data() as Omit<ResearchTaskDocument, "id">) };
   }
 
   async delete(uid: string, taskId: string): Promise<void> {

@@ -20,7 +20,21 @@ researchTasksRouter.post("/", async (req: Request, res: Response, next: NextFunc
       throw new AppError("VALIDATION_ERROR", `Validation failed: ${issues}`);
     }
 
-    const task = await researchTaskRepository.create(req.user!.uid, parseResult.data);
+    // API.md §6.14: Idempotency-Key honored — prevents double-accepting a
+    // suggestion (a retried acceptance returns the originally created task).
+    const idempotencyKey = req.header("Idempotency-Key");
+    if (idempotencyKey) {
+      const existing = await researchTaskRepository.findByIdempotencyKey(
+        req.user!.uid,
+        idempotencyKey
+      );
+      if (existing) {
+        res.status(200).json({ data: existing });
+        return;
+      }
+    }
+
+    const task = await researchTaskRepository.create(req.user!.uid, parseResult.data, idempotencyKey);
     res.status(201).json({ data: task });
   } catch (err) {
     next(err);

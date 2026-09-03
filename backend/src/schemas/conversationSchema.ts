@@ -19,14 +19,9 @@ export const CreateConversationSchema = z
       message: "contextId is required when contextType is not 'general', and must be null when contextType is 'general'.",
       path: ["contextId"],
     }
-  )
-  // `research` context references an analysis (API.md §6.10), but the analyses
-  // collection and its read API do not exist until Phase 5 — accepting an
-  // unresolvable reference now would create dangling context. Honest deferral.
-  .refine((data) => data.contextType !== "research", {
-    message: "Conversations with 'research' context are not available yet — analyses arrive in a later phase.",
-    path: ["contextType"],
-  });
+  );
+  // `research` context (→ analysis) is resolved ownership-checked in
+  // conversationRepository/contextBuilder since Phase 5.
 
 export const UpdateConversationSchema = z
   .object({

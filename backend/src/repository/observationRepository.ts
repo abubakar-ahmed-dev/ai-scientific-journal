@@ -1,4 +1,4 @@
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { FieldValue, FieldPath, Timestamp } from "firebase-admin/firestore";
 import { getFirebaseFirestore } from "../lib/firebaseAdmin";
 import {
   CreateObservationDTO,
@@ -357,10 +357,18 @@ export class ObservationRepository {
 
   async markAsAnalyzed(uid: string, observationIds: string[]): Promise<void> {
     if (!observationIds || observationIds.length === 0) return;
+    // Existence-filter first: an observation deleted between analysis start
+    // and write-back must not fail the whole batch (the analysis is already
+    // persisted — RETAIN semantics tolerate the dangling reference; the
+    // write-back must not turn success into an inconsistent partial state).
+    const existingSnapshot = await this.getCollection(uid)
+      .where(FieldPath.documentId(), "in", observationIds)
+      .get();
+    if (existingSnapshot.empty) return;
+
     const batch = getFirebaseFirestore().batch();
-    for (const id of observationIds) {
-      const ref = this.getCollection(uid).doc(id);
-      batch.update(ref, {
+    for (const doc of existingSnapshot.docs) {
+      batch.update(doc.ref, {
         status: "analyzed",
         updatedAt: FieldValue.serverTimestamp(),
       });

@@ -1,5 +1,6 @@
 import { observationRepository } from "../repository/observationRepository";
 import { projectRepository } from "../repository/projectRepository";
+import { analysisRepository } from "../repository/analysisRepository";
 import { CHAT_SYSTEM_INSTRUCTION } from "./prompts/systemPrompt";
 import { ChatContextPayload, ChatEntityContext, ChatMessageContext } from "./types";
 import { env } from "../config/env";
@@ -53,6 +54,20 @@ export class ChatContextBuilder {
           description: proj.description || undefined,
           field: proj.field || undefined,
           tags: proj.tags,
+        };
+      } else if (contextType === "research") {
+        // Research context references a caller-owned analysis (API.md §6.10);
+        // analyses exist since Phase 5, so the Phase 4 deferral is lifted.
+        const analysis = await analysisRepository.findById(uid, contextId);
+        if (!analysis) {
+          throw new AppError("NOT_FOUND", `Referenced analysis '${contextId}' not found.`);
+        }
+        contextualData = {
+          type: "research",
+          id: analysis.id,
+          title: analysis.summary.slice(0, 200),
+          description: [analysis.summary, ...analysis.keyFindings].join(" • ").slice(0, 4000),
+          tags: [],
         };
       }
     }

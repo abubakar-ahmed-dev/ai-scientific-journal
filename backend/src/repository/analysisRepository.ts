@@ -4,6 +4,7 @@ import { ListAnalysesQueryDTO } from "../schemas/analysisSchema";
 import { StructuredAnalysisOutput, HypothesisOutput } from "../ai/parsers/analysisOutputSchema";
 import { decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
 import { observationRepository } from "./observationRepository";
+import { serializeTimestamps } from "../lib/serialize";
 
 export interface AnalysisDocument {
   id: string;
@@ -74,7 +75,7 @@ export class AnalysisRepository {
 
     await docRef.set(record);
     const snap = await docRef.get();
-    return { id: docRef.id, ...(snap.data() as Omit<AnalysisDocument, "id">) };
+    return { id: docRef.id, ...serializeTimestamps(snap.data() as Omit<AnalysisDocument, "id">) };
   }
 
   async list(
@@ -119,7 +120,7 @@ export class AnalysisRepository {
 
     const data: AnalysisDocument[] = resultDocs.map((d) => ({
       id: d.id,
-      ...(d.data() as Omit<AnalysisDocument, "id">),
+      ...serializeTimestamps(d.data() as Omit<AnalysisDocument, "id">),
     }));
 
     let nextCursor: string | null = null;
@@ -145,7 +146,7 @@ export class AnalysisRepository {
   async findById(uid: string, analysisId: string): Promise<AnalysisDocument | null> {
     const snap = await this.getCollection(uid).doc(analysisId).get();
     if (!snap.exists) return null;
-    return { id: snap.id, ...(snap.data() as Omit<AnalysisDocument, "id">) };
+    return { id: snap.id, ...serializeTimestamps(snap.data() as Omit<AnalysisDocument, "id">) };
   }
 
   async findByIdWithSourceSummary(uid: string, analysisId: string): Promise<AnalysisWithSourcesDocument | null> {
