@@ -5,8 +5,11 @@ import {
   ChatGenerationResult,
   AnalysisPromptPayload,
   StructuredAnalysisResult,
+  GroundedAnswerPayload,
+  GroundedAnswerResult,
 } from "../types";
 import { StructuredAnalysisOutputSchema } from "../parsers/analysisOutputSchema";
+import { GroundedAnswerOutputSchema } from "../../schemas/askSchema";
 import { AppError } from "../../types/errors";
 
 export class GeminiAdapter implements IAIService {
@@ -83,13 +86,15 @@ export class GeminiAdapter implements IAIService {
         },
       });
 
+      let timer: NodeJS.Timeout;
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
+        timer = setTimeout(() => {
           reject(new Error("AI_TIMEOUT"));
         }, this.timeoutMs);
       });
 
       const response = await Promise.race([apiCall, timeoutPromise]);
+      clearTimeout(timer!);
 
       const candidate = response.candidates?.[0];
       const text = response.text || candidate?.content?.parts?.[0]?.text;
@@ -145,13 +150,15 @@ export class GeminiAdapter implements IAIService {
         },
       });
 
+      let timer: NodeJS.Timeout;
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
+        timer = setTimeout(() => {
           reject(new Error("AI_TIMEOUT"));
         }, this.timeoutMs);
       });
 
       const response = await Promise.race([apiCall, timeoutPromise]);
+      clearTimeout(timer!);
 
       const candidate = response.candidates?.[0];
       const text = response.text || candidate?.content?.parts?.[0]?.text;
@@ -173,6 +180,85 @@ export class GeminiAdapter implements IAIService {
           .map((i) => `${i.path.join(".") || "output"}: ${i.message}`)
           .join("; ");
         throw new AppError("AI_INVALID_RESPONSE", `Structured analysis schema validation failed: ${issues}`);
+      }
+
+      const latencyMs = Date.now() - startTime;
+
+      return {
+        output: validation.data,
+        model: this.model,
+        promptVersion: payload.promptVersion,
+        metadata: {
+          latencyMs,
+          tokenUsage: {
+            promptTokens: response.usageMetadata?.promptTokenCount,
+            candidatesTokens: response.usageMetadata?.candidatesTokenCount,
+            totalTokens: response.usageMetadata?.totalTokenCount,
+          },
+        },
+      };
+    } catch (err: unknown) {
+      this.handleError(err);
+    }
+  }
+
+  async generateGroundedAnswer(payload: GroundedAnswerPayload): Promise<GroundedAnswerResult> {
+    const startTime = Date.now();
+
+    const contents = [
+      {
+        role: "user",
+        parts: [
+          {
+            text: `[Retrieved Observation Context Data]\n${payload.contextText}\n\n[User Question]\n${payload.question}`,
+          },
+        ],
+      },
+    ];
+
+    try {
+      const { GoogleGenAI } = await import("@google/genai");
+      const client = new GoogleGenAI({ apiKey: this.apiKey });
+
+      const apiCall = client.models.generateContent({
+        model: this.model,
+        contents,
+        config: {
+          systemInstruction: payload.systemInstruction,
+          responseMimeType: "application/json",
+        },
+      });
+
+      let timer: NodeJS.Timeout;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error("AI_TIMEOUT"));
+        }, this.timeoutMs);
+      });
+
+      const response = await Promise.race([apiCall, timeoutPromise]);
+      clearTimeout(timer!);
+
+      const candidate = response.candidates?.[0];
+      const text = response.text || candidate?.content?.parts?.[0]?.text;
+
+      if (!text || text.trim().length === 0) {
+        throw new AppError("AI_INVALID_RESPONSE", "Received empty response from AI model");
+      }
+
+      let parsedJson: unknown;
+      try {
+        parsedJson = JSON.parse(text);
+      } catch {
+        throw new AppError("AI_INVALID_RESPONSE", "Model response was not valid JSON");
+      }
+
+      const validation = GroundedAnswerOutputSchema.safeParse(parsedJson);
+      if (!validation.success) {
+        const issues = validation.error.issues
+          .map((i) => `${i.path.join(".") || "output"}: ${i.message}`)
+          .join("; ");
+        throw new AppError("AI_INVALID_RESPONSE", `Grounded answer schema validation failed: ${issues}`);
       }
 
       const latencyMs = Date.now() - startTime;
