@@ -9,10 +9,11 @@ import {
   generateAnalysis,
   generateResearchSuggestions,
   fetchAnalyses,
+  searchObservations,
 } from "../lib/api";
-import type { Observation, ObservationVersion, Analysis } from "../lib/api";
+import type { Observation, ObservationVersion, Analysis, SearchResponseItem } from "../lib/api";
 import { AnalysisViewer } from "../components/AnalysisViewer";
-import { Sparkles, MessageSquare, Lightbulb, ListChecks } from "lucide-react";
+import { Sparkles, MessageSquare, Lightbulb, ListChecks, BookOpen } from "lucide-react";
 
 export default function ObservationDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,7 @@ export default function ObservationDetailPage() {
   const [observation, setObservation] = useState<Observation | null>(null);
   const [versions, setVersions] = useState<ObservationVersion[]>([]);
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
+  const [relatedObservations, setRelatedObservations] = useState<SearchResponseItem[]>([]);
   const [showVersions, setShowVersions] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +31,18 @@ export default function ObservationDetailPage() {
   const [suggesting, setSuggesting] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
+  async function loadRelated(obs: Observation) {
+    try {
+      const query = `${obs.title} ${(obs.tags || []).join(" ")}`.trim();
+      if (!query) return;
+      const res = await searchObservations({ query, limit: 5 });
+      const filtered = (res || []).filter((item) => item.observationId !== obs.id);
+      setRelatedObservations(filtered);
+    } catch {
+      // Non-blocking for base detail view (PRD NFR-02)
+    }
+  }
+
   async function loadObservation() {
     if (!id) return;
     try {
@@ -36,6 +50,7 @@ export default function ObservationDetailPage() {
       setError(null);
       const res = await fetchObservation(id);
       setObservation(res.data);
+      loadRelated(res.data);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to load observation";
       setError(msg);
@@ -325,6 +340,51 @@ export default function ObservationDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* Related Observations Section */}
+            {relatedObservations.length > 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-indigo-600" />
+                    <span>Related Observations ({relatedObservations.length})</span>
+                  </h3>
+                  <span className="text-xs text-slate-400">Lexical similarity over journal</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {relatedObservations.map((item) => (
+                    <Link
+                      key={item.observationId}
+                      to={`/observations/${item.observationId}`}
+                      className="group block p-4 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/20 transition shadow-2xs"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="text-sm font-semibold text-slate-900 group-hover:text-indigo-600 transition line-clamp-1">
+                          {item.title}
+                        </h4>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded shrink-0">
+                          {Math.round(item.score * 100)}% match
+                        </span>
+                      </div>
+                      {item.observedAt && (
+                        <p className="text-xs text-slate-400 mt-1">
+                          {new Date(item.observedAt).toLocaleDateString(undefined, {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </p>
+                      )}
+                      {item.snippet && (
+                        <p className="text-xs text-slate-600 mt-2 line-clamp-2">
+                          {item.snippet}
+                        </p>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* AI Analyses Section */}
             {analyses.length > 0 && (

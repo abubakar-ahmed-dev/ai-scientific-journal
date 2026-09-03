@@ -585,3 +585,50 @@ export async function deleteResearchTask(taskId: string) {
     throw new ApiRequestError("INTERNAL_ERROR", "Failed to delete task", undefined, res.status);
   }
 }
+
+export interface AskResponse {
+  answer: string;
+  evidence: Array<{
+    observationId: string;
+    title: string;
+    observedAt: string;
+    note?: string;
+  }>;
+  uncertainties: string[];
+  model: string;
+  promptVersion: string;
+}
+
+export interface SearchResponseItem {
+  observationId: string;
+  title: string;
+  observedAt: string;
+  score: number;
+  snippet: string;
+}
+
+export async function askMyJournal(
+  body: { question: string; conversationId?: string },
+  idempotencyKey?: string
+): Promise<AskResponse> {
+  const headers: Record<string, string> = {};
+  if (idempotencyKey) {
+    headers["Idempotency-Key"] = idempotencyKey;
+  }
+  const res = await api<AskResponse>("/ai/ask", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+  return res.data;
+}
+
+export async function searchObservations(
+  body: { query: string; limit?: number; projectId?: string }
+): Promise<SearchResponseItem[]> {
+  const res = await api<SearchResponseItem[]>("/ai/search", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  return res.data;
+}

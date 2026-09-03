@@ -12,6 +12,7 @@ import ProjectDetailPage from "../pages/ProjectDetailPage";
 import SettingsPage from "../pages/SettingsPage";
 
 import { ResearchTasksPage } from "../pages/ResearchTasksPage";
+import { AskMyJournalPage } from "../pages/AskMyJournalPage";
 
 export default function App() {
   const { currentUser, loading } = useAuth();
@@ -32,6 +33,14 @@ export default function App() {
       <Route path="/observations/new" element={<ObservationFormPage />} />
       <Route path="/observations/:id" element={<ObservationDetailPage />} />
       <Route path="/observations/:id/edit" element={<ObservationFormPage />} />
+      <Route
+        path="/ask"
+        element={
+          <Layout>
+            <AskMyJournalPage />
+          </Layout>
+        }
+      />
       <Route
         path="/tasks"
         element={
