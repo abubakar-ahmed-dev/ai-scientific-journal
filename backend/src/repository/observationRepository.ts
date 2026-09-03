@@ -354,6 +354,19 @@ export class ObservationRepository {
     // 4. Delete the observation document
     await docRef.delete();
   }
+
+  async markAsAnalyzed(uid: string, observationIds: string[]): Promise<void> {
+    if (!observationIds || observationIds.length === 0) return;
+    const batch = getFirebaseFirestore().batch();
+    for (const id of observationIds) {
+      const ref = this.getCollection(uid).doc(id);
+      batch.update(ref, {
+        status: "analyzed",
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+  }
 }
 
 export const observationRepository = new ObservationRepository();
