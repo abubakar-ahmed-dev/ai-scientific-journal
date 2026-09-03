@@ -55,7 +55,7 @@ describe("AskMyJournalPage", () => {
         },
       ],
       uncertainties: ["Wind conditions may have affected flight altitude."],
-      model: "gemini-2.5-flash",
+      model: "test-model",
       promptVersion: "ask-grounded-v1",
     });
 
@@ -75,7 +75,7 @@ describe("AskMyJournalPage", () => {
     expect(screen.getByText("Hawk Sighting in North Ridge")).toBeInTheDocument();
     expect(screen.getByText(/supporting journal evidence \(1\)/i)).toBeInTheDocument();
     expect(screen.getByText("Wind conditions may have affected flight altitude.")).toBeInTheDocument();
-    expect(screen.getByText("gemini-2.5-flash")).toBeInTheDocument();
+    expect(screen.getByText("test-model")).toBeInTheDocument();
     expect(screen.getByText("ask-grounded-v1")).toBeInTheDocument();
   });
 

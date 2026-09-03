@@ -413,7 +413,7 @@ aiRouter.post("/search", async (req: Request, res: Response, next: NextFunction)
       observationId: c.observationId,
       title: c.title,
       observedAt: c.observedAt,
-      score: Math.round(c.score * 100) / 100,
+      score: c.score,
       snippet: c.snippet || "",
     }));
 
