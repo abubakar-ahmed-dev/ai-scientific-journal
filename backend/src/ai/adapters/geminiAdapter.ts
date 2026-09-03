@@ -1,5 +1,12 @@
 import { env } from "../../config/env";
-import { IAIService, ChatContextPayload, ChatGenerationResult } from "../types";
+import {
+  IAIService,
+  ChatContextPayload,
+  ChatGenerationResult,
+  AnalysisPromptPayload,
+  StructuredAnalysisResult,
+} from "../types";
+import { StructuredAnalysisOutputSchema } from "../parsers/analysisOutputSchema";
 import { AppError } from "../../types/errors";
 
 export class GeminiAdapter implements IAIService {
@@ -7,7 +14,11 @@ export class GeminiAdapter implements IAIService {
   private model: string;
   private timeoutMs: number;
 
-  constructor(apiKey: string = env.GEMINI_API_KEY, model: string = env.AI_MODEL, timeoutMs: number = env.AI_TIMEOUT_MS) {
+  constructor(
+    apiKey: string = env.GEMINI_API_KEY,
+    model: string = env.AI_MODEL,
+    timeoutMs: number = env.AI_TIMEOUT_MS
+  ) {
     this.apiKey = apiKey;
     this.model = model;
     this.timeoutMs = timeoutMs;
@@ -16,10 +27,8 @@ export class GeminiAdapter implements IAIService {
   async generateChatReply(context: ChatContextPayload): Promise<ChatGenerationResult> {
     const startTime = Date.now();
 
-    // Construct contents array from conversation history + current user message
     const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
 
-    // If contextual data is provided, append it as background information
     if (context.contextualData) {
       const data = context.contextualData;
       const contextLines: string[] = [
@@ -50,7 +59,6 @@ export class GeminiAdapter implements IAIService {
       });
     }
 
-    // Add prior history turns
     for (const msg of context.conversationHistory) {
       contents.push({
         role: msg.role === "assistant" ? "model" : "user",
@@ -58,18 +66,15 @@ export class GeminiAdapter implements IAIService {
       });
     }
 
-    // Add current user message
     contents.push({
       role: "user",
       parts: [{ text: context.currentUserMessage }],
     });
 
     try {
-      // Dynamic import of ESM module @google/genai
       const { GoogleGenAI } = await import("@google/genai");
       const client = new GoogleGenAI({ apiKey: this.apiKey });
 
-      // Enforce timeout using Promise.race
       const apiCall = client.models.generateContent({
         model: this.model,
         contents,
@@ -109,31 +114,112 @@ export class GeminiAdapter implements IAIService {
         },
       };
     } catch (err: unknown) {
-      if (err instanceof AppError) {
-        throw err;
-      }
-
-      const errMsg = err instanceof Error ? err.message : String(err);
-
-      if (errMsg === "AI_TIMEOUT" || errMsg.includes("timeout") || errMsg.includes("deadline")) {
-        throw new AppError("AI_UNAVAILABLE", "AI model generation timed out. Please retry.");
-      }
-
-      if (
-        errMsg.includes("503") ||
-        errMsg.includes("UNAVAILABLE") ||
-        errMsg.includes("RESOURCE_EXHAUSTED") ||
-        errMsg.includes("Overloaded") ||
-        errMsg.includes("fetch failed")
-      ) {
-        throw new AppError("AI_UNAVAILABLE", `Gemini service is temporarily unavailable: ${errMsg}`);
-      }
-
-      if (errMsg.includes("SAFETY") || errMsg.includes("blocked")) {
-        throw new AppError("AI_INVALID_RESPONSE", "Response was blocked by content safety filters.");
-      }
-
-      throw new AppError("AI_UNAVAILABLE", `AI generation error: ${errMsg}`);
+      this.handleError(err);
     }
+  }
+
+  async generateStructuredAnalysis(payload: AnalysisPromptPayload): Promise<StructuredAnalysisResult> {
+    const startTime = Date.now();
+
+    const contents = [
+      {
+        role: "user",
+        parts: [
+          {
+            text: `${payload.taskInstruction}\n\n[Scientific Context Data to Analyze]\n${payload.contextText}`,
+          },
+        ],
+      },
+    ];
+
+    try {
+      const { GoogleGenAI } = await import("@google/genai");
+      const client = new GoogleGenAI({ apiKey: this.apiKey });
+
+      const apiCall = client.models.generateContent({
+        model: this.model,
+        contents,
+        config: {
+          systemInstruction: payload.systemInstruction,
+          responseMimeType: "application/json",
+        },
+      });
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("AI_TIMEOUT"));
+        }, this.timeoutMs);
+      });
+
+      const response = await Promise.race([apiCall, timeoutPromise]);
+
+      const candidate = response.candidates?.[0];
+      const text = response.text || candidate?.content?.parts?.[0]?.text;
+
+      if (!text || text.trim().length === 0) {
+        throw new AppError("AI_INVALID_RESPONSE", "Received empty response from AI model");
+      }
+
+      let parsedJson: unknown;
+      try {
+        parsedJson = JSON.parse(text);
+      } catch {
+        throw new AppError("AI_INVALID_RESPONSE", "Model response was not valid JSON");
+      }
+
+      const validation = StructuredAnalysisOutputSchema.safeParse(parsedJson);
+      if (!validation.success) {
+        const issues = validation.error.issues
+          .map((i) => `${i.path.join(".") || "output"}: ${i.message}`)
+          .join("; ");
+        throw new AppError("AI_INVALID_RESPONSE", `Structured analysis schema validation failed: ${issues}`);
+      }
+
+      const latencyMs = Date.now() - startTime;
+
+      return {
+        output: validation.data,
+        model: this.model,
+        promptVersion: payload.promptVersion,
+        metadata: {
+          latencyMs,
+          tokenUsage: {
+            promptTokens: response.usageMetadata?.promptTokenCount,
+            candidatesTokens: response.usageMetadata?.candidatesTokenCount,
+            totalTokens: response.usageMetadata?.totalTokenCount,
+          },
+        },
+      };
+    } catch (err: unknown) {
+      this.handleError(err);
+    }
+  }
+
+  private handleError(err: unknown): never {
+    if (err instanceof AppError) {
+      throw err;
+    }
+
+    const errMsg = err instanceof Error ? err.message : String(err);
+
+    if (errMsg === "AI_TIMEOUT" || errMsg.includes("timeout") || errMsg.includes("deadline")) {
+      throw new AppError("AI_UNAVAILABLE", "AI model generation timed out. Please retry.");
+    }
+
+    if (
+      errMsg.includes("503") ||
+      errMsg.includes("UNAVAILABLE") ||
+      errMsg.includes("RESOURCE_EXHAUSTED") ||
+      errMsg.includes("Overloaded") ||
+      errMsg.includes("fetch failed")
+    ) {
+      throw new AppError("AI_UNAVAILABLE", `Gemini service is temporarily unavailable: ${errMsg}`);
+    }
+
+    if (errMsg.includes("SAFETY") || errMsg.includes("blocked")) {
+      throw new AppError("AI_INVALID_RESPONSE", "Response was blocked by content safety filters.");
+    }
+
+    throw new AppError("AI_UNAVAILABLE", `AI generation error: ${errMsg}`);
   }
 }
