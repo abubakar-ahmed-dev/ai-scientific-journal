@@ -939,6 +939,54 @@ The deletion-cascade model (`DATABASE_SCHEMA.md` §19) required project deletion
 
 ---
 
+# ADR-022: Lexical Retrieval over Derived Index for RAG (Embeddings Deferred)
+
+**Status:** Accepted
+**Date:** 2026-09-03
+
+## Context
+
+Phase 6 implements the flagship intelligence capabilities of the AI Scientific Journal: **Ask My Journal** (PRD FR-16, grounded Q&A over historical observations) and **Related Observations** (PRD FR-17, retrieval-only semantic references).
+
+The canonical architecture establishes three core constraints:
+1. `users/{uid}/observationSearch` is a derived, user-scoped subcollection (ADR-017) maintaining `searchableText`.
+2. The schema deliberately reserves optional `embeddingReference` and `embeddingVersion` fields (`DATABASE_SCHEMA.md` §14).
+3. The PRD §8 Infrastructure Principle explicitly commands: *"Resist adding a vector database before retrieval quality actually requires it. Production-quality architecture, not unnecessary architectural complexity."*
+
+At personal journal scale (hundreds to low thousands of entries per user), full-collection vector indexing via external vector databases (Pinecone, Weaviate, Milvus) would introduce external cost, operational complexity, multi-tenant network hops, and external authorization risks.
+
+## Decision
+
+1. **Ship lexical retrieval over the derived index (`observationSearch`) for Phase 6.**
+   - Retrieval queries the user's `users/{uid}/observationSearch` subcollection by path.
+   - Relevance is computed using deterministic lexical scoring (weighted token overlap with title prefix boost and term frequency).
+   - Candidate observations are re-checked against canonical `observations` documents; deleted or out-of-scope records are dropped before passing to generation or search response.
+2. **Embeddings and dedicated vector infrastructure remain explicitly deferred.**
+   - If evaluation (`AI_EVALUATION.md` §13) reveals significant lexical vocabulary mismatch or retrieval recall gaps, an embedding-based reranker or vector search strategy will be implemented using the reserved schema fields (`embeddingReference`, `embeddingVersion`) and recorded as a separate ADR.
+3. **Canonical observation operations are isolated from index failures.**
+   - In accordance with ADR-017, observation create/update/delete operations treat index maintenance as best-effort; index failures are logged as warnings and never fail canonical data operations.
+
+## Alternatives Considered
+
+* **Introduce an external vector database (Pinecone, Chroma, pgvector):** Rejected per PRD §8 infrastructure principle. Adds infrastructure complexity, credentials, and third-party tenancy boundaries before empirical evaluation proves necessity.
+* **Compute embeddings via Gemini API synchronously on every observation write:** Rejected for Phase 6 MVP. Adds external network latency and cost to basic journaling CRUD; requires asynchronous background queues or retry semantics not yet warranted.
+* **Direct client-side search:** Rejected. Violates server-side control and context-bounding principles (ADR-003, AI_ARCHITECTURE §6).
+
+## Consequences
+
+### Positive
+
+* **Zero new infrastructure:** Uses existing Cloud Firestore and Node.js backend.
+* **Fast and fully offline-testable:** Retrieval and scoring are deterministic pure functions in unit and integration suites.
+* **Strong security isolation:** Retrieval is strictly user-scoped by Firestore path (`users/{uid}/observationSearch`), guaranteeing zero cross-user leakage before any model invocation.
+* **Preserves upgrade path:** Reserved schema fields (`embeddingReference`, `embeddingVersion`) ensure vector indexing can be added seamlessly without breaking database schema or API contracts.
+
+### Negative
+
+* Pure lexical retrieval does not identify conceptual synonyms without shared vocabulary (e.g., query "canine" may not match an observation mentioning only "fox" unless synonyms or tags are present).
+
+---
+
 # ADR Maintenance
 
 New ADRs should be added when a decision:
