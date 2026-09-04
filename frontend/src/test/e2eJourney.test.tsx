@@ -3,10 +3,32 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import LandingPage from "../pages/LandingPage";
 import DashboardPage from "../pages/DashboardPage";
+import ObservationFormPage from "../pages/ObservationFormPage";
 import ObservationDetailPage from "../pages/ObservationDetailPage";
+import { ChatWindow } from "../components/ChatWindow";
 import { AskMyJournalPage } from "../pages/AskMyJournalPage";
+import { ResearchMapPage } from "../pages/ResearchMapPage";
 import * as api from "../lib/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+// Mock Leaflet for JSDOM
+vi.mock("react-leaflet", () => ({
+  MapContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="map-container">{children}</div>
+  ),
+  TileLayer: () => <div data-testid="tile-layer" />,
+  Marker: ({ children, position }: any) => (
+    <div data-testid="map-marker" data-lat={position[0]} data-lng={position[1]}>
+      {children}
+    </div>
+  ),
+  Circle: ({ center }: any) => <div data-testid="map-circle" data-lat={center[0]} data-lng={center[1]} />,
+  Popup: ({ children }: any) => <div data-testid="map-popup">{children}</div>,
+}));
+
+vi.mock("../lib/leafletSetup", () => ({
+  setupLeafletIcons: vi.fn(),
+}));
 
 const mockSignIn = vi.fn();
 let mockCurrentUser: { uid: string; email: string; displayName?: string } | null = null;
@@ -27,13 +49,17 @@ vi.mock("../lib/api", async () => {
     fetchObservations: vi.fn(),
     fetchObservation: vi.fn(),
     createObservation: vi.fn(),
+    updateObservation: vi.fn(),
     fetchObservationVersions: vi.fn(),
     fetchProjects: vi.fn(),
     fetchResearchTasks: vi.fn(),
     createResearchTask: vi.fn(),
     fetchConversations: vi.fn(),
     createConversation: vi.fn(),
+    fetchMessages: vi.fn(),
+    sendMessage: vi.fn(),
     fetchAnalyses: vi.fn(),
+    fetchAnalysis: vi.fn(),
     generateAnalysis: vi.fn(),
     askMyJournal: vi.fn(),
     searchObservations: vi.fn(),
@@ -54,7 +80,7 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
     });
   });
 
-  it("completes full scientific journey: auth → dashboard → observation detail → AI analysis → task acceptance → RAG query → version history", async () => {
+  it("completes full scientific journey: auth → dashboard → record observation → media inspection → AI analysis → task acceptance → version history → chat discussion → map inspection → RAG query (Plan §5.2)", async () => {
     // -------------------------------------------------------------------------
     // Step 1: Researcher Lands and Authenticates
     // -------------------------------------------------------------------------
@@ -101,7 +127,7 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
           updatedAt: "2026-09-02T13:00:00Z",
         },
       ],
-      meta: { limit: 6 },
+      meta: { limit: 6, hasMore: false },
     });
 
     vi.mocked(api.fetchProjects).mockResolvedValue({
@@ -118,12 +144,12 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
           updatedAt: "2026-09-01T10:00:00Z",
         },
       ],
-      meta: { limit: 20 },
+      meta: { limit: 50, hasMore: false },
     });
 
-    vi.mocked(api.fetchResearchTasks).mockResolvedValue({ data: [], meta: { limit: 5 } });
+    vi.mocked(api.fetchResearchTasks).mockResolvedValue({ data: [], meta: { limit: 50, hasMore: false } });
     vi.mocked(api.fetchConversations).mockResolvedValue({ data: [], meta: { limit: 5 } });
-    vi.mocked(api.fetchAnalyses).mockResolvedValue({ data: [], meta: { limit: 5 } });
+    vi.mocked(api.fetchAnalyses).mockResolvedValue({ data: [], meta: { limit: 5, hasMore: false } });
 
     const { unmount: unmountDashboard } = render(
       <MemoryRouter initialEntries={["/dashboard"]}>
@@ -137,10 +163,66 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
 
     expect(screen.getByText("Jungfraujoch Ridge")).toBeInTheDocument();
     expect(screen.getByText("1 files attached")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /research projects/i })).toBeInTheDocument();
     unmountDashboard();
 
     // -------------------------------------------------------------------------
-    // Step 3: Observation Detail Inspection & AI Structured Analysis
+    // Step 3: Record Field Observation via Form (Plan §5.2 Step 3 / F5)
+    // -------------------------------------------------------------------------
+    vi.mocked(api.createObservation).mockResolvedValue({
+      data: {
+        id: "obs_e2e_1",
+        ownerId: "user_scientist_1",
+        projectId: "proj_alpine",
+        title: "Alpine Lichen Photosynthesis under UV",
+        description: "Assayed Xanthoria elegans pigmentation and chlorophyll fluorescence.",
+        notes: "Observed red parietin pigment saturation.",
+        hypothesis: "UV radiation induces protective carotenoid synthesis.",
+        observedAt: "2026-09-02T11:30:00Z",
+        location: { latitude: 46.54, longitude: 8.01, precision: "exact", label: "Jungfraujoch Ridge" },
+        tags: ["lichen", "uv", "alpine"],
+        measurements: [{ name: "PAR", value: 1850, unit: "umol/m2/s" }],
+        status: "recorded",
+        mediaCount: 1,
+        version: 1,
+        createdAt: "2026-09-02T11:30:00Z",
+        updatedAt: "2026-09-02T11:30:00Z",
+      },
+    });
+
+    const { unmount: unmountForm } = render(
+      <MemoryRouter initialEntries={["/observations/new"]}>
+        <Routes>
+          <Route path="/observations/new" element={<ObservationFormPage />} />
+          <Route path="/observations/:id" element={<div>Observation Created Target</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const titleInput = screen.getByPlaceholderText(/feeder activity/i);
+    const descInput = screen.getByPlaceholderText(/detailed description of what you observed/i);
+
+    fireEvent.change(titleInput, { target: { value: "Alpine Lichen Photosynthesis under UV" } });
+    fireEvent.change(descInput, {
+      target: { value: "Assayed Xanthoria elegans pigmentation and chlorophyll fluorescence." },
+    });
+
+    const saveObsBtn = screen.getByRole("button", { name: /save observation/i });
+    fireEvent.click(saveObsBtn);
+
+    await waitFor(() => {
+      expect(api.createObservation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Alpine Lichen Photosynthesis under UV",
+          description: "Assayed Xanthoria elegans pigmentation and chlorophyll fluorescence.",
+        })
+      );
+    });
+
+    unmountForm();
+
+    // -------------------------------------------------------------------------
+    // Step 4: Observation Detail Inspection with Media Gallery (Plan §5.2 Step 4 / F5)
     // -------------------------------------------------------------------------
     vi.mocked(api.fetchObservation).mockResolvedValue({
       data: {
@@ -163,7 +245,21 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
       },
     });
 
-    vi.mocked(api.fetchObservationMedia).mockResolvedValue([]);
+    vi.mocked(api.fetchObservationMedia).mockResolvedValue([
+      {
+        id: "med_e2e_1",
+        ownerId: "user_scientist_1",
+        observationId: "obs_e2e_1",
+        fileName: "parietin_fluorescence.jpg",
+        type: "image",
+        mimeType: "image/jpeg",
+        url: "https://storage.mock/parietin_fluorescence.jpg",
+        caption: "Fluorescence under UV-A excitation",
+        sizeBytes: 245000,
+        createdAt: "2026-09-02T11:35:00Z",
+      },
+    ]);
+
     vi.mocked(api.searchObservations).mockResolvedValue([]);
 
     // Mock AI Analysis pipeline output
@@ -197,6 +293,7 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
     };
 
     vi.mocked(api.generateAnalysis).mockResolvedValue({ data: mockAnalysisOutput });
+    vi.mocked(api.fetchAnalysis).mockResolvedValue({ data: mockAnalysisOutput });
     vi.mocked(api.createResearchTask).mockResolvedValue({ data: { id: "task_accepted_1" } as any });
 
     vi.mocked(api.fetchObservationVersions).mockResolvedValue({
@@ -229,7 +326,14 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
       expect(screen.getByText("Alpine Lichen Photosynthesis under UV")).toBeInTheDocument();
     });
 
-    // Trigger AI Analysis
+    // Verify Media Gallery attached image
+    await waitFor(() => {
+      expect(screen.getByText("parietin_fluorescence.jpg")).toBeInTheDocument();
+    });
+
+    // -------------------------------------------------------------------------
+    // Step 5: AI Structured Analysis & Task Acceptance
+    // -------------------------------------------------------------------------
     const analyzeBtn = screen.getByRole("button", { name: /analyze with ai/i });
     fireEvent.click(analyzeBtn);
 
@@ -239,7 +343,6 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
 
     expect(screen.getByText("Isolate parietin extract via HPLC chromatography")).toBeInTheDocument();
 
-    // Step 4: Accept AI Suggestion as Research Task
     const acceptTaskBtn = screen.getByRole("button", { name: /\+ accept as task/i });
     fireEvent.click(acceptTaskBtn);
 
@@ -254,7 +357,9 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
       projectId: "proj_alpine",
     });
 
-    // Step 5: Version History Snapshot Inspection
+    // -------------------------------------------------------------------------
+    // Step 6: Version History Snapshot Inspection
+    // -------------------------------------------------------------------------
     const versionHistoryBtn = screen.getByRole("button", { name: /view version history/i });
     fireEvent.click(versionHistoryBtn);
 
@@ -277,7 +382,88 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
     unmountDetail();
 
     // -------------------------------------------------------------------------
-    // Step 6: Ask My Journal (RAG Grounded Q&A)
+    // Step 7: Research Assistant Stateful Discussion (Plan §5.2 Step 7 / F5)
+    // -------------------------------------------------------------------------
+    vi.mocked(api.fetchMessages).mockResolvedValue({
+      data: [
+        {
+          id: "msg_1",
+          ownerId: "user_e2e_1",
+          conversationId: "conv_e2e_1",
+          role: "user",
+          content: "Does parietin fluorescence increase linearly with solar altitude?",
+          sequence: 1,
+          createdAt: "2026-09-02T15:00:00Z",
+        },
+        {
+          id: "msg_2",
+          ownerId: "user_e2e_1",
+          conversationId: "conv_e2e_1",
+          role: "assistant",
+          content: "Empirical readings suggest non-linear saturation occurs once PAR exceeds 1500 umol/m2/s.",
+          sequence: 2,
+          model: "gemini-2.5-flash",
+          metadata: {
+            latencyMs: 450,
+            tokenUsage: { totalTokens: 88 },
+          },
+          createdAt: "2026-09-02T15:00:02Z",
+        },
+      ],
+      meta: { limit: 100 },
+    });
+
+    const { unmount: unmountChat } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ChatWindow
+            conversation={{
+              id: "conv_e2e_1",
+              ownerId: "user_scientist_1",
+              projectId: "proj_alpine",
+              title: "Lichen Photoprotection Discussion",
+              contextType: "observation",
+              contextId: "obs_e2e_1",
+              status: "active",
+              messageCount: 2,
+              createdAt: "2026-09-02T15:00:00Z",
+              updatedAt: "2026-09-02T15:00:02Z",
+            }}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Lichen Photoprotection Discussion")).toBeInTheDocument();
+      expect(screen.getByText(/Empirical readings suggest non-linear saturation/i)).toBeInTheDocument();
+    });
+
+    // Verify model provenance badge and AI disclaimer
+    expect(screen.getByText("gemini-2.5-flash")).toBeInTheDocument();
+    expect(screen.getByText(/AI suggestions should be experimentally verified/i)).toBeInTheDocument();
+    unmountChat();
+
+    // -------------------------------------------------------------------------
+    // Step 8: Research Map Geospatial Inspection (Plan §5.2 Step 9 / F5)
+    // -------------------------------------------------------------------------
+    const { unmount: unmountMap } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/map"]}>
+          <ResearchMapPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Research Map")).toBeInTheDocument();
+      expect(screen.getByTestId("map-container")).toBeInTheDocument();
+    });
+
+    unmountMap();
+
+    // -------------------------------------------------------------------------
+    // Step 9: Ask My Journal (RAG Grounded Q&A)
     // -------------------------------------------------------------------------
     vi.mocked(api.askMyJournal).mockResolvedValue({
       answer: "Based on your journal records, alpine lichen Xanthoria elegans adapts to high UV radiation via parietin pigment synthesis.",
@@ -319,7 +505,6 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
       "href",
       "/observations/obs_e2e_1"
     );
-    expect(screen.getByText("gemini-2.5-flash")).toBeInTheDocument();
     expect(screen.getByText("ask-grounded-v1")).toBeInTheDocument();
   });
 });

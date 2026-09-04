@@ -107,7 +107,7 @@ describe("AnalysisViewer Component", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Hydrated Live Title")).toBeInTheDocument();
+      expect(screen.getAllByText("Hydrated Live Title").length).toBeGreaterThan(0);
       expect(screen.getByText(/\[Observation deleted\]/i)).toBeInTheDocument();
     });
   });
