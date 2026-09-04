@@ -61,10 +61,17 @@ export default function ProjectsPage() {
     }
   }
 
+  // Filter state
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed" | "archived">("all");
+
+  const filteredProjects = projects.filter(
+    (p) => statusFilter === "all" || p.status === statusFilter
+  );
+
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Research Projects</h1>
             <p className="text-sm text-slate-500">
@@ -77,6 +84,23 @@ export default function ProjectsPage() {
           >
             {showCreate ? "Cancel" : "+ New Project"}
           </button>
+        </div>
+
+        {/* Status Filter Tabs */}
+        <div className="flex space-x-2 border-b border-slate-200 pb-2">
+          {(["all", "active", "completed", "archived"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setStatusFilter(tab)}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition ${
+                statusFilter === tab
+                  ? "bg-indigo-600 text-white shadow-2xs"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              {tab} ({tab === "all" ? projects.length : projects.filter((p) => p.status === tab).length})
+            </button>
+          ))}
         </div>
 
         {/* Create Project Panel */}
@@ -154,19 +178,23 @@ export default function ProjectsPage() {
         {/* Projects Grid */}
         {loading ? (
           <div className="p-12 text-center text-slate-500 text-sm">Loading projects...</div>
-        ) : projects.length === 0 ? (
+        ) : filteredProjects.length === 0 ? (
           <div className="bg-white p-12 text-center rounded-lg border border-slate-200">
-            <p className="text-slate-500 text-sm">No projects created yet.</p>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="mt-4 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-            >
-              Create Your First Project
-            </button>
+            <p className="text-slate-500 text-sm">
+              {projects.length === 0 ? "No projects created yet." : `No ${statusFilter} projects found.`}
+            </p>
+            {projects.length === 0 && (
+              <button
+                onClick={() => setShowCreate(true)}
+                className="mt-4 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+              >
+                Create Your First Project
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((proj) => (
+            {filteredProjects.map((proj) => (
               <div key={proj.id} className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between hover:border-indigo-200 transition">
                 <div>
                   <div className="flex items-start justify-between">

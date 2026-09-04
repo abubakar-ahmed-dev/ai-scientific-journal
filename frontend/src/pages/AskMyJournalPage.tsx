@@ -38,7 +38,7 @@ export const AskMyJournalPage: React.FC = () => {
     }
   };
 
-  const isInsufficientEvidence = result && result.evidence.length === 0;
+  const isInsufficientEvidence = Boolean(result && (!result.evidence || result.evidence.length === 0));
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 space-y-8">
