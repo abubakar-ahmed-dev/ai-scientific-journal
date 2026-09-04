@@ -9,11 +9,13 @@ import {
   generateAnalysis,
   generateResearchSuggestions,
   fetchAnalyses,
+  fetchAnalysis,
   searchObservations,
 } from "../lib/api";
 import type { Observation, ObservationVersion, Analysis, SearchResponseItem } from "../lib/api";
 import { AnalysisViewer } from "../components/AnalysisViewer";
 import { MediaGallery } from "../components/MediaGallery";
+import { VersionSnapshotModal } from "../components/VersionSnapshotModal";
 
 // Leaflet stays out of the detail-page chunk; the mini map loads only when a
 // located observation is actually rendered.
@@ -27,6 +29,7 @@ export default function ObservationDetailPage() {
   const navigate = useNavigate();
   const [observation, setObservation] = useState<Observation | null>(null);
   const [versions, setVersions] = useState<ObservationVersion[]>([]);
+  const [selectedVersion, setSelectedVersion] = useState<ObservationVersion | null>(null);
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [relatedObservations, setRelatedObservations] = useState<SearchResponseItem[]>([]);
   const [showVersions, setShowVersions] = useState(false);
@@ -70,7 +73,18 @@ export default function ObservationDetailPage() {
     if (!id) return;
     try {
       const res = await fetchAnalyses({ observationId: id });
-      setAnalyses(res.data || []);
+      const baseAnalyses = res.data || [];
+      const detailed = await Promise.all(
+        baseAnalyses.map(async (anl) => {
+          try {
+            const detailRes = await fetchAnalysis(anl.id, true);
+            return detailRes.data;
+          } catch {
+            return anl;
+          }
+        })
+      );
+      setAnalyses(detailed);
     } catch {
       // Non-blocking for base detail view
     }
@@ -134,7 +148,14 @@ export default function ObservationDetailPage() {
         observationIds: [id],
         projectId: observation?.projectId || undefined,
       });
-      setAnalyses((prev) => [res.data, ...prev]);
+      let finalAnalysis = res.data;
+      try {
+        const detailRes = await fetchAnalysis(res.data.id, true);
+        finalAnalysis = detailRes.data;
+      } catch {
+        // fallback
+      }
+      setAnalyses((prev) => [finalAnalysis, ...prev]);
       if (observation) {
         setObservation({ ...observation, status: "analyzed" });
       }
@@ -155,7 +176,14 @@ export default function ObservationDetailPage() {
         observationIds: [id],
         projectId: observation?.projectId || undefined,
       });
-      setAnalyses((prev) => [res.data, ...prev]);
+      let finalAnalysis = res.data;
+      try {
+        const detailRes = await fetchAnalysis(res.data.id, true);
+        finalAnalysis = detailRes.data;
+      } catch {
+        // fallback
+      }
+      setAnalyses((prev) => [finalAnalysis, ...prev]);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to generate research suggestions";
       setAiError(msg);
@@ -271,13 +299,22 @@ export default function ObservationDetailPage() {
                   ) : (
                     <ul className="space-y-3">
                       {versions.map((ver) => (
-                        <li key={ver.id} className="p-3 bg-white rounded border border-slate-200 text-xs space-y-1">
+                        <li key={ver.id} className="p-3.5 bg-white rounded-lg border border-slate-200 text-xs space-y-1.5 hover:border-indigo-200 transition">
                           <div className="flex justify-between font-medium">
-                            <span>Revision v{ver.version}</span>
+                            <span className="font-bold text-indigo-700">Revision v{ver.version}</span>
                             <span className="text-slate-400">{new Date(ver.editedAt).toLocaleString()}</span>
                           </div>
-                          <p className="text-slate-700"><strong>Title:</strong> {ver.title}</p>
+                          <p className="text-slate-800"><strong>Title:</strong> {ver.title}</p>
                           <p className="text-slate-600 line-clamp-2"><strong>Description:</strong> {ver.description}</p>
+                          <div className="pt-1 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedVersion(ver)}
+                              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1 focus:outline-hidden"
+                            >
+                              <span>Inspect Snapshot & Compare</span> &rarr;
+                            </button>
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -438,6 +475,12 @@ export default function ObservationDetailPage() {
           </div>
         )}
       </div>
+
+      <VersionSnapshotModal
+        version={selectedVersion}
+        currentObservation={observation}
+        onClose={() => setSelectedVersion(null)}
+      />
     </Layout>
   );
 }
