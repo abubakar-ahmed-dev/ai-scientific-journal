@@ -1,6 +1,7 @@
 import { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../lib/firebase/authContext";
+import type { ReactNode } from "react";
 import LandingPage from "../pages/LandingPage";
 import DashboardPage from "../pages/DashboardPage";
 import ObservationsPage from "../pages/ObservationsPage";
@@ -21,6 +22,16 @@ const ResearchMapPage = lazy(() =>
   import("../pages/ResearchMapPage").then((m) => ({ default: m.ResearchMapPage }))
 );
 
+// Signs a signed-out user (logout, expired session) back to the landing page
+// instead of rendering data-less pages against a dead session.
+function RequireAuth({ children }: { children: ReactNode }) {
+  const { currentUser } = useAuth();
+  if (!currentUser) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+}
+
 export default function App() {
   const { currentUser, loading } = useAuth();
 
@@ -35,14 +46,15 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={currentUser ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
-      <Route path="/dashboard" element={<DashboardPage />} />
-      <Route path="/observations" element={<ObservationsPage />} />
-      <Route path="/observations/new" element={<ObservationFormPage />} />
-      <Route path="/observations/:id" element={<ObservationDetailPage />} />
-      <Route path="/observations/:id/edit" element={<ObservationFormPage />} />
+      <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
+      <Route path="/observations" element={<RequireAuth><ObservationsPage /></RequireAuth>} />
+      <Route path="/observations/new" element={<RequireAuth><ObservationFormPage /></RequireAuth>} />
+      <Route path="/observations/:id" element={<RequireAuth><ObservationDetailPage /></RequireAuth>} />
+      <Route path="/observations/:id/edit" element={<RequireAuth><ObservationFormPage /></RequireAuth>} />
       <Route
         path="/map"
         element={
+          <RequireAuth>
           <Layout>
             <Suspense
               fallback={
@@ -52,35 +64,42 @@ export default function App() {
               <ResearchMapPage />
             </Suspense>
           </Layout>
+          </RequireAuth>
         }
       />
       <Route
         path="/ask"
         element={
-          <Layout>
-            <AskMyJournalPage />
-          </Layout>
+          <RequireAuth>
+            <Layout>
+              <AskMyJournalPage />
+            </Layout>
+          </RequireAuth>
         }
       />
       <Route
         path="/tasks"
         element={
-          <Layout>
-            <ResearchTasksPage />
-          </Layout>
+          <RequireAuth>
+            <Layout>
+              <ResearchTasksPage />
+            </Layout>
+          </RequireAuth>
         }
       />
       <Route
         path="/conversations"
         element={
-          <Layout>
-            <ConversationsPage />
-          </Layout>
+          <RequireAuth>
+            <Layout>
+              <ConversationsPage />
+            </Layout>
+          </RequireAuth>
         }
       />
-      <Route path="/projects" element={<ProjectsPage />} />
-      <Route path="/projects/:id" element={<ProjectDetailPage />} />
-      <Route path="/settings" element={<SettingsPage />} />
+      <Route path="/projects" element={<RequireAuth><ProjectsPage /></RequireAuth>} />
+      <Route path="/projects/:id" element={<RequireAuth><ProjectDetailPage /></RequireAuth>} />
+      <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
     </Routes>
   );
 }
