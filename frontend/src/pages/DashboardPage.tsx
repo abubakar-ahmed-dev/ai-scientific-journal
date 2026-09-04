@@ -1,17 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import {
-  FileText,
-  FolderKanban,
-  CheckSquare,
-  Sparkles,
-  MapPin,
-  MessageSquare,
-  ArrowRight,
-  Plus,
-  RefreshCw,
-  Search,
-} from "lucide-react";
+import { Layout } from "../components/Layout";
 import {
   fetchObservations,
   fetchProjects,
@@ -26,7 +15,19 @@ import type {
   Conversation,
   Analysis,
 } from "../lib/api";
-import { Layout } from "../components/Layout";
+import {
+  Sparkles,
+  FileText,
+  FolderKanban,
+  CheckSquare,
+  ArrowRight,
+  Plus,
+  Search,
+  MapPin,
+  MessageSquare,
+  RefreshCw,
+  AlertTriangle,
+} from "lucide-react";
 
 export default function DashboardPage() {
   const [observations, setObservations] = useState<Observation[]>([]);
@@ -37,46 +38,87 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadDashboardData() {
+  // Pagination hasMore flags for accurate metric indication
+  const [obsHasMore, setObsHasMore] = useState(false);
+  const [projHasMore, setProjHasMore] = useState(false);
+  const [tasksHasMore, setTasksHasMore] = useState(false);
+  const [analysesHasMore, setAnalysesHasMore] = useState(false);
+
+  // Track per-section settlement (F6: distinct error state from empty state)
+  const [failedSections, setFailedSections] = useState<{
+    observations?: boolean;
+    projects?: boolean;
+    tasks?: boolean;
+    conversations?: boolean;
+    analyses?: boolean;
+  }>({});
+
+  const loadDashboardData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    try {
-      const results = await Promise.allSettled([
-        fetchObservations({ limit: 6 }),
-        fetchProjects({ limit: 20 }),
-        fetchResearchTasks({ limit: 5 }),
-        fetchConversations({ limit: 5 }),
-        fetchAnalyses({ limit: 5 }),
-      ]);
+    setFailedSections({});
 
-      if (results[0].status === "fulfilled") {
-        setObservations(results[0].value.data || []);
-      }
-      if (results[1].status === "fulfilled") {
-        setProjects(results[1].value.data || []);
-      }
-      if (results[2].status === "fulfilled") {
-        setTasks(results[2].value.data || []);
-      }
-      if (results[3].status === "fulfilled") {
-        setConversations(results[3].value.data || []);
-      }
-      if (results[4].status === "fulfilled") {
-        setAnalyses(results[4].value.data || []);
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load dashboard data");
-    } finally {
-      setLoading(false);
+    const results = await Promise.allSettled([
+      fetchObservations({ limit: 6 }),
+      fetchProjects({ limit: 50 }),
+      fetchResearchTasks({ limit: 50 }),
+      fetchConversations({ limit: 5 }),
+      fetchAnalyses({ limit: 5 }),
+    ]);
+
+    const errors: typeof failedSections = {};
+
+    if (results[0].status === "fulfilled") {
+      setObservations(results[0].value.data || []);
+      setObsHasMore(Boolean(results[0].value.meta?.hasMore));
+    } else {
+      errors.observations = true;
     }
-  }
+
+    if (results[1].status === "fulfilled") {
+      setProjects(results[1].value.data || []);
+      setProjHasMore(Boolean(results[1].value.meta?.hasMore));
+    } else {
+      errors.projects = true;
+    }
+
+    if (results[2].status === "fulfilled") {
+      setTasks(results[2].value.data || []);
+      setTasksHasMore(Boolean(results[2].value.meta?.hasMore));
+    } else {
+      errors.tasks = true;
+    }
+
+    if (results[3].status === "fulfilled") {
+      setConversations(results[3].value.data || []);
+    } else {
+      errors.conversations = true;
+    }
+
+    if (results[4].status === "fulfilled") {
+      setAnalyses(results[4].value.data || []);
+      setAnalysesHasMore(Boolean(results[4].value.meta?.hasMore));
+    } else {
+      errors.analyses = true;
+    }
+
+    const hasAnyError = Object.values(errors).some(Boolean);
+    if (hasAnyError) {
+      setError("Some research data could not be loaded. Please retry below.");
+      setFailedSections(errors);
+    }
+
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [loadDashboardData]);
 
   const activeProjects = projects.filter((p) => p.status === "active");
-  const pendingTasks = tasks.filter((t) => t.status === "suggested" || t.status === "planned" || t.status === "in_progress");
+  const pendingTasks = tasks.filter(
+    (t) => t.status === "suggested" || t.status === "planned" || t.status === "in_progress"
+  );
 
   return (
     <Layout>
@@ -103,13 +145,17 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Error Alert with Retry */}
+        {/* Error Alert with Reachable Retry (F6) */}
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800 flex items-center justify-between">
-            <span>{error}</span>
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-900 flex items-center justify-between shadow-xs">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>{error}</span>
+            </div>
             <button
+              type="button"
               onClick={loadDashboardData}
-              className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-red-200 text-xs font-medium text-red-700 rounded hover:bg-red-50 transition"
+              className="inline-flex items-center gap-1 px-3 py-1 bg-white border border-amber-300 text-xs font-semibold text-amber-800 rounded-md hover:bg-amber-100 transition shadow-2xs"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Retry
@@ -117,31 +163,37 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* Observations Metric */}
+        {/* Metrics Grid (Honest labels & count semantics per F4) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Recent Observations Metric */}
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-2">
             <div className="flex items-center justify-between text-slate-500">
-              <span className="text-xs font-semibold uppercase tracking-wider">Observations</span>
-              <FileText className="w-4 h-4 text-blue-600" />
+              <span className="text-xs font-semibold uppercase tracking-wider">Recent Observations</span>
+              <FileText className="w-4 h-4 text-indigo-600" />
             </div>
-            <p className="text-3xl font-bold text-slate-900">{observations.length}</p>
+            <p className="text-3xl font-bold text-slate-900">
+              {observations.length}
+              {obsHasMore && <span className="text-lg font-normal text-slate-400">+</span>}
+            </p>
             <Link
               to="/observations"
               className="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1 pt-1"
             >
-              <span>View all observations</span>
+              <span>View field journal</span>
               <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
 
-          {/* Projects Metric */}
+          {/* Active Projects Metric */}
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-2">
             <div className="flex items-center justify-between text-slate-500">
               <span className="text-xs font-semibold uppercase tracking-wider">Active Projects</span>
-              <FolderKanban className="w-4 h-4 text-emerald-600" />
+              <FolderKanban className="w-4 h-4 text-amber-600" />
             </div>
-            <p className="text-3xl font-bold text-slate-900">{activeProjects.length}</p>
+            <p className="text-3xl font-bold text-slate-900">
+              {activeProjects.length}
+              {projHasMore && <span className="text-lg font-normal text-slate-400">+</span>}
+            </p>
             <Link
               to="/projects"
               className="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1 pt-1"
@@ -151,13 +203,16 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* Research Tasks Metric */}
+          {/* Pending Tasks Metric */}
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-2">
             <div className="flex items-center justify-between text-slate-500">
-              <span className="text-xs font-semibold uppercase tracking-wider">Research Tasks</span>
-              <CheckSquare className="w-4 h-4 text-amber-600" />
+              <span className="text-xs font-semibold uppercase tracking-wider">Pending Tasks</span>
+              <CheckSquare className="w-4 h-4 text-emerald-600" />
             </div>
-            <p className="text-3xl font-bold text-slate-900">{pendingTasks.length}</p>
+            <p className="text-3xl font-bold text-slate-900">
+              {pendingTasks.length}
+              {tasksHasMore && <span className="text-lg font-normal text-slate-400">+</span>}
+            </p>
             <Link
               to="/tasks"
               className="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1 pt-1"
@@ -170,10 +225,13 @@ export default function DashboardPage() {
           {/* AI Analyses Metric */}
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-2">
             <div className="flex items-center justify-between text-slate-500">
-              <span className="text-xs font-semibold uppercase tracking-wider">AI Analyses</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">Recent AI Analyses</span>
               <Sparkles className="w-4 h-4 text-purple-600" />
             </div>
-            <p className="text-3xl font-bold text-slate-900">{analyses.length}</p>
+            <p className="text-3xl font-bold text-slate-900">
+              {analyses.length}
+              {analysesHasMore && <span className="text-lg font-normal text-slate-400">+</span>}
+            </p>
             <Link
               to="/ask"
               className="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1 pt-1"
@@ -184,8 +242,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Quick Scientific Action Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Quick Scientific Action Cards (4 Cards per Plan §2.2 / F11) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
             to="/ask"
             className="p-4 bg-linear-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl hover:shadow-xs transition flex items-center gap-3.5 group"
@@ -230,6 +288,21 @@ export default function DashboardPage() {
               <p className="text-xs text-slate-600">Stateful research discussions bounded by project</p>
             </div>
           </Link>
+
+          <Link
+            to="/projects"
+            className="p-4 bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl hover:shadow-xs transition flex items-center gap-3.5 group"
+          >
+            <div className="w-10 h-10 rounded-lg bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <FolderKanban className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 group-hover:text-amber-700 transition">
+                Research Projects
+              </h3>
+              <p className="text-xs text-slate-600">Organize observations into initiatives (+ New Project)</p>
+            </div>
+          </Link>
         </div>
 
         {/* Main 2-Column Feed */}
@@ -255,6 +328,18 @@ export default function DashboardPage() {
                     <div className="h-3 bg-slate-100 rounded w-2/3"></div>
                   </div>
                 ))}
+              </div>
+            ) : failedSections.observations ? (
+              <div className="bg-amber-50/70 p-8 rounded-xl border border-amber-200 text-center space-y-2">
+                <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
+                <p className="text-xs font-semibold text-amber-900">Failed to load recent observations.</p>
+                <button
+                  type="button"
+                  onClick={loadDashboardData}
+                  className="text-xs text-indigo-600 font-semibold hover:underline"
+                >
+                  Retry loading observations
+                </button>
               </div>
             ) : observations.length === 0 ? (
               <div className="bg-white p-10 rounded-xl border border-slate-200 text-center space-y-3">
@@ -339,6 +424,17 @@ export default function DashboardPage() {
                   <div className="h-3 bg-slate-200 rounded w-1/2"></div>
                   <div className="h-3 bg-slate-100 rounded w-3/4"></div>
                 </div>
+              ) : failedSections.tasks ? (
+                <div className="p-4 bg-amber-50/70 rounded-xl border border-amber-200 text-center space-y-1">
+                  <p className="text-xs font-semibold text-amber-900">Failed to load research tasks.</p>
+                  <button
+                    type="button"
+                    onClick={loadDashboardData}
+                    className="text-xs text-indigo-600 font-semibold hover:underline"
+                  >
+                    Retry
+                  </button>
+                </div>
               ) : tasks.length === 0 ? (
                 <div className="p-5 bg-white rounded-xl border border-slate-200 text-center text-xs text-slate-500">
                   No active research tasks. Accept AI suggestions or create new tasks.
@@ -376,6 +472,17 @@ export default function DashboardPage() {
                 <div className="p-4 bg-white rounded-xl border border-slate-200 animate-pulse space-y-2">
                   <div className="h-3 bg-slate-200 rounded w-1/2"></div>
                   <div className="h-3 bg-slate-100 rounded w-3/4"></div>
+                </div>
+              ) : failedSections.analyses ? (
+                <div className="p-4 bg-amber-50/70 rounded-xl border border-amber-200 text-center space-y-1">
+                  <p className="text-xs font-semibold text-amber-900">Failed to load AI analyses.</p>
+                  <button
+                    type="button"
+                    onClick={loadDashboardData}
+                    className="text-xs text-indigo-600 font-semibold hover:underline"
+                  >
+                    Retry
+                  </button>
                 </div>
               ) : analyses.length === 0 ? (
                 <div className="p-5 bg-white rounded-xl border border-slate-200 text-center text-xs text-slate-500">

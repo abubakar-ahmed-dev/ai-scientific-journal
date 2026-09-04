@@ -1,24 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import DashboardPage from "./DashboardPage";
 import * as api from "../lib/api";
 
+// Mock API module
+vi.mock("../lib/api", async () => {
+  const actual = await vi.importActual("../lib/api");
+  return {
+    ...actual,
+    fetchObservations: vi.fn(),
+    fetchProjects: vi.fn(),
+    fetchResearchTasks: vi.fn(),
+    fetchConversations: vi.fn(),
+    fetchAnalyses: vi.fn(),
+  };
+});
+
+// Mock Auth Context
 vi.mock("../lib/firebase/authContext", () => ({
   useAuth: () => ({
-    currentUser: { uid: "user_test", email: "researcher@lab.org", displayName: "Dr. Stone" },
+    currentUser: { uid: "user_test", email: "scientist@fast.edu" },
     loading: false,
-    signInWithGoogle: vi.fn(),
     signOut: vi.fn(),
   }),
-}));
-
-vi.mock("../lib/api", () => ({
-  fetchObservations: vi.fn(),
-  fetchProjects: vi.fn(),
-  fetchResearchTasks: vi.fn(),
-  fetchConversations: vi.fn(),
-  fetchAnalyses: vi.fn(),
 }));
 
 describe("DashboardPage Component", () => {
@@ -26,7 +31,7 @@ describe("DashboardPage Component", () => {
     vi.clearAllMocks();
   });
 
-  it("renders metric cards and populated recent observation list", async () => {
+  it("renders metric cards and populated recent observation list with 4 quick actions", async () => {
     vi.mocked(api.fetchObservations).mockResolvedValue({
       data: [
         {
@@ -48,7 +53,7 @@ describe("DashboardPage Component", () => {
           updatedAt: "2026-09-01T10:00:00Z",
         },
       ],
-      meta: { limit: 6 },
+      meta: { limit: 6, hasMore: true },
     });
 
     vi.mocked(api.fetchProjects).mockResolvedValue({
@@ -65,7 +70,7 @@ describe("DashboardPage Component", () => {
           updatedAt: "2026-09-01T10:00:00Z",
         },
       ],
-      meta: { limit: 20 },
+      meta: { limit: 50, hasMore: false },
     });
 
     vi.mocked(api.fetchResearchTasks).mockResolvedValue({
@@ -84,7 +89,7 @@ describe("DashboardPage Component", () => {
           updatedAt: "2026-09-01T10:00:00Z",
         },
       ],
-      meta: { limit: 5 },
+      meta: { limit: 50, hasMore: false },
     });
 
     vi.mocked(api.fetchConversations).mockResolvedValue({
@@ -125,19 +130,30 @@ describe("DashboardPage Component", () => {
     // Header
     expect(screen.getByRole("heading", { name: /research dashboard/i })).toBeInTheDocument();
 
+    // Honest metric titles
+    expect(screen.getAllByText("Recent Observations")[0]).toBeInTheDocument();
+    expect(screen.getByText("Active Projects")).toBeInTheDocument();
+    expect(screen.getByText("Pending Tasks")).toBeInTheDocument();
+    expect(screen.getAllByText("Recent AI Analyses")[0]).toBeInTheDocument();
+
     // Wait for observation to load
     await waitFor(() => {
       expect(screen.getByText("Microbial Colony Formation")).toBeInTheDocument();
     });
+
+    // hasMore indicator on observations (1+)
+    expect(screen.getByText("+")).toBeInTheDocument();
 
     // Verify observation details
     expect(screen.getByText("Noticed rapid bacterial growth at 37C incubator.")).toBeInTheDocument();
     expect(screen.getByText("1 files attached")).toBeInTheDocument();
     expect(screen.getByText("Lab Station 3")).toBeInTheDocument();
 
-    // Verify quick action links
+    // Verify all 4 quick action links (F11)
     expect(screen.getAllByRole("link", { name: /ask my journal/i })[0]).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /research map/i })[0]).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /ai scientific chat/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /research projects/i })).toBeInTheDocument();
 
     // Verify task and analysis loaded
     expect(screen.getByText("Replicate assay with control group")).toBeInTheDocument();
@@ -146,8 +162,8 @@ describe("DashboardPage Component", () => {
 
   it("handles empty states gracefully when no records exist", async () => {
     vi.mocked(api.fetchObservations).mockResolvedValue({ data: [], meta: { limit: 6 } });
-    vi.mocked(api.fetchProjects).mockResolvedValue({ data: [], meta: { limit: 20 } });
-    vi.mocked(api.fetchResearchTasks).mockResolvedValue({ data: [], meta: { limit: 5 } });
+    vi.mocked(api.fetchProjects).mockResolvedValue({ data: [], meta: { limit: 50 } });
+    vi.mocked(api.fetchResearchTasks).mockResolvedValue({ data: [], meta: { limit: 50 } });
     vi.mocked(api.fetchConversations).mockResolvedValue({ data: [], meta: { limit: 5 } });
     vi.mocked(api.fetchAnalyses).mockResolvedValue({ data: [], meta: { limit: 5 } });
 
@@ -162,5 +178,40 @@ describe("DashboardPage Component", () => {
     });
 
     expect(screen.getByRole("link", { name: /log first observation/i })).toBeInTheDocument();
+  });
+
+  it("handles partial fetch failures with reachable retry banner and section error state (F6)", async () => {
+    // Observations fail; other endpoints succeed
+    vi.mocked(api.fetchObservations).mockRejectedValue(new Error("Network connection lost"));
+    vi.mocked(api.fetchProjects).mockResolvedValue({ data: [], meta: { limit: 50 } });
+    vi.mocked(api.fetchResearchTasks).mockResolvedValue({ data: [], meta: { limit: 50 } });
+    vi.mocked(api.fetchConversations).mockResolvedValue({ data: [], meta: { limit: 5 } });
+    vi.mocked(api.fetchAnalyses).mockResolvedValue({ data: [], meta: { limit: 5 } });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    // Verify error alert banner appears with Retry button
+    await waitFor(() => {
+      expect(screen.getByText(/some research data could not be loaded/i)).toBeInTheDocument();
+    });
+
+    const retryBannerBtn = screen.getByRole("button", { name: /^retry$/i });
+    expect(retryBannerBtn).toBeInTheDocument();
+
+    // Verify section-level error card is shown instead of false empty state
+    expect(screen.getByText("Failed to load recent observations.")).toBeInTheDocument();
+    expect(screen.queryByText(/no observations logged yet/i)).not.toBeInTheDocument();
+
+    // Clicking retry refetches
+    vi.mocked(api.fetchObservations).mockResolvedValue({ data: [], meta: { limit: 6 } });
+    fireEvent.click(retryBannerBtn);
+
+    await waitFor(() => {
+      expect(api.fetchObservations).toHaveBeenCalledTimes(2);
+    });
   });
 });
