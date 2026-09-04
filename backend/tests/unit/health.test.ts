@@ -27,3 +27,18 @@ describe("request correlation", () => {
     expect(res.headers["x-request-id"]).toBe("req_test_123");
   });
 });
+
+describe("malformed request handling (SECURITY §31 API matrix)", () => {
+  it("malformed JSON body returns 400 VALIDATION_ERROR without parser internals", async () => {
+    const res = await request(createApp())
+      .post("/api/v1/research-tasks")
+      .set("Authorization", "Bearer anything") // auth mock not installed here; parse failure fires first
+      .set("Content-Type", "application/json")
+      .send("{ not valid json");
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    expect(res.body.error.requestId).toBeDefined();
+    expect(JSON.stringify(res.body)).not.toContain("at position");
+    expect(JSON.stringify(res.body)).not.toContain("Unexpected token");
+  });
+});
