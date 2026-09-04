@@ -21,6 +21,7 @@ import { retrievalService } from "../ai/retrieval/retrievalService";
 import { aiRateLimiter } from "../middleware/rateLimiter";
 import { env } from "../config/env";
 import { logger } from "../lib/logger";
+import { logAiSignal } from "../lib/aiSignals";
 import { AppError } from "../types/errors";
 
 export const aiRouter = Router();
@@ -84,7 +85,34 @@ aiRouter.post("/summarize", async (req: Request, res: Response, next: NextFuncti
     }
 
     const aiService = getAiService();
-    const result = await aiService.generateStructuredAnalysis(promptPayload);
+    const aiStart = process.hrtime.bigint();
+    let result;
+    try {
+      result = await aiService.generateStructuredAnalysis(promptPayload);
+    } catch (err) {
+      logAiSignal({
+        operation: "summarize",
+        req,
+        status: "failure",
+        durationMs: Math.round(Number(process.hrtime.bigint() - aiStart) / 1e6),
+        errorType:
+          err instanceof AppError && (err.code === "AI_INVALID_RESPONSE" || err.code === "AI_UNAVAILABLE")
+            ? (err.code as "AI_INVALID_RESPONSE" | "AI_UNAVAILABLE")
+            : "RETRIEVAL_ERROR",
+      });
+      throw err;
+    }
+    logAiSignal({
+      operation: "summarize",
+      req,
+      status: "success",
+      durationMs: Math.round(Number(process.hrtime.bigint() - aiStart) / 1e6),
+      model: result.model,
+      promptVersion: result.promptVersion,
+      inputLength: promptPayload.contextText.length,
+      outputLength: result.output.summary.length,
+      tokenUsage: result.metadata.tokenUsage,
+    });
 
     const savedAnalysis = await analysisRepository.create(uid, {
       projectId: targetProjectId,
@@ -136,7 +164,34 @@ aiRouter.post("/analyze", async (req: Request, res: Response, next: NextFunction
 
     const promptPayload = buildObservationAnalysisPrompt(observations);
     const aiService = getAiService();
-    const result = await aiService.generateStructuredAnalysis(promptPayload);
+    const aiStart = process.hrtime.bigint();
+    let result;
+    try {
+      result = await aiService.generateStructuredAnalysis(promptPayload);
+    } catch (err) {
+      logAiSignal({
+        operation: "analyze",
+        req,
+        status: "failure",
+        durationMs: Math.round(Number(process.hrtime.bigint() - aiStart) / 1e6),
+        errorType:
+          err instanceof AppError && (err.code === "AI_INVALID_RESPONSE" || err.code === "AI_UNAVAILABLE")
+            ? (err.code as "AI_INVALID_RESPONSE" | "AI_UNAVAILABLE")
+            : "RETRIEVAL_ERROR",
+      });
+      throw err;
+    }
+    logAiSignal({
+      operation: "analyze",
+      req,
+      status: "success",
+      durationMs: Math.round(Number(process.hrtime.bigint() - aiStart) / 1e6),
+      model: result.model,
+      promptVersion: result.promptVersion,
+      inputLength: promptPayload.contextText.length,
+      outputLength: result.output.summary.length,
+      tokenUsage: result.metadata.tokenUsage,
+    });
 
     // Persist analysis
     const savedAnalysis = await analysisRepository.create(uid, {
@@ -201,7 +256,34 @@ aiRouter.post("/suggest-research", async (req: Request, res: Response, next: Nex
 
     const promptPayload = buildResearchSuggestionsPrompt(contextDescriptions, priorSummary);
     const aiService = getAiService();
-    const result = await aiService.generateStructuredAnalysis(promptPayload);
+    const aiStart = process.hrtime.bigint();
+    let result;
+    try {
+      result = await aiService.generateStructuredAnalysis(promptPayload);
+    } catch (err) {
+      logAiSignal({
+        operation: "suggest-research",
+        req,
+        status: "failure",
+        durationMs: Math.round(Number(process.hrtime.bigint() - aiStart) / 1e6),
+        errorType:
+          err instanceof AppError && (err.code === "AI_INVALID_RESPONSE" || err.code === "AI_UNAVAILABLE")
+            ? (err.code as "AI_INVALID_RESPONSE" | "AI_UNAVAILABLE")
+            : "RETRIEVAL_ERROR",
+      });
+      throw err;
+    }
+    logAiSignal({
+      operation: "suggest-research",
+      req,
+      status: "success",
+      durationMs: Math.round(Number(process.hrtime.bigint() - aiStart) / 1e6),
+      model: result.model,
+      promptVersion: result.promptVersion,
+      inputLength: promptPayload.contextText.length,
+      outputLength: result.output.summary.length,
+      tokenUsage: result.metadata.tokenUsage,
+    });
 
     const savedAnalysis = await analysisRepository.create(uid, {
       projectId: projectId ?? null,
@@ -330,7 +412,37 @@ aiRouter.post("/ask", async (req: Request, res: Response, next: NextFunction): P
     // Step 3: Call AI Service with bounded context
     const promptPayload = buildAskGroundedPrompt(question, candidates);
     const aiService = getAiService();
-    const result = await aiService.generateGroundedAnswer(promptPayload);
+    const aiStart = process.hrtime.bigint();
+    let result;
+    try {
+      result = await aiService.generateGroundedAnswer(promptPayload);
+    } catch (err) {
+      logAiSignal({
+        operation: "ask",
+        req,
+        status: "failure",
+        durationMs: Math.round(Number(process.hrtime.bigint() - aiStart) / 1e6),
+        errorType:
+          err instanceof AppError && (err.code === "AI_INVALID_RESPONSE" || err.code === "AI_UNAVAILABLE")
+            ? (err.code as "AI_INVALID_RESPONSE" | "AI_UNAVAILABLE")
+            : "RETRIEVAL_ERROR",
+        candidateCount: candidates.length,
+      });
+      throw err;
+    }
+    logAiSignal({
+      operation: "ask",
+      req,
+      status: "success",
+      durationMs: Math.round(Number(process.hrtime.bigint() - aiStart) / 1e6),
+      model: result.model,
+      promptVersion: result.promptVersion,
+      inputLength: question.length,
+      outputLength: result.output.answer.length,
+      contextLength: promptPayload.contextText.length,
+      candidateCount: candidates.length,
+      tokenUsage: result.metadata.tokenUsage,
+    });
 
     // Step 4: Grounding / Output Validation (Rule 5)
     // Every cited observationId MUST belong to the prompt-included canonical-verified candidates

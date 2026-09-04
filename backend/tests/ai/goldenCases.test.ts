@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest";
-import { z } from "zod";
 import { FakeAIService } from "../../src/ai/adapters/fakeAiService";
 import { StructuredAnalysisOutputSchema } from "../../src/ai/parsers/analysisOutputSchema";
 import { GroundedAnswerOutputSchema } from "../../src/schemas/askSchema";
@@ -74,7 +73,7 @@ describe("Golden-case AI evaluation (AI_EVALUATION §13 #1, §11)", () => {
       { name: "sparse observation (no measurements)", observations: 1 },
     ];
 
-    it.each(cases)("$name: output validates with provenance", async ({ observations }) => {
+    it.each(cases)("$name: output validates with provenance", async () => {
       const service = new FakeAIService();
       const result = await service.generateStructuredAnalysis(
         analysisPayload(OBSERVATION_ANALYSIS_PROMPT_VERSION)
@@ -126,10 +125,10 @@ describe("Golden-case AI evaluation (AI_EVALUATION §13 #1, §11)", () => {
 
   describe("Capability 3 — conversation summary (3 golden cases)", () => {
     it.each([
-      { name: "short 2-turn exchange", turns: 2 },
-      { name: "medium 6-turn exchange", turns: 6 },
-      { name: "long 12-turn exchange", turns: 12 },
-    ])("$name: output validates with provenance", async ({ turns }) => {
+      { name: "short 2-turn exchange" },
+      { name: "medium 6-turn exchange" },
+      { name: "long 12-turn exchange" },
+    ])("$name: output validates with provenance", async () => {
       const service = new FakeAIService();
       const result = await service.generateStructuredAnalysis(
         analysisPayload(CONVERSATION_SUMMARY_PROMPT_VERSION)
