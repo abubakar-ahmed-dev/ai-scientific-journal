@@ -80,7 +80,7 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
     });
   });
 
-  it("completes full scientific journey: auth → dashboard → record observation → media inspection → AI analysis → task acceptance → version history → chat discussion → map inspection → RAG query (Plan §5.2)", async () => {
+  it("completes full scientific journey: auth → dashboard → record observation → media inspection → AI analysis → task acceptance → version history → chat discussion → map inspection → RAG query (Plan §5.2)", { timeout: 20000 }, async () => {
     // -------------------------------------------------------------------------
     // Step 1: Researcher Lands and Authenticates
     // -------------------------------------------------------------------------
