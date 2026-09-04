@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchMessages,
   sendMessage,
+  fetchObservation,
+  fetchProject,
   ApiRequestError,
 } from "../lib/api";
 import type { Conversation, Message } from "../lib/api";
@@ -30,7 +32,39 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const [inputContent, setInputContent] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [failedContent, setFailedContent] = useState<string | null>(null);
+  const [contextTitle, setContextTitle] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Resolve context title (F8: Discussing Observation/Project: [Title])
+  useEffect(() => {
+    if (!conversation.contextId || conversation.contextType === "general") {
+      setContextTitle(null);
+      return;
+    }
+
+    let isMounted = true;
+    if (conversation.contextType === "observation") {
+      fetchObservation(conversation.contextId)
+        .then((res) => {
+          if (isMounted) setContextTitle(res.data.title);
+        })
+        .catch(() => {
+          if (isMounted) setContextTitle(null);
+        });
+    } else if (conversation.contextType === "project") {
+      fetchProject(conversation.contextId)
+        .then((res) => {
+          if (isMounted) setContextTitle(res.data.title);
+        })
+        .catch(() => {
+          if (isMounted) setContextTitle(null);
+        });
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [conversation.contextId, conversation.contextType]);
 
   const {
     data: messagesData,
@@ -113,13 +147,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-            <span className="inline-flex items-center gap-1 font-medium capitalize text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-              <Sparkles className="w-3 h-3" />
-              Context: {conversation.contextType}
-            </span>
-            {conversation.contextId && (
-              <span className="text-slate-400">ID: {conversation.contextId}</span>
+          <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500">
+            {conversation.contextType === "general" ? (
+              <span className="inline-flex items-center gap-1 font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                <Sparkles className="w-3 h-3" />
+                Context: Global Journal
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded">
+                <Sparkles className="w-3 h-3 text-indigo-600" />
+                <span>
+                  Discussing {conversation.contextType === "observation" ? "Observation" : "Project"}:{" "}
+                  <strong>{contextTitle || (conversation.contextId ? `${conversation.contextId.slice(0, 12)}...` : "Unfiled")}</strong>
+                </span>
+              </span>
             )}
             <span className="text-slate-400">•</span>
             <span>{conversation.messageCount} messages</span>
@@ -274,7 +315,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
           <div className="pt-2 flex items-center justify-between text-[11px] text-slate-400">
             <span>AI suggestions should be experimentally verified. Empirical observations remain authoritative ground truth.</span>
-            <span>Markdown supported</span>
+            <span>Plain text formatted</span>
           </div>
         </form>
       )}

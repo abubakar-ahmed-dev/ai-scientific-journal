@@ -7,21 +7,62 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const { currentUser, signOut } = useAuth();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [prevPath, setPrevPath] = useState(location.pathname);
+  const drawerRef = React.useRef<HTMLDivElement>(null);
+  const hamburgerBtnRef = React.useRef<HTMLButtonElement>(null);
 
-  // Close mobile drawer on route change
-  useEffect(() => {
+  // Close mobile drawer on route change without cascading effect
+  if (location.pathname !== prevPath) {
+    setPrevPath(location.pathname);
     setMobileMenuOpen(false);
-  }, [location.pathname]);
+  }
 
-  // Close on Escape key
+  // Focus trap and Escape key handling for mobile drawer (F9)
   useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    // Focus first focusable element inside drawer
+    const focusable = drawerRef.current?.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable && focusable.length > 0) {
+      focusable[0]?.focus();
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && mobileMenuOpen) {
+      if (e.key === "Escape") {
         setMobileMenuOpen(false);
+        hamburgerBtnRef.current?.focus();
+        return;
+      }
+
+      if (e.key === "Tab" && drawerRef.current) {
+        const focusableElements = drawerRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement?.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement?.focus();
+          }
+        }
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [mobileMenuOpen]);
 
   const navLinks = [
@@ -52,6 +93,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           <div className="flex items-center space-x-4 sm:space-x-8">
             {/* Mobile Hamburger Toggle */}
             <button
+              ref={hamburgerBtnRef}
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
@@ -123,6 +165,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             onClick={() => setMobileMenuOpen(false)}
           >
             <div
+              ref={drawerRef}
               className="bg-white border-b border-slate-200 p-4 space-y-2 shadow-xl"
               onClick={(e) => e.stopPropagation()}
             >

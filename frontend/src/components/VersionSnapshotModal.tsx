@@ -14,15 +14,54 @@ export const VersionSnapshotModal: React.FC<VersionSnapshotModalProps> = ({
   onClose,
 }) => {
   const [activeTab, setActiveTab] = useState<"details" | "compare">("details");
+  const modalRef = React.useRef<HTMLDivElement>(null);
+  const previousFocusRef = React.useRef<HTMLElement | null>(null);
 
   useEffect(() => {
+    previousFocusRef.current = document.activeElement as HTMLElement;
+
+    // Focus first focusable element on open
+    const focusable = modalRef.current?.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable && focusable.length > 0) {
+      focusable[0]?.focus();
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
+        return;
+      }
+
+      if (e.key === "Tab" && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement?.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement?.focus();
+          }
+        }
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      previousFocusRef.current?.focus();
+    };
   }, [onClose]);
 
   if (!version) return null;
@@ -36,6 +75,7 @@ export const VersionSnapshotModal: React.FC<VersionSnapshotModalProps> = ({
       onClick={onClose}
     >
       <div
+        ref={modalRef}
         className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
