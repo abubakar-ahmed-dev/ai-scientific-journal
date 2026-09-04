@@ -223,6 +223,7 @@ export interface Observation {
   status: "draft" | "recorded" | "analyzed";
   measurements: Measurement[];
   location?: ObservationLocation | null;
+  mediaCount?: number;
   version: number;
   createdAt: string;
   updatedAt: string;
