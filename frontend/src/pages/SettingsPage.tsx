@@ -112,8 +112,9 @@ export default function SettingsPage() {
 
             {/* Display Name */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Display Name</label>
+              <label htmlFor="settings-display-name" className="block text-sm font-medium text-slate-700 mb-1">Display Name</label>
               <input
+                id="settings-display-name"
                 type="text"
                 required
                 maxLength={100}
@@ -125,8 +126,9 @@ export default function SettingsPage() {
 
             {/* Photo URL */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Photo URL (HTTPS)</label>
+              <label htmlFor="settings-photo-url" className="block text-sm font-medium text-slate-700 mb-1">Photo URL (HTTPS)</label>
               <input
+                id="settings-photo-url"
                 type="url"
                 placeholder="https://example.com/avatar.jpg"
                 value={photoURL}
@@ -141,8 +143,9 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Theme</label>
+                  <label htmlFor="settings-theme" className="block text-xs font-medium text-slate-600 mb-1">Theme</label>
                   <select
+                    id="settings-theme"
                     value={theme}
                     onChange={(e) => setTheme(e.target.value as any)}
                     className="w-full px-3 py-2 border border-slate-300 rounded text-sm bg-white"
@@ -154,8 +157,9 @@ export default function SettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Timezone</label>
+                  <label htmlFor="settings-timezone" className="block text-xs font-medium text-slate-600 mb-1">Timezone</label>
                   <input
+                    id="settings-timezone"
                     type="text"
                     placeholder="UTC or America/New_York"
                     value={timezone}

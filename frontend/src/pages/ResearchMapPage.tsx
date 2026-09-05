@@ -220,8 +220,9 @@ export const ResearchMapPage: React.FC = () => {
 
         {/* Project Filter */}
         <div className="flex items-center gap-1.5">
-          <Layers className="w-4 h-4 text-slate-400" />
+          <Layers className="w-4 h-4 text-slate-400" aria-hidden="true" />
           <select
+            aria-label="Filter by project"
             value={selectedProjectId}
             onChange={(e) => setSelectedProjectId(e.target.value)}
             className="px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
@@ -238,8 +239,9 @@ export const ResearchMapPage: React.FC = () => {
 
         {/* Tag Filter */}
         <div className="flex items-center gap-1.5">
-          <Tag className="w-4 h-4 text-slate-400" />
+          <Tag className="w-4 h-4 text-slate-400" aria-hidden="true" />
           <select
+            aria-label="Filter by tag"
             value={selectedTag}
             onChange={(e) => setSelectedTag(e.target.value)}
             className="px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
@@ -255,8 +257,9 @@ export const ResearchMapPage: React.FC = () => {
 
         {/* Date Filter */}
         <div className="flex items-center gap-1.5">
-          <Calendar className="w-4 h-4 text-slate-400" />
+          <Calendar className="w-4 h-4 text-slate-400" aria-hidden="true" />
           <select
+            aria-label="Filter by date"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
             className="px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"

@@ -77,6 +77,7 @@ export default function ObservationsPage() {
           <form onSubmit={handleSearchSubmit} className="flex gap-2">
             <input
               type="text"
+              aria-label="Search observations"
               placeholder="Search title, description, hypothesis, tags..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -93,8 +94,9 @@ export default function ObservationsPage() {
           <div className="flex flex-wrap gap-4 items-center justify-between text-sm">
             <div className="flex flex-wrap gap-4 items-center">
               <div>
-                <label className="text-xs font-medium text-slate-500 mr-2">Project:</label>
+                <label htmlFor="filter-project" className="text-xs font-medium text-slate-500 mr-2">Project:</label>
                 <select
+                  id="filter-project"
                   value={selectedProject}
                   onChange={(e) => setSelectedProject(e.target.value)}
                   className="px-2.5 py-1.5 border border-slate-300 rounded-md text-sm bg-white"
@@ -110,8 +112,9 @@ export default function ObservationsPage() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-slate-500 mr-2">Status:</label>
+                <label htmlFor="filter-status" className="text-xs font-medium text-slate-500 mr-2">Status:</label>
                 <select
+                  id="filter-status"
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
                   className="px-2.5 py-1.5 border border-slate-300 rounded-md text-sm bg-white"
@@ -126,8 +129,9 @@ export default function ObservationsPage() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-500 mr-2">Sort By:</label>
+              <label htmlFor="sort-by" className="text-xs font-medium text-slate-500 mr-2">Sort By:</label>
               <select
+                id="sort-by"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as "updated" | "observed")}
                 className="px-2.5 py-1.5 border border-slate-300 rounded-md text-sm bg-white"

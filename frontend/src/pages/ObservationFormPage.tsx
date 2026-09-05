@@ -207,10 +207,11 @@ export default function ObservationFormPage() {
           <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-lg border border-slate-200 shadow-sm space-y-6">
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="obs-title" className="block text-sm font-medium text-slate-700 mb-1">
                 Title <span className="text-red-500">*</span>
               </label>
               <input
+                id="obs-title"
                 type="text"
                 required
                 maxLength={200}
@@ -223,10 +224,11 @@ export default function ObservationFormPage() {
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="obs-description" className="block text-sm font-medium text-slate-700 mb-1">
                 Description / Field Notes <span className="text-red-500">*</span>
               </label>
               <textarea
+                id="obs-description"
                 required
                 rows={5}
                 maxLength={20000}
@@ -240,8 +242,9 @@ export default function ObservationFormPage() {
             {/* Project & Status & Observed Date */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Project</label>
+                <label htmlFor="obs-project" className="block text-sm font-medium text-slate-700 mb-1">Project</label>
                 <select
+                  id="obs-project"
                   value={projectId}
                   onChange={(e) => setProjectId(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white"
@@ -264,8 +267,9 @@ export default function ObservationFormPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                <label htmlFor="obs-status" className="block text-sm font-medium text-slate-700 mb-1">Status</label>
                 <select
+                  id="obs-status"
                   value={status}
                   onChange={(e) => setStatus(e.target.value as any)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white"
@@ -277,8 +281,9 @@ export default function ObservationFormPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Observed Date/Time</label>
+                <label htmlFor="obs-observed-at" className="block text-sm font-medium text-slate-700 mb-1">Observed Date/Time</label>
                 <input
+                  id="obs-observed-at"
                   type="datetime-local"
                   value={observedAt}
                   onChange={(e) => setObservedAt(e.target.value)}
@@ -290,8 +295,9 @@ export default function ObservationFormPage() {
             {/* Hypothesis & Supplementary Notes */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Hypothesis (Optional)</label>
+                <label htmlFor="obs-hypothesis" className="block text-sm font-medium text-slate-700 mb-1">Hypothesis (Optional)</label>
                 <textarea
+                  id="obs-hypothesis"
                   rows={3}
                   placeholder="Your initial hypothesis..."
                   value={hypothesis}
@@ -301,8 +307,9 @@ export default function ObservationFormPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Notes (Optional)</label>
+                <label htmlFor="obs-notes" className="block text-sm font-medium text-slate-700 mb-1">Notes (Optional)</label>
                 <textarea
+                  id="obs-notes"
                   rows={3}
                   placeholder="Additional context, equipment used..."
                   value={notes}
@@ -415,8 +422,9 @@ export default function ObservationFormPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Latitude</label>
+                      <label htmlFor="loc-lat" className="block text-xs font-medium text-slate-600 mb-1">Latitude</label>
                       <input
+                        id="loc-lat"
                         type="number"
                         step="any"
                         min={-90}
@@ -427,8 +435,9 @@ export default function ObservationFormPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Longitude</label>
+                      <label htmlFor="loc-lng" className="block text-xs font-medium text-slate-600 mb-1">Longitude</label>
                       <input
+                        id="loc-lng"
                         type="number"
                         step="any"
                         min={-180}
@@ -439,8 +448,9 @@ export default function ObservationFormPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Location Label</label>
+                      <label htmlFor="loc-label" className="block text-xs font-medium text-slate-600 mb-1">Location Label</label>
                       <input
+                        id="loc-label"
                         type="text"
                         placeholder="e.g. Field Station A"
                         value={locationLabel}
@@ -449,8 +459,9 @@ export default function ObservationFormPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Precision</label>
+                      <label htmlFor="loc-precision" className="block text-xs font-medium text-slate-600 mb-1">Precision</label>
                       <select
+                        id="loc-precision"
                         value={precision}
                         onChange={(e) => setPrecision(e.target.value as "exact" | "approximate" | "hidden")}
                         className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm bg-white"

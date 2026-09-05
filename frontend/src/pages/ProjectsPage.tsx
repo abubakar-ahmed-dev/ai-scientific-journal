@@ -92,6 +92,7 @@ export default function ProjectsPage() {
             <button
               key={tab}
               onClick={() => setStatusFilter(tab)}
+              aria-pressed={statusFilter === tab}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition ${
                 statusFilter === tab
                   ? "bg-indigo-600 text-white shadow-2xs"
@@ -108,8 +109,9 @@ export default function ProjectsPage() {
           <form onSubmit={handleCreateProject} className="bg-white p-6 rounded-lg border border-indigo-100 shadow-sm space-y-4">
             <h2 className="text-base font-semibold text-slate-900">Create New Project</h2>
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">Project Title *</label>
+              <label htmlFor="new-project-title" className="block text-xs font-medium text-slate-700 mb-1">Project Title *</label>
               <input
+                id="new-project-title"
                 type="text"
                 required
                 maxLength={200}
@@ -122,8 +124,9 @@ export default function ProjectsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Field / Discipline (Optional)</label>
+                <label htmlFor="new-project-field" className="block text-xs font-medium text-slate-700 mb-1">Field / Discipline (Optional)</label>
                 <input
+                  id="new-project-field"
                   type="text"
                   maxLength={100}
                   placeholder="e.g. Ornithology, Marine Biology"
@@ -134,8 +137,9 @@ export default function ProjectsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Tags (Comma-separated)</label>
+                <label htmlFor="new-project-tags" className="block text-xs font-medium text-slate-700 mb-1">Tags (Comma-separated)</label>
                 <input
+                  id="new-project-tags"
                   type="text"
                   placeholder="birds, migration, weather"
                   value={tagsInput}
@@ -146,8 +150,9 @@ export default function ProjectsPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">Description (Optional)</label>
+              <label htmlFor="new-project-description" className="block text-xs font-medium text-slate-700 mb-1">Description (Optional)</label>
               <textarea
+                id="new-project-description"
                 rows={3}
                 placeholder="Brief summary of research goals..."
                 value={description}

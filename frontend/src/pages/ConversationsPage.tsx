@@ -162,6 +162,7 @@ export const ConversationsPage: React.FC = () => {
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
+              aria-label="Search conversations"
               placeholder="Search chats..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -203,8 +204,17 @@ export const ConversationsPage: React.FC = () => {
               return (
                 <div
                   key={conv.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
                   onClick={() => setSearchParams({ id: conv.id })}
-                  className={`p-3 cursor-pointer transition-colors group flex items-start justify-between gap-2 ${
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSearchParams({ id: conv.id });
+                    }
+                  }}
+                  className={`p-3 cursor-pointer transition-colors group flex items-start justify-between gap-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                     isSelected ? "bg-indigo-50/70 border-l-4 border-indigo-600" : "hover:bg-slate-50"
                   }`}
                 >
@@ -232,8 +242,9 @@ export const ConversationsPage: React.FC = () => {
                           status: conv.status === "active" ? "archived" : "active",
                         });
                       }}
+                      aria-label={conv.status === "active" ? `Archive conversation: ${conv.title}` : `Unarchive conversation: ${conv.title}`}
                       title={conv.status === "active" ? "Archive" : "Unarchive"}
-                      className="p-1 hover:text-indigo-600 text-slate-400 rounded"
+                      className="p-1 hover:text-indigo-600 text-slate-400 rounded focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
                     >
                       <Archive className="w-3.5 h-3.5" />
                     </button>
@@ -243,6 +254,7 @@ export const ConversationsPage: React.FC = () => {
                         setConversationPendingDelete(conv);
                       }}
                       aria-haspopup="dialog"
+                      aria-label={`Delete conversation: ${conv.title}`}
                       title="Delete"
                       className="p-1 hover:text-red-600 text-slate-400 rounded focus:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500"
                     >

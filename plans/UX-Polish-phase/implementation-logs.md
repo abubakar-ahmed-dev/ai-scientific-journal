@@ -147,9 +147,40 @@ ui suites 13/13.
 
 ---
 
+## Block 5 — Accessibility pass
+
+**Status:** Complete.
+
+**What changed**
+- `frontend/src/index.css` (global):
+  - `:focus-visible` outline (indigo, 2px, offset) on every focusable element — keyboard
+    users always see focus; mouse users do not get spurious outlines.
+  - `prefers-reduced-motion: reduce` guard: `animate-pulse` skeletons become effectively
+    static, all transitions/animations minimized (guidelines §48).
+- Accessible names on icon-only buttons (guidelines §44) — all previously tooltip-only
+  (`title`) controls now carry `aria-label` incl. the item name:
+  - ConversationsPage: archive/unarchive, delete (per-conversation labels).
+  - ResearchTasksPage: edit, delete (per-task labels).
+- Form control label associations (`htmlFor`/`id` or `aria-label`):
+  - ObservationsPage: search input (`aria-label`), project/status/sort selects (`htmlFor`).
+  - ProjectsPage: create-project title/field/tags/description fields (`htmlFor`);
+    status filter tabs got `aria-pressed`.
+  - ObservationFormPage: title, description, project, status, observed-at, hypothesis,
+    notes, lat/lng/label/precision — all label-associated.
+  - SettingsPage: display name, photo URL, theme, timezone (`htmlFor`; checkboxes were done).
+  - ResearchMapPage: project/tag/date filter selects (`aria-label`, icons `aria-hidden`).
+  - ConversationsPage: chat search input (`aria-label`).
+- Keyboard operability (guidelines §45): conversation list cards were click-only `<div>`s —
+  now `role="button"`, `tabIndex={0}`, Enter/Space activate, `aria-pressed` for selected,
+  visible focus ring.
+- Icon-only lucide icons next to labeled controls marked `aria-hidden` (decorative).
+
+**Validation:** tsc clean, eslint 0 errors; all 8 affected suites 24/24.
+
+---
+
 ## Remaining blocks (pending)
 
-- **Block 5** — Accessibility sweep (reduced-motion, aria names, focus-visible).
 - **Block 6** — Projects/Tasks search + clear filters, observation-form progressive
   disclosure, Settings grouping + danger zone, breadcrumbs, remaining states.
 

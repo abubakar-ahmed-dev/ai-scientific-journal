@@ -284,6 +284,7 @@ export const ResearchTasksPage: React.FC = () => {
                       type="button"
                       onClick={() => openEditModal(task)}
                       className="text-slate-400 hover:text-indigo-600 p-1 transition-colors"
+                      aria-label={`Edit task: ${task.title}`}
                       title="Edit task"
                     >
                       <Pencil className="w-4 h-4" />
@@ -293,6 +294,7 @@ export const ResearchTasksPage: React.FC = () => {
                       onClick={() => setTaskPendingDelete(task)}
                       aria-haspopup="dialog"
                       className="text-slate-400 hover:text-red-600 p-1 transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500 rounded"
+                      aria-label={`Delete task: ${task.title}`}
                       title="Delete task"
                     >
                       <Trash2 className="w-4 h-4" />
