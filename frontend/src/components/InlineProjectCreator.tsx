@@ -15,6 +15,11 @@ interface InlineProjectCreatorProps {
  * a dropdown (observation form, new-chat modal, research-task creation).
  * Creating a project in place appends it to the list and selects it — the
  * user never loses their in-progress work to visit the projects page.
+ *
+ * Rendered as a <div> (not <form>): this component is always embedded inside
+ * a parent form, and nested <form> elements are invalid HTML — the browser
+ * drops the inner tag, which breaks submission and hydration. Enter in the
+ * title input triggers handleCreate directly instead of a native submit.
  */
 export const InlineProjectCreator: React.FC<InlineProjectCreatorProps> = ({
   onCreated,
@@ -26,8 +31,7 @@ export const InlineProjectCreator: React.FC<InlineProjectCreatorProps> = ({
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreate = async () => {
     if (!title.trim() || creating) return;
     setCreating(true);
     setError(null);
@@ -66,8 +70,7 @@ export const InlineProjectCreator: React.FC<InlineProjectCreatorProps> = ({
   }
 
   return (
-    <form
-      onSubmit={handleCreate}
+    <div
       className={`rounded-md border border-indigo-200 bg-indigo-50/50 ${compact ? "p-2.5 space-y-2" : "p-3 space-y-2.5"}`}
     >
       <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-800">
@@ -80,11 +83,16 @@ export const InlineProjectCreator: React.FC<InlineProjectCreatorProps> = ({
       <input
         autoFocus
         type="text"
-        required
         maxLength={200}
         placeholder="Project title (e.g. Urban Bird Ecology Study)"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault(); // don't submit the surrounding outer form
+            handleCreate();
+          }
+        }}
         className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-indigo-500"
       />
 
@@ -99,7 +107,8 @@ export const InlineProjectCreator: React.FC<InlineProjectCreatorProps> = ({
 
       <div className="flex items-center gap-2">
         <button
-          type="submit"
+          type="button"
+          onClick={handleCreate}
           disabled={!title.trim() || creating}
           className="px-3 py-1.5 bg-indigo-600 text-white rounded text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 transition"
         >
@@ -116,6 +125,6 @@ export const InlineProjectCreator: React.FC<InlineProjectCreatorProps> = ({
           Cancel
         </button>
       </div>
-    </form>
+    </div>
   );
 };
