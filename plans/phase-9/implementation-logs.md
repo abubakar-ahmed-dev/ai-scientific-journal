@@ -115,6 +115,32 @@
   (passes in ~5 s in isolation; default 5 s timeout proved flaky under full-suite parallel
   workers on this machine).
 
+## 2b. Follow-up fix: task project reassignment on edit (user report)
+
+**Problem:** a research task's project association could not be changed after creation —
+`UpdateResearchTaskSchema` (`.strict()`, no `projectId`) rejected the field, the repository
+`update()` ignored it, and the edit modal had no project control. Users could not move a task
+between projects or unfile it.
+
+**Files changed:**
+* `backend/src/schemas/researchTaskSchema.ts` — `UpdateResearchTaskSchema` now accepts
+  `projectId: string | null` (ownership validated in repository; `null` = Unfiled).
+* `backend/src/repository/researchTaskRepository.ts` — `update()` validates target-project
+  ownership (same rule as `create()`) and persists `projectId`.
+* `frontend/src/lib/api.ts` — `updateResearchTask` patch type gains `projectId?: string | null`.
+* `frontend/src/pages/ResearchTasksPage.tsx` — edit modal gains a Project Association select
+  (prefilled with the task's current project, "Unfiled" default) plus the existing
+  `InlineProjectCreator` for in-place project creation; task card shows a project chip when filed.
+* `frontend/src/pages/ResearchTasksPage.test.tsx` — new case: reassign task to another project
+  via edit modal submits `projectId` patch.
+* `backend/tests/integration/researchTasks.test.ts` — new case: move A→B, unfile (null),
+  foreign project id rejected `400 VALIDATION_ERROR`.
+* `docs/API.md` §6.14 — PATCH body documented with `projectId` semantics.
+
+**Validation:** backend integration 9/9 (`vitest run tests/integration/researchTasks.test.ts`),
+backend lint + tsc clean, frontend typecheck clean, frontend task-page tests 4/4, frontend lint
+unchanged (pre-existing warnings only).
+
 ## 3. Validation Performed (final state)
 
 | Gate | Command | Result |

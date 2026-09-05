@@ -434,7 +434,8 @@ Tasks are user-level resources (**ADR-014**). **AI never autonomously creates ta
 
 ### `PATCH /api/v1/research-tasks/:taskId`
 
-* Body: `title`?, `description`?, `status`? — transitions follow `suggested → planned → in_progress → completed`, with `dismissed` allowed from any state (`DATABASE_SCHEMA.md` §17); invalid transitions → `400 VALIDATION_ERROR`.
+* Body: `title`?, `description`?, `status`?, `projectId`? — transitions follow `suggested → planned → in_progress → completed`, with `dismissed` allowed from any state (`DATABASE_SCHEMA.md` §17); invalid transitions → `400 VALIDATION_ERROR`.
+* `projectId` moves the task between projects; `null` files it under "Unfiled". Ownership of the target project is validated; unknown or foreign project → `400 VALIDATION_ERROR`.
 * `200` — updated task.
 
 ### `DELETE /api/v1/research-tasks/:taskId`
