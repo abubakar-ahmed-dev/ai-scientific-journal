@@ -124,4 +124,52 @@ describe("ResearchTasksPage", () => {
       expect(api.updateResearchTask).toHaveBeenCalledWith("task-1", { status: "planned" });
     });
   });
+
+  it("edit modal allows reassigning the task to another project", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    vi.mocked(api.fetchProjects).mockResolvedValue({
+      data: [
+        {
+          id: "proj-42",
+          ownerId: "test-user",
+          title: "Urban Bird Ecology",
+          description: null,
+          field: "ecology",
+          status: "active",
+          tags: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      meta: { hasMore: false, nextCursor: null },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ResearchTasksPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await screen.findByText("Deploy barometric pressure sensor array");
+
+    fireEvent.click(screen.getByTitle("Edit task"));
+
+    // Project select is prefilled to the task's current project (Unfiled here).
+    const projectSelect = await screen.findByLabelText(/project association/i) as HTMLSelectElement;
+    expect(projectSelect.value).toBe("");
+
+    fireEvent.change(projectSelect, { target: { value: "proj-42" } });
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(api.updateResearchTask).toHaveBeenCalledWith("task-1", {
+        projectId: "proj-42",
+      });
+    });
+  });
 });
