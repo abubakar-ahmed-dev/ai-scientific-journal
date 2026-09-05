@@ -7,6 +7,7 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Editable fields
@@ -55,6 +56,9 @@ export default function SettingsPage() {
       });
       setProfile(res.data);
       setMessage({ type: "success", text: "Profile and preferences updated successfully." });
+      // Transient inline "Saved" state (guidelines §38): reassures without a toast.
+      setJustSaved(true);
+      window.setTimeout(() => setJustSaved(false), 2500);
     } catch (err: unknown) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to update profile" });
     } finally {
@@ -194,9 +198,12 @@ export default function SettingsPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-2 bg-indigo-600 text-white rounded text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-50"
+                aria-live="polite"
+                className={`px-6 py-2 text-white rounded text-sm font-medium transition disabled:opacity-50 ${
+                  justSaved && !saving ? "bg-emerald-600" : "bg-indigo-600 hover:bg-indigo-700"
+                }`}
               >
-                {saving ? "Saving..." : "Save Preferences"}
+                {saving ? "Saving..." : justSaved ? "✓ Saved" : "Save Preferences"}
               </button>
             </div>
           </form>

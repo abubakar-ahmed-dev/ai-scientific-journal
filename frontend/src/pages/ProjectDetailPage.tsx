@@ -9,11 +9,14 @@ import {
 } from "../lib/api";
 import type { Project, Observation, ResearchTask } from "../lib/api";
 import { Layout } from "../components/Layout";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { useToast } from "../components/ui/Toast";
 import { FileText, CheckSquare, Plus, Edit2, Trash2, ArrowLeft } from "lucide-react";
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [project, setProject] = useState<Project | null>(null);
   const [observations, setObservations] = useState<Observation[]>([]);
@@ -25,6 +28,7 @@ export default function ProjectDetailPage() {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<"active" | "archived" | "completed">("active");
   const [field, setField] = useState("");
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   async function loadData() {
     if (!id) return;
@@ -65,24 +69,21 @@ export default function ProjectDetailPage() {
       });
       setEditing(false);
       loadData();
+      toast.success("Project updated.");
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to update project");
+      toast.error(err instanceof Error ? err.message : "Failed to update project");
     }
   }
 
   async function handleDelete() {
     if (!id) return;
-    if (
-      window.confirm(
-        "Are you sure you want to delete this project? Note: Associated observations will NOT be deleted; they will be set to unfiled."
-      )
-    ) {
-      try {
-        await deleteProject(id);
-        navigate("/projects");
-      } catch (err: unknown) {
-        alert(err instanceof Error ? err.message : "Failed to delete project");
-      }
+    setConfirmDeleteOpen(false);
+    try {
+      await deleteProject(id);
+      toast.success("Project deleted.");
+      navigate("/projects");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete project");
     }
   }
 
@@ -106,8 +107,9 @@ export default function ProjectDetailPage() {
               <span>{editing ? "Cancel" : "Edit Project"}</span>
             </button>
             <button
-              onClick={handleDelete}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition"
+              onClick={() => setConfirmDeleteOpen(true)}
+              aria-haspopup="dialog"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Delete</span>
@@ -341,6 +343,26 @@ export default function ProjectDetailPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="Delete project?"
+        destructive
+        confirmLabel="Delete Project"
+        message={
+          <>
+            <p>
+              This permanently deletes <strong>{project?.title || "this project"}</strong>. This
+              action cannot be undone.
+            </p>
+            <p className="mt-2">
+              Observations and tasks are not deleted — they will be kept as unfiled.
+            </p>
+          </>
+        }
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDeleteOpen(false)}
+      />
     </Layout>
   );
 }

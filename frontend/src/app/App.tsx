@@ -15,6 +15,7 @@ import SettingsPage from "../pages/SettingsPage";
 
 import { ResearchTasksPage } from "../pages/ResearchTasksPage";
 import { AskMyJournalPage } from "../pages/AskMyJournalPage";
+import { ToastProvider } from "../components/ui/Toast";
 
 // Leaflet + its assets are heavy; split them out of the initial bundle so
 // only map routes pay the download cost.
@@ -44,7 +45,8 @@ export default function App() {
   }
 
   return (
-    <Routes>
+    <ToastProvider>
+      <Routes>
       {/* The landing page is a public home page, not a login-only gate: signed-in
           users can still visit it via the logo and get a "Go to Dashboard" CTA. */}
       <Route path="/" element={<LandingPage />} />
@@ -102,6 +104,7 @@ export default function App() {
       <Route path="/projects" element={<RequireAuth><ProjectsPage /></RequireAuth>} />
       <Route path="/projects/:id" element={<RequireAuth><ProjectDetailPage /></RequireAuth>} />
       <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
-    </Routes>
+      </Routes>
+    </ToastProvider>
   );
 }

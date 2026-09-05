@@ -16,6 +16,8 @@ import type { Observation, ObservationVersion, Analysis, SearchResponseItem } fr
 import { AnalysisViewer } from "../components/AnalysisViewer";
 import { MediaGallery } from "../components/MediaGallery";
 import { VersionSnapshotModal } from "../components/VersionSnapshotModal";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { useToast } from "../components/ui/Toast";
 
 // Leaflet stays out of the detail-page chunk; the mini map loads only when a
 // located observation is actually rendered.
@@ -27,6 +29,7 @@ import { Sparkles, MessageSquare, Lightbulb, ListChecks, BookOpen } from "lucide
 export default function ObservationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const toast = useToast();
   const [observation, setObservation] = useState<Observation | null>(null);
   const [versions, setVersions] = useState<ObservationVersion[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<ObservationVersion | null>(null);
@@ -40,6 +43,7 @@ export default function ObservationDetailPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   async function loadRelated(obs: Observation) {
     try {
@@ -109,14 +113,17 @@ export default function ObservationDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!id || !confirm("Are you sure you want to delete this observation? This action cannot be undone.")) return;
+    if (!id) return;
+    setConfirmDeleteOpen(false);
     try {
       setDeleting(true);
       await deleteObservation(id);
+      toast.success("Observation deleted.");
       navigate("/observations");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to delete observation";
       setError(msg);
+      toast.error(msg);
       setDeleting(false);
     }
   };
@@ -239,9 +246,10 @@ export default function ObservationDetailPage() {
               Edit
             </Link>
             <button
-              onClick={handleDelete}
+              onClick={() => setConfirmDeleteOpen(true)}
               disabled={deleting}
-              className="px-3.5 py-1.5 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 transition"
+              aria-haspopup="dialog"
+              className="px-3.5 py-1.5 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500"
             >
               {deleting ? "Deleting..." : "Delete"}
             </button>
@@ -480,6 +488,25 @@ export default function ObservationDetailPage() {
         version={selectedVersion}
         currentObservation={observation}
         onClose={() => setSelectedVersion(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="Delete observation?"
+        destructive
+        confirmLabel="Delete Observation"
+        message={
+          <>
+            <p>
+              This permanently deletes{" "}
+              <strong>{observation?.title || "this observation"}</strong>, including its media and
+              version history. This action cannot be undone.
+            </p>
+            <p className="mt-2">Any analyses that reference it are not deleted.</p>
+          </>
+        }
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDeleteOpen(false)}
       />
     </Layout>
   );

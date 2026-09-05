@@ -13,6 +13,11 @@ vi.mock("../lib/firebase/authContext", () => ({
   }),
 }));
 
+vi.mock("../components/ui/Toast", () => ({
+  ToastProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useToast: () => ({ success: vi.fn(), error: vi.fn() }),
+}));
+
 vi.mock("../lib/api", () => ({
   fetchProject: vi.fn(),
   fetchObservations: vi.fn(),

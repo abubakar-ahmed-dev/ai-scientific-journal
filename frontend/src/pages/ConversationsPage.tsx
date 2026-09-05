@@ -12,6 +12,8 @@ import {
 import type { Conversation, Project } from "../lib/api";
 import { ChatWindow } from "../components/ChatWindow";
 import { InlineProjectCreator } from "../components/InlineProjectCreator";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { useToast } from "../components/ui/Toast";
 import {
   MessageSquare,
   Plus,
@@ -39,6 +41,8 @@ export const ConversationsPage: React.FC = () => {
   const [newContextType, setNewContextType] = useState<"general" | "observation" | "project">("general");
   const [newContextId, setNewContextId] = useState("");
   const [modalError, setModalError] = useState<string | null>(null);
+  const [conversationPendingDelete, setConversationPendingDelete] = useState<Conversation | null>(null);
+  const toast = useToast();
 
   // Query conversations
   const { data: convsData, isLoading } = useQuery({
@@ -107,6 +111,10 @@ export const ConversationsPage: React.FC = () => {
       if (activeConvId === selectedConversation?.id) {
         setSearchParams({});
       }
+      toast.success("Conversation deleted.");
+    },
+    onError: (err: unknown) => {
+      toast.error(err instanceof Error ? err.message : "Failed to delete conversation");
     },
   });
 
@@ -232,12 +240,11 @@ export const ConversationsPage: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (window.confirm("Are you sure you want to delete this conversation and its messages?")) {
-                          deleteMutation.mutate(conv.id);
-                        }
+                        setConversationPendingDelete(conv);
                       }}
+                      aria-haspopup="dialog"
                       title="Delete"
-                      className="p-1 hover:text-red-600 text-slate-400 rounded"
+                      className="p-1 hover:text-red-600 text-slate-400 rounded focus:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -434,6 +441,25 @@ export const ConversationsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={conversationPendingDelete !== null}
+        title="Delete conversation?"
+        destructive
+        confirmLabel="Delete Conversation"
+        message={
+          <p>
+            This permanently deletes{" "}
+            <strong>{conversationPendingDelete?.title || "this conversation"}</strong> and all of
+            its messages. This action cannot be undone.
+          </p>
+        }
+        onConfirm={() => {
+          if (conversationPendingDelete) deleteMutation.mutate(conversationPendingDelete.id);
+          setConversationPendingDelete(null);
+        }}
+        onCancel={() => setConversationPendingDelete(null)}
+      />
     </div>
   );
 };

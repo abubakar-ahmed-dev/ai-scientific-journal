@@ -23,6 +23,8 @@ import {
 } from "../lib/api";
 import type { ResearchTask, Project } from "../lib/api";
 import { InlineProjectCreator } from "../components/InlineProjectCreator";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { useToast } from "../components/ui/Toast";
 
 type TaskStatusFilter = "all" | "suggested" | "planned" | "in_progress" | "completed" | "dismissed";
 type TaskStatus = Exclude<TaskStatusFilter, "all">;
@@ -46,6 +48,7 @@ const statusLabel = (status: TaskStatus): string =>
 
 export const ResearchTasksPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>("all");
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -58,6 +61,7 @@ export const ResearchTasksPage: React.FC = () => {
   const [editStatus, setEditStatus] = useState<TaskStatus>("planned");
   const [editProjectId, setEditProjectId] = useState<string>("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [taskPendingDelete, setTaskPendingDelete] = useState<ResearchTask | null>(null);
 
   const { data: tasksData, isLoading } = useQuery({
     queryKey: ["researchTasks", statusFilter],
@@ -121,6 +125,10 @@ export const ResearchTasksPage: React.FC = () => {
     mutationFn: (taskId: string) => deleteResearchTask(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["researchTasks"] });
+      toast.success("Task deleted.");
+    },
+    onError: (err: unknown) => {
+      toast.error(err instanceof Error ? err.message : "Failed to delete task");
     },
   });
 
@@ -282,12 +290,9 @@ export const ResearchTasksPage: React.FC = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        if (confirm("Delete this research task?")) {
-                          deleteTaskMutation.mutate(task.id);
-                        }
-                      }}
-                      className="text-slate-400 hover:text-red-600 p-1 transition-colors"
+                      onClick={() => setTaskPendingDelete(task)}
+                      aria-haspopup="dialog"
+                      className="text-slate-400 hover:text-red-600 p-1 transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500 rounded"
                       title="Delete task"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -575,6 +580,24 @@ export const ResearchTasksPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={taskPendingDelete !== null}
+        title="Delete task?"
+        destructive
+        confirmLabel="Delete Task"
+        message={
+          <p>
+            This permanently deletes the task{" "}
+            <strong>{taskPendingDelete?.title || ""}</strong>. This action cannot be undone.
+          </p>
+        }
+        onConfirm={() => {
+          if (taskPendingDelete) deleteTaskMutation.mutate(taskPendingDelete.id);
+          setTaskPendingDelete(null);
+        }}
+        onCancel={() => setTaskPendingDelete(null)}
+      />
     </div>
   );
 };
