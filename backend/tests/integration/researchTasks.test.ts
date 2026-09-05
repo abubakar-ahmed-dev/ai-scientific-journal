@@ -313,4 +313,54 @@ describe("Research Tasks API (/api/v1/research-tasks)", () => {
     expect(getRes.status).toBe(404);
     expect(getRes.body.error.code).toBe("NOT_FOUND");
   });
+
+  it("PATCH moves a task between projects and validates ownership", async () => {
+    // 1. Seed two owned projects + one task filed under project A
+    const projectAPath = `users/${USER_A.uid}/projects/proj_a`;
+    const projectBPath = `users/${USER_A.uid}/projects/proj_b`;
+    inMemoryDb.set(projectAPath, { id: "proj_a", ownerId: USER_A.uid, title: "Project A" });
+    inMemoryDb.set(projectBPath, { id: "proj_b", ownerId: USER_A.uid, title: "Project B" });
+
+    const createRes = await request(app)
+      .post("/api/v1/research-tasks")
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
+      .send({
+        source: "user",
+        title: "Movable Task",
+        description: "Testing project reassignment",
+        projectId: "proj_a",
+      });
+    expect(createRes.status).toBe(201);
+    const taskId = createRes.body.data.id;
+    expect(createRes.body.data.projectId).toBe("proj_a");
+
+    // 2. Move to project B
+    const moveRes = await request(app)
+      .patch(`/api/v1/research-tasks/${taskId}`)
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
+      .send({ projectId: "proj_b" });
+
+    expect(moveRes.status).toBe(200);
+    expect(moveRes.body.data.projectId).toBe("proj_b");
+
+    // 3. Unfile (null projectId)
+    const unfileRes = await request(app)
+      .patch(`/api/v1/research-tasks/${taskId}`)
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
+      .send({ projectId: null });
+
+    expect(unfileRes.status).toBe(200);
+    expect(unfileRes.body.data.projectId).toBeNull();
+
+    // 4. Foreign project id rejected
+    const projectBUserBPath = `users/${USER_B.uid}/projects/proj_bob`;
+    inMemoryDb.set(projectBUserBPath, { id: "proj_bob", ownerId: USER_B.uid, title: "Bob Project" });
+    const foreignRes = await request(app)
+      .patch(`/api/v1/research-tasks/${taskId}`)
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
+      .send({ projectId: "proj_bob" });
+
+    expect(foreignRes.status).toBe(400);
+    expect(foreignRes.body.error.code).toBe("VALIDATION_ERROR");
+  });
 });

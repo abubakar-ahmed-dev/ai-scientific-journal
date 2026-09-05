@@ -223,6 +223,20 @@ export class ResearchTaskRepository {
     if (patch.title !== undefined) updateData.title = patch.title;
     if (patch.description !== undefined) updateData.description = patch.description;
     if (patch.status !== undefined) updateData.status = patch.status;
+    if (patch.projectId !== undefined) {
+      // Ownership of the target project validated like in create() — a null
+      // projectId is a legal "move to Unfiled" operation.
+      if (patch.projectId) {
+        const project = await projectRepository.findById(uid, patch.projectId);
+        if (!project) {
+          throw new AppError(
+            "VALIDATION_ERROR",
+            `Referenced project '${patch.projectId}' does not exist`
+          );
+        }
+      }
+      updateData.projectId = patch.projectId;
+    }
     if (patch.relatedObservationIds !== undefined) updateData.relatedObservationIds = patch.relatedObservationIds;
 
     await docRef.update(updateData);
