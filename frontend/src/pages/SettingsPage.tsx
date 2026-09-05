@@ -42,7 +42,10 @@ export default function SettingsPage() {
     try {
       const res = await updateMe({
         displayName,
-        photoURL: photoURL || null,
+        // API.md §6.2: photoURL must be a valid HTTPS URL when present — omit
+        // the key entirely rather than sending null (the schema is
+        // .optional(), not nullable, and empty string is invalid).
+        ...(photoURL.trim() ? { photoURL: photoURL.trim() } : {}),
         preferences: {
           theme,
           timezone,
