@@ -14,6 +14,7 @@ import {
   Settings,
 } from "lucide-react";
 import { useAuth } from "../lib/firebase/authContext";
+import { CommandPalette } from "./CommandPalette";
 
 interface NavLinkItem {
   to: string;
@@ -56,9 +57,22 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const { currentUser, signOut } = useAuth();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [prevPath, setPrevPath] = useState(location.pathname);
   const drawerRef = React.useRef<HTMLDivElement>(null);
   const hamburgerBtnRef = React.useRef<HTMLButtonElement>(null);
+
+  // Global Ctrl/Cmd+K opens the command palette (guidelines §6/§45).
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Close mobile drawer on route change without cascading effect
   if (location.pathname !== prevPath) {
@@ -203,8 +217,22 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </Link>
           </div>
 
-          {/* User Profile & Sign Out */}
+          {/* User Profile, Command Palette trigger & Sign Out */}
           <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              aria-label="Open command palette"
+              aria-haspopup="dialog"
+              className="hidden sm:flex items-center gap-2 pl-2.5 pr-1.5 py-1.5 text-xs text-slate-400 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span className="font-medium">Search…</span>
+              <kbd className="text-[10px] font-semibold text-slate-400 bg-white border border-slate-200 rounded px-1 py-0.5">
+                Ctrl K
+              </kbd>
+            </button>
+
             {currentUser && (
               <div className="flex items-center space-x-2 text-xs text-slate-600 bg-slate-50 py-1 px-2.5 rounded-full border border-slate-200">
                 <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-[10px]">
@@ -301,6 +329,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</div>
         </main>
       </div>
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   );
 };

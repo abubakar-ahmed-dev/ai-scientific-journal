@@ -91,11 +91,64 @@ Record per-block progress. Follows `plans/UX-Polish-phase/plan.md`.
 
 ---
 
+## Block 3 — Feedback primitives & destructive actions
+
+**Status:** Complete. Commit: `feat(frontend): accessible confirm dialogs, toasts, and saved states`.
+
+**What changed**
+- New primitives in `frontend/src/components/ui/`:
+  - `Dialog.tsx` — accessible modal: `role="dialog"` + `aria-modal` + accessible name,
+    Escape closes, Tab focus trap, focus restored to the triggering element on close.
+  - `ConfirmDialog.tsx` — destructive variant (red confirm button + warning icon, `autoFocus`
+    on Cancel-first flow avoided: confirm focused for non-destructive, red for destructive);
+    consequence text slot; used for all destructive confirmations (guidelines §53).
+  - `Toast.tsx` — `ToastProvider` + `useToast()` (`success`/`error`), 4.5 s auto-dismiss,
+    manual dismiss buttons, `aria-live="polite"` region, `role="status"`/`role="alert"`.
+    Provider mounted once in `App.tsx`.
+- Replaced all 4 `window.confirm()` call sites with `ConfirmDialog`:
+  - Project delete: states the project is permanently deleted and that observations/tasks are
+    kept as unfiled (matches `projectRepository.delete()` side effect, DATABASE_SCHEMA §19).
+  - Observation delete: observation + media + version history deleted; analyses kept.
+  - Conversation delete: conversation + all messages deleted.
+  - Task delete: task deleted.
+  - Delete triggers carry `aria-haspopup="dialog"` + `focus-visible` rings.
+- Toasts wired into project/observation/conversation/task create/update/delete success and
+  failure paths. Routine saves stay inline: SettingsPage button now shows `Saving…` →
+  `✓ Saved` transient state (2.5 s, green) instead of a toast (guidelines §38/§39).
+- Tests: `components/ui/ui.test.tsx` (6 cases: confirm actions/Escape/closed state; toast
+  roles, manual dismiss, auto-dismiss, provider guard). Conversations/ResearchTasks/
+  ProjectDetail/e2eJourney suites updated with a Toast module mock.
+
+**Validation:** tsc clean, eslint 0 errors, affected suites 13/13.
+
+---
+
+## Block 4 — Command palette MVP
+
+**Status:** Complete, awaiting user browser verification.
+
+**What changed**
+- `frontend/src/components/CommandPalette.tsx` (new): Ctrl/Cmd+K palette (guidelines §7/§45).
+  - Sources — real capabilities only: 8 page-nav items, 4 quick actions (New Observation,
+    Ask Journal, Open AI Chat, Create Task), plus 5 most-recent projects and 5 most-recent
+    observations fetched on open via existing list endpoints.
+  - Query filters item labels/sections only — no fake full-text search (guidelines §7).
+  - Keyboard-first: input autofocused, ↑/↓ cycle, Enter activates, Esc closes,
+    Tab wraps input↔list; `role="dialog"` + `aria-modal`, `role="listbox"`/`option`
+    with `aria-selected`, hover syncs active row, `⏎` hint icon on active row.
+  - Focus restored to the trigger on close.
+- `Layout.tsx`: global Ctrl/Cmd+K listener (toggle), header `Search… Ctrl K` button
+  (hidden on xs, real behavior — opens the palette), palette mounted at shell root.
+- Tests: `CommandPalette.test.tsx` (5 cases: closed/open render, query filter,
+  recent projects/observations load, arrow+Escape, Enter-activates-closes).
+
+**Validation:** tsc clean, eslint 0 errors, palette + Layout + e2eJourney + Dashboard +
+ui suites 13/13.
+
+---
+
 ## Remaining blocks (pending)
 
-- **Block 3** — Dialog/ConfirmDialog/Toast primitives; replace 4 `window.confirm()` sites;
-  project-delete consequence copy; Saved states.
-- **Block 4** — Ctrl/Cmd+K command palette MVP (page nav, quick actions, recent items).
 - **Block 5** — Accessibility sweep (reduced-motion, aria names, focus-visible).
 - **Block 6** — Projects/Tasks search + clear filters, observation-form progressive
   disclosure, Settings grouping + danger zone, breadcrumbs, remaining states.
