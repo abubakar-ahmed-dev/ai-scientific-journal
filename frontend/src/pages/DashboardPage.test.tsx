@@ -26,100 +26,101 @@ vi.mock("../lib/firebase/authContext", () => ({
   }),
 }));
 
+const OBSERVATION = {
+  id: "obs_1",
+  ownerId: "user_test",
+  projectId: "proj_1",
+  title: "Microbial Colony Formation",
+  description: "Noticed rapid bacterial growth at 37C incubator.",
+  notes: null,
+  hypothesis: null,
+  observedAt: "2026-09-01T10:00:00Z",
+  location: { latitude: 34.05, longitude: -118.24, precision: "exact" as const, label: "Lab Station 3" },
+  tags: ["biology", "bacteria"],
+  measurements: [{ name: "Temperature", value: 37, unit: "C" }],
+  status: "recorded" as const,
+  mediaCount: 1,
+  version: 1,
+  createdAt: "2026-09-01T10:00:00Z",
+  updatedAt: "2026-09-01T10:00:00Z",
+};
+
+const PROJECT = {
+  id: "proj_1",
+  ownerId: "user_test",
+  title: "Enzyme Kinetics Study",
+  description: "Active research project",
+  field: "Biochemistry",
+  tags: ["kinetics"],
+  status: "active" as const,
+  createdAt: "2026-09-01T10:00:00Z",
+  updatedAt: "2026-09-01T10:00:00Z",
+};
+
+const TASK = {
+  id: "task_1",
+  ownerId: "user_test",
+  projectId: "proj_1",
+  relatedObservationIds: ["obs_1"],
+  title: "Replicate assay with control group",
+  description: "Ensure reproducibility of colony growth.",
+  status: "planned" as const,
+  source: "user" as const,
+  sourceAnalysisId: null,
+  createdAt: "2026-09-01T10:00:00Z",
+  updatedAt: "2026-09-01T10:00:00Z",
+};
+
+const ANALYSIS = {
+  id: "analysis_1",
+  ownerId: "user_test",
+  projectId: null,
+  observationIds: ["obs_1"],
+  conversationId: null,
+  type: "analysis" as const,
+  summary: "Exponential growth detected in bacterial samples.",
+  keyFindings: ["Growth rate 2x higher than baseline"],
+  hypotheses: [],
+  uncertainties: [],
+  suggestedQuestions: [],
+  openQuestions: [],
+  suggestedNextSteps: ["Replicate the growth assay with a control group"],
+  model: "gemini-2.5-flash",
+  promptVersion: "observation-analysis-v1",
+  createdAt: "2026-09-01T10:00:00Z",
+};
+
+function mockApis(overrides: {
+  observations?: ReturnType<typeof vi.fn>,
+  projects?: ReturnType<typeof vi.fn>,
+  tasks?: ReturnType<typeof vi.fn>,
+  conversations?: ReturnType<typeof vi.fn>,
+  analyses?: ReturnType<typeof vi.fn>,
+} = {}) {
+  vi.mocked(api.fetchObservations).mockResolvedValue(
+    overrides.observations ?? { data: [OBSERVATION], meta: { limit: 6, hasMore: true } }
+  );
+  vi.mocked(api.fetchProjects).mockResolvedValue(
+    overrides.projects ?? { data: [PROJECT], meta: { limit: 50, hasMore: false } }
+  );
+  vi.mocked(api.fetchResearchTasks).mockResolvedValue(
+    overrides.tasks ?? { data: [TASK], meta: { limit: 50, hasMore: false } }
+  );
+  vi.mocked(api.fetchConversations).mockResolvedValue(
+    overrides.conversations ?? { data: [], meta: { limit: 5 } }
+  );
+  vi.mocked(api.fetchAnalyses).mockResolvedValue(
+    overrides.analyses ?? { data: [ANALYSIS], meta: { limit: 5 } }
+  );
+}
+
 describe("DashboardPage Component", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("renders metric cards and populated recent observation list with 4 quick actions", async () => {
-    vi.mocked(api.fetchObservations).mockResolvedValue({
-      data: [
-        {
-          id: "obs_1",
-          ownerId: "user_test",
-          projectId: null,
-          title: "Microbial Colony Formation",
-          description: "Noticed rapid bacterial growth at 37C incubator.",
-          notes: null,
-          hypothesis: null,
-          observedAt: "2026-09-01T10:00:00Z",
-          location: { latitude: 34.05, longitude: -118.24, precision: "exact", label: "Lab Station 3" },
-          tags: ["biology", "bacteria"],
-          measurements: [{ name: "Temperature", value: 37, unit: "C" }],
-          status: "recorded",
-          mediaCount: 1,
-          version: 1,
-          createdAt: "2026-09-01T10:00:00Z",
-          updatedAt: "2026-09-01T10:00:00Z",
-        },
-      ],
-      meta: { limit: 6, hasMore: true },
-    });
-
-    vi.mocked(api.fetchProjects).mockResolvedValue({
-      data: [
-        {
-          id: "proj_1",
-          ownerId: "user_test",
-          title: "Enzyme Kinetics Study",
-          description: "Active research project",
-          field: "Biochemistry",
-          tags: ["kinetics"],
-          status: "active",
-          createdAt: "2026-09-01T10:00:00Z",
-          updatedAt: "2026-09-01T10:00:00Z",
-        },
-      ],
-      meta: { limit: 50, hasMore: false },
-    });
-
-    vi.mocked(api.fetchResearchTasks).mockResolvedValue({
-      data: [
-        {
-          id: "task_1",
-          ownerId: "user_test",
-          projectId: null,
-          relatedObservationIds: ["obs_1"],
-          title: "Replicate assay with control group",
-          description: "Ensure reproducibility of colony growth.",
-          status: "planned",
-          source: "user",
-          sourceAnalysisId: null,
-          createdAt: "2026-09-01T10:00:00Z",
-          updatedAt: "2026-09-01T10:00:00Z",
-        },
-      ],
-      meta: { limit: 50, hasMore: false },
-    });
-
-    vi.mocked(api.fetchConversations).mockResolvedValue({
-      data: [],
-      meta: { limit: 5 },
-    });
-
-    vi.mocked(api.fetchAnalyses).mockResolvedValue({
-      data: [
-        {
-          id: "analysis_1",
-          ownerId: "user_test",
-          projectId: null,
-          observationIds: ["obs_1"],
-          conversationId: null,
-          type: "analysis",
-          summary: "Exponential growth detected in bacterial samples.",
-          keyFindings: ["Growth rate 2x higher than baseline"],
-          hypotheses: [],
-          uncertainties: [],
-          suggestedQuestions: [],
-          openQuestions: [],
-          suggestedNextSteps: [],
-          model: "gemini-2.5-flash",
-          promptVersion: "observation-analysis-v1",
-          createdAt: "2026-09-01T10:00:00Z",
-        },
-      ],
-      meta: { limit: 5 },
-    });
+  it("renders greeting, current research hero, honest metrics, and 4 canonical quick actions", async () => {
+    mockApis();
 
     render(
       <MemoryRouter>
@@ -127,45 +128,51 @@ describe("DashboardPage Component", () => {
       </MemoryRouter>
     );
 
-    // Header
-    expect(screen.getByRole("heading", { name: /research dashboard/i })).toBeInTheDocument();
+    // Time-based greeting header (guidelines §10), not a generic title
+    expect(
+      screen.getByRole("heading", { name: /good (morning|afternoon|evening)/i })
+    ).toBeInTheDocument();
 
-    // Honest metric titles
-    expect(screen.getAllByText("Recent Observations")[0]).toBeInTheDocument();
-    expect(screen.getByText("Active Projects")).toBeInTheDocument();
-    expect(screen.getByText("Pending Tasks")).toBeInTheDocument();
-    expect(screen.getAllByText("Recent AI Analyses")[0]).toBeInTheDocument();
-
-    // Wait for observation to load
+    // Current Research hero surfaces the most recent active project with honest stats
     await waitFor(() => {
-      expect(screen.getByText("Microbial Colony Formation")).toBeInTheDocument();
+      expect(screen.getByText("Enzyme Kinetics Study")).toBeInTheDocument();
     });
+    expect(screen.getByText("Current Research", { selector: "p" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /continue research/i })).toBeInTheDocument();
+    expect(screen.getByText(/last activity:/i)).toBeInTheDocument();
 
-    // hasMore indicator on observations (1+)
+    // Honest metric titles with "+" hasMore indicator on observations
+    expect(screen.getByText("Observations", { selector: "span.text-xs" })).toBeInTheDocument();
+    expect(screen.getByText("Active Projects", { selector: "span.text-xs" })).toBeInTheDocument();
+    expect(screen.getByText("Open Tasks", { selector: "span.text-xs" })).toBeInTheDocument();
+    expect(screen.getByText("AI Analyses", { selector: "span.text-xs" })).toBeInTheDocument();
     expect(screen.getByText("+")).toBeInTheDocument();
 
-    // Verify observation details
+    // Verify observation details loaded (title appears in list + activity feed)
+    expect(screen.getAllByText("Microbial Colony Formation").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Noticed rapid bacterial growth at 37C incubator.")).toBeInTheDocument();
     expect(screen.getByText("1 files attached")).toBeInTheDocument();
-    expect(screen.getByText("Lab Station 3")).toBeInTheDocument();
 
-    // Verify all 4 quick action links (F11)
-    expect(screen.getAllByRole("link", { name: /ask my journal/i })[0]).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: /research map/i })[0]).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /ai scientific chat/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /research projects/i })).toBeInTheDocument();
+    // The 4 canonical quick actions (New Observation / Ask Journal / AI Chat / Add Task)
+    expect(screen.getAllByRole("link", { name: /new observation/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("link", { name: /ask journal search your knowledge/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /ai chat work with ai/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /add task plan your work/i })).toBeInTheDocument();
 
-    // Verify task and analysis loaded
+    // Prioritized task summary + AI suggestion panel (labeled, not stated as fact)
     expect(screen.getByText("Replicate assay with control group")).toBeInTheDocument();
-    expect(screen.getByText("Exponential growth detected in bacterial samples.")).toBeInTheDocument();
+    expect(screen.getByText("AI suggestion", { selector: "p" })).toBeInTheDocument();
+    // Panel surfaces the analysis' first suggested next step
+    expect(screen.getByText(/replicate the growth assay with a control group/i)).toBeInTheDocument();
   });
 
-  it("handles empty states gracefully when no records exist", async () => {
-    vi.mocked(api.fetchObservations).mockResolvedValue({ data: [], meta: { limit: 6 } });
-    vi.mocked(api.fetchProjects).mockResolvedValue({ data: [], meta: { limit: 50 } });
-    vi.mocked(api.fetchResearchTasks).mockResolvedValue({ data: [], meta: { limit: 50 } });
-    vi.mocked(api.fetchConversations).mockResolvedValue({ data: [], meta: { limit: 5 } });
-    vi.mocked(api.fetchAnalyses).mockResolvedValue({ data: [], meta: { limit: 5 } });
+  it("shows the onboarding state when the workspace has no projects and no observations", async () => {
+    mockApis({
+      observations: { data: [], meta: { limit: 6 } },
+      projects: { data: [], meta: { limit: 50 } },
+      tasks: { data: [], meta: { limit: 50 } },
+      analyses: { data: [], meta: { limit: 5 } },
+    });
 
     render(
       <MemoryRouter>
@@ -174,19 +181,24 @@ describe("DashboardPage Component", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/no observations logged yet/i)).toBeInTheDocument();
+      expect(screen.getByText(/your research workspace is ready/i)).toBeInTheDocument();
     });
 
-    expect(screen.getByRole("link", { name: /log first observation/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /create project/i })).toBeInTheDocument();
+    expect(screen.getByText("1. Create your first project")).toBeInTheDocument();
+    expect(screen.getByText("2. Record your first observation")).toBeInTheDocument();
+    expect(screen.getByText("3. Explore the journal AI")).toBeInTheDocument();
+    // The regular hero should not render in onboarding mode
+    expect(screen.queryByText(/continue research/i)).not.toBeInTheDocument();
   });
 
   it("handles partial fetch failures with reachable retry banner and section error state (F6)", async () => {
     // Observations fail; other endpoints succeed
     vi.mocked(api.fetchObservations).mockRejectedValue(new Error("Network connection lost"));
-    vi.mocked(api.fetchProjects).mockResolvedValue({ data: [], meta: { limit: 50 } });
-    vi.mocked(api.fetchResearchTasks).mockResolvedValue({ data: [], meta: { limit: 50 } });
+    vi.mocked(api.fetchProjects).mockResolvedValue({ data: [PROJECT], meta: { limit: 50 } });
+    vi.mocked(api.fetchResearchTasks).mockResolvedValue({ data: [TASK], meta: { limit: 50 } });
     vi.mocked(api.fetchConversations).mockResolvedValue({ data: [], meta: { limit: 5 } });
-    vi.mocked(api.fetchAnalyses).mockResolvedValue({ data: [], meta: { limit: 5 } });
+    vi.mocked(api.fetchAnalyses).mockResolvedValue({ data: [ANALYSIS], meta: { limit: 5 } });
 
     render(
       <MemoryRouter>

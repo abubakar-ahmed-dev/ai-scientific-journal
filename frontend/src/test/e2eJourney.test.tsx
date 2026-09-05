@@ -158,12 +158,16 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Alpine Lichen Photosynthesis under UV")).toBeInTheDocument();
+      // Title renders in observation list and again in the activity feed
+      expect(
+        screen.getAllByText("Alpine Lichen Photosynthesis under UV").length
+      ).toBeGreaterThanOrEqual(1);
     });
 
     expect(screen.getByText("Jungfraujoch Ridge")).toBeInTheDocument();
     expect(screen.getByText("1 files attached")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /research projects/i })).toBeInTheDocument();
+    // Old "Research Projects" quick-action card replaced by "View all projects" hero link
+    expect(screen.getByRole("link", { name: /view all projects/i })).toBeInTheDocument();
     unmountDashboard();
 
     // -------------------------------------------------------------------------
