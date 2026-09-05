@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   Sparkles,
   Compass,
@@ -13,13 +12,6 @@ import { useAuth } from "../lib/firebase/authContext";
 
 export default function LandingPage() {
   const { currentUser, loading, signInWithGoogle } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (currentUser) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [currentUser, navigate]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-indigo-500 selection:text-white">
@@ -36,13 +28,22 @@ export default function LandingPage() {
           </div>
 
           <div>
-            <button
-              onClick={() => signInWithGoogle()}
-              disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-md transition shadow-xs focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center gap-2"
-            >
-              Sign In with Google
-            </button>
+            {currentUser ? (
+              <Link
+                to="/dashboard"
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-md transition shadow-xs focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 inline-flex items-center gap-2"
+              >
+                Go to Dashboard
+              </Link>
+            ) : (
+              <button
+                onClick={() => signInWithGoogle()}
+                disabled={loading}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-md transition shadow-xs focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center gap-2"
+              >
+                Sign In with Google
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -71,14 +72,24 @@ export default function LandingPage() {
             </p>
 
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button
-                onClick={() => signInWithGoogle()}
-                disabled={loading}
-                className="w-full sm:w-auto px-8 py-3.5 text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg transition shadow-md hover:shadow-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500 flex items-center justify-center gap-2"
-              >
-                <span>Enter Research Journal</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              {currentUser ? (
+                <Link
+                  to="/dashboard"
+                  className="w-full sm:w-auto px-8 py-3.5 text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg transition shadow-md hover:shadow-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500 flex items-center justify-center gap-2"
+                >
+                  <span>Go to Dashboard</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              ) : (
+                <button
+                  onClick={() => signInWithGoogle()}
+                  disabled={loading}
+                  className="w-full sm:w-auto px-8 py-3.5 text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg transition shadow-md hover:shadow-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500 flex items-center justify-center gap-2"
+                >
+                  <span>Enter Research Journal</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             <div className="pt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500 font-medium">

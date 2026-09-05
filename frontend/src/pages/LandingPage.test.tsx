@@ -72,7 +72,7 @@ describe("LandingPage", () => {
     expect(screen.getByText("Synthesize with RAG")).toBeInTheDocument();
   });
 
-  it("redirects authenticated researchers directly to /dashboard (Plan §2.1 / F10)", () => {
+  it("shows a Go to Dashboard CTA instead of sign-in buttons for signed-in researchers", () => {
     vi.mocked(authContext.useAuth).mockReturnValue({
       currentUser: { uid: "user_active_scientist", email: "scientist@alps.ch" } as any,
       loading: false,
@@ -89,6 +89,10 @@ describe("LandingPage", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByTestId("dashboard-target")).toBeInTheDocument();
+    // The landing page remains accessible as a public home page (logo target);
+    // signed-in users get navigation CTAs rather than a forced redirect.
+    expect(screen.getAllByRole("link", { name: /go to dashboard/i }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /sign in with google/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /enter research journal/i })).not.toBeInTheDocument();
   });
 });

@@ -414,8 +414,12 @@ export default function DashboardPage() {
                   <CheckSquare className="w-4 h-4 text-amber-600" />
                   <span>Research Tasks</span>
                 </h3>
-                <Link to="/tasks" className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
-                  Board &rarr;
+                <Link
+                  to="/tasks"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 transition focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                >
+                  Open Tasks Board
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
 

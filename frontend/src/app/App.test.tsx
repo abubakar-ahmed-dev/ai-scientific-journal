@@ -35,6 +35,18 @@ describe("App routing guards", () => {
     expect(screen.getByText("Landing Page")).toBeInTheDocument();
   });
 
+  it("renders the landing page for signed-in users at / (logo target)", () => {
+    vi.mocked(authContext.useAuth).mockReturnValue({
+      currentUser: { uid: "user_1", email: "s@lab.org" } as never,
+      loading: false,
+      signInWithGoogle: vi.fn(),
+      signOut: vi.fn(),
+    });
+
+    renderAt("/");
+    expect(screen.getByText("Landing Page")).toBeInTheDocument();
+  });
+
   it("redirects signed-out users from /dashboard to / (logout fix)", () => {
     vi.mocked(authContext.useAuth).mockReturnValue({
       currentUser: null,

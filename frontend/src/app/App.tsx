@@ -33,7 +33,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  const { currentUser, loading } = useAuth();
+  const { loading } = useAuth();
 
   if (loading) {
     return (
@@ -45,7 +45,9 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/" element={currentUser ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
+      {/* The landing page is a public home page, not a login-only gate: signed-in
+          users can still visit it via the logo and get a "Go to Dashboard" CTA. */}
+      <Route path="/" element={<LandingPage />} />
       <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
       <Route path="/observations" element={<RequireAuth><ObservationsPage /></RequireAuth>} />
       <Route path="/observations/new" element={<RequireAuth><ObservationFormPage /></RequireAuth>} />

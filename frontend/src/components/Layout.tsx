@@ -105,8 +105,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </button>
 
             <Link
-              to="/dashboard"
+              to="/"
               className="flex items-center space-x-2 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 rounded-md"
+              title="Go to homepage"
             >
               <span className="text-xl font-bold bg-linear-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
                 AI Scientific Journal
