@@ -48,11 +48,12 @@ describe("Layout Component", () => {
 
     fireEvent.click(toggleButton);
     expect(screen.getByRole("button", { name: /close navigation menu/i })).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("navigation", { name: /mobile navigation/i })).toBeInTheDocument();
+    // Drawer reuses the grouped nav model; the drawer container is rendered when open.
+    expect(screen.getByLabelText(/mobile navigation/i)).toBeInTheDocument();
 
     // Clicking close toggles it back
     fireEvent.click(screen.getByRole("button", { name: /close navigation menu/i }));
-    expect(screen.queryByRole("navigation", { name: /mobile navigation/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/mobile navigation/i)).not.toBeInTheDocument();
   });
 
   it("triggers signOut when clicking Sign Out button", () => {
