@@ -179,10 +179,42 @@ ui suites 13/13.
 
 ---
 
-## Remaining blocks (pending)
+## Block 6 — Secondary refinements
 
-- **Block 6** — Projects/Tasks search + clear filters, observation-form progressive
-  disclosure, Settings grouping + danger zone, breadcrumbs, remaining states.
+**Status:** Complete.
+
+**What changed**
+- **Projects search + clear filters** (guidelines §51): search input filters by
+  title/field/tags client-side; status tabs + search combined under one "Clear filters"
+  action shown only when filters are active; empty state distinguishes "no projects yet"
+  from "no matches". Also replaced the last `alert()` (project create error) with a toast
+  and added a success toast.
+- **Tasks filter clarity**: status tabs wrapped in a labelled `role="group"`, tabs carry
+  `aria-pressed`, a "Clear filter" link appears next to the tabs when a status filter is set.
+- **Observation form progressive disclosure** (guidelines §52): hypothesis, notes,
+  measurements, location, and tags moved into a native `<details>` "Advanced Fields" section
+  (collapsed for new observations, expanded in edit mode so existing data stays visible).
+  Keyboard-accessible with no extra JS; tag remove buttons got `aria-label`s.
+- **Settings grouping** (guidelines §30/§54): restructured into labelled sections —
+  Account (read-only), Researcher Profile (`fieldset`/`legend`), Application Preferences
+  (`fieldset`/`legend`) — plus an honest "Your research data" privacy note. No fake danger
+  zone: account deletion does not exist in the backend, so none was added.
+- **Build hygiene discovered during validation**: `npm run build` surfaced pre-existing
+  type errors in test files that `tsc --noEmit` (project references) was not catching —
+  fixed `ui.test.tsx` unused imports, `DashboardPage.test.tsx` mock typing helper, and an
+  unused/`Conversation`-typed state in `DashboardPage.tsx`. Build now passes cleanly.
+
+**Validation:** `npm run build` clean (chunk-size advisory only), lint 0 errors,
+10 affected suites 27/27.
+
+---
+
+## Phase status
+
+All 6 blocks complete. Remaining deferred items (explicit non-goals, see plan §1/§5):
+breadcrumbs (flat hierarchy — little value today), full-suite vitest worker OOM on
+MarkdownText (pre-existing environment issue, documented in Block 2), notifications
+(no backend capability).
 
 **Environment note for future blocks:** full-suite vitest runs on this machine are flaky
 (worker fork OOM ~2 GB ceiling on MarkdownText suite; pre-existing). Run touched suites

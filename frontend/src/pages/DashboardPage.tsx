@@ -71,7 +71,9 @@ export default function DashboardPage() {
   const [observations, setObservations] = useState<Observation[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<ResearchTask[]>([]);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  // Conversation count is fetched but only its settlement is surfaced (via retry
+  // banner); the list itself is not displayed on the dashboard.
+  const [, setConversations] = useState<Conversation[]>([]);
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

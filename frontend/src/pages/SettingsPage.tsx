@@ -94,6 +94,7 @@ export default function SettingsPage() {
           <form onSubmit={handleSave} className="bg-white p-6 sm:p-8 rounded-lg border border-slate-200 shadow-sm space-y-6">
             {/* Read-Only Account Details */}
             <div className="bg-slate-50 p-4 rounded-md border border-slate-200 space-y-2 text-xs text-slate-600">
+              <h2 className="text-sm font-semibold text-slate-800">Account</h2>
               <div>
                 <strong>Firebase UID:</strong> {profile?.ownerId}
               </div>
@@ -110,8 +111,12 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* Display Name */}
-            <div>
+            {/* Profile section */}
+            <fieldset className="space-y-4 border-0 p-0">
+              <legend className="text-sm font-semibold text-slate-800 pb-1">Researcher Profile</legend>
+
+              {/* Display Name */}
+              <div>
               <label htmlFor="settings-display-name" className="block text-sm font-medium text-slate-700 mb-1">Display Name</label>
               <input
                 id="settings-display-name"
@@ -136,10 +141,11 @@ export default function SettingsPage() {
                 className="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-indigo-500"
               />
             </div>
+            </fieldset>
 
             {/* Preferences */}
-            <div className="space-y-4 pt-4 border-t border-slate-200">
-              <h2 className="text-sm font-semibold text-slate-800">Application Preferences</h2>
+            <fieldset className="space-y-4 border-0 p-0 pt-4 border-t border-slate-200">
+              <legend className="text-sm font-semibold text-slate-800 pb-1">Application Preferences</legend>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -196,6 +202,15 @@ export default function SettingsPage() {
                   </label>
                 </div>
               </div>
+            </fieldset>
+
+            {/* Data Safety note (guidelines §54): honest, no unsupported claims */}
+            <div className="p-4 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
+              <p className="font-semibold text-slate-700">Your research data</p>
+              <p>
+                Observations, projects, and media are stored privately under your account and
+                are never shared with other users. Deletion of a record is permanent.
+              </p>
             </div>
 
             <div className="pt-4 border-t border-slate-200 flex justify-end">

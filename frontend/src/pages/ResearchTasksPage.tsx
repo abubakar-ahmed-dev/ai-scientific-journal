@@ -229,22 +229,39 @@ export const ResearchTasksPage: React.FC = () => {
         </div>
       )}
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-1 overflow-x-auto bg-slate-100/80 p-1 rounded-xl w-fit">
-        {(["all", "suggested", "planned", "in_progress", "completed", "dismissed"] as TaskStatusFilter[]).map((tab) => (
+      {/* Filter Tabs (guidelines §51) */}
+      <div className="flex items-center gap-3">
+        <div
+          role="group"
+          aria-label="Filter tasks by status"
+          className="flex items-center gap-1 overflow-x-auto bg-slate-100/80 p-1 rounded-xl w-fit"
+        >
+          {(["all", "suggested", "planned", "in_progress", "completed", "dismissed"] as TaskStatusFilter[]).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setStatusFilter(tab)}
+              aria-pressed={statusFilter === tab}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all capitalize ${
+                statusFilter === tab
+                  ? "bg-white text-slate-900 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              {tab.replace("_", " ")}
+            </button>
+          ))}
+        </div>
+
+        {statusFilter !== "all" && (
           <button
-            key={tab}
             type="button"
-            onClick={() => setStatusFilter(tab)}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all capitalize ${
-              statusFilter === tab
-                ? "bg-white text-slate-900 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
+            onClick={() => setStatusFilter("all")}
+            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 shrink-0"
           >
-            {tab.replace("_", " ")}
+            Clear filter
           </button>
-        ))}
+        )}
       </div>
 
       {/* Tasks Grid / List */}

@@ -90,27 +90,29 @@ const ANALYSIS = {
   createdAt: "2026-09-01T10:00:00Z",
 };
 
+type ApiMock<T> = { data: T[]; meta: { limit: number; hasMore?: boolean } };
+
 function mockApis(overrides: {
-  observations?: ReturnType<typeof vi.fn>,
-  projects?: ReturnType<typeof vi.fn>,
-  tasks?: ReturnType<typeof vi.fn>,
-  conversations?: ReturnType<typeof vi.fn>,
-  analyses?: ReturnType<typeof vi.fn>,
+  observations?: ApiMock<typeof OBSERVATION>;
+  projects?: ApiMock<typeof PROJECT>;
+  tasks?: ApiMock<typeof TASK>;
+  conversations?: ApiMock<never>;
+  analyses?: ApiMock<typeof ANALYSIS>;
 } = {}) {
   vi.mocked(api.fetchObservations).mockResolvedValue(
-    overrides.observations ?? { data: [OBSERVATION], meta: { limit: 6, hasMore: true } }
+    overrides.observations ?? ({ data: [OBSERVATION], meta: { limit: 6, hasMore: true } } as ApiMock<typeof OBSERVATION>)
   );
   vi.mocked(api.fetchProjects).mockResolvedValue(
-    overrides.projects ?? { data: [PROJECT], meta: { limit: 50, hasMore: false } }
+    overrides.projects ?? ({ data: [PROJECT], meta: { limit: 50, hasMore: false } } as ApiMock<typeof PROJECT>)
   );
   vi.mocked(api.fetchResearchTasks).mockResolvedValue(
-    overrides.tasks ?? { data: [TASK], meta: { limit: 50, hasMore: false } }
+    overrides.tasks ?? ({ data: [TASK], meta: { limit: 50, hasMore: false } } as ApiMock<typeof TASK>)
   );
   vi.mocked(api.fetchConversations).mockResolvedValue(
-    overrides.conversations ?? { data: [], meta: { limit: 5 } }
+    overrides.conversations ?? ({ data: [], meta: { limit: 5 } } as ApiMock<never>)
   );
   vi.mocked(api.fetchAnalyses).mockResolvedValue(
-    overrides.analyses ?? { data: [ANALYSIS], meta: { limit: 5 } }
+    overrides.analyses ?? ({ data: [ANALYSIS], meta: { limit: 5 } } as ApiMock<typeof ANALYSIS>)
   );
 }
 

@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import { fetchProjects, createProject } from "../lib/api";
 import type { Project } from "../lib/api";
 import { Layout } from "../components/Layout";
+import { useToast } from "../components/ui/Toast";
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const toast = useToast();
 
   // New Project Form
   const [showCreate, setShowCreate] = useState(false);
@@ -54,8 +56,9 @@ export default function ProjectsPage() {
       setTagsInput("");
       setShowCreate(false);
       loadProjects();
+      toast.success("Project created.");
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to create project");
+      toast.error(err instanceof Error ? err.message : "Failed to create project");
     } finally {
       setCreating(false);
     }
@@ -63,10 +66,19 @@ export default function ProjectsPage() {
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed" | "archived">("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredProjects = projects.filter(
-    (p) => statusFilter === "all" || p.status === statusFilter
-  );
+  const filteredProjects = projects.filter((p) => {
+    if (statusFilter !== "all" && p.status !== statusFilter) return false;
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      const haystack = `${p.title} ${p.field ?? ""} ${p.tags.join(" ")}`.toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const hasActiveFilters = statusFilter !== "all" || searchQuery.trim() !== "";
 
   return (
     <Layout>
@@ -86,8 +98,8 @@ export default function ProjectsPage() {
           </button>
         </div>
 
-        {/* Status Filter Tabs */}
-        <div className="flex space-x-2 border-b border-slate-200 pb-2">
+        {/* Search + Status Filter Tabs (guidelines §51) */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 border-b border-slate-200 pb-2">
           {(["all", "active", "completed", "archived"] as const).map((tab) => (
             <button
               key={tab}
@@ -102,6 +114,29 @@ export default function ProjectsPage() {
               {tab} ({tab === "all" ? projects.length : projects.filter((p) => p.status === tab).length})
             </button>
           ))}
+
+          <div className="sm:ml-auto flex items-center gap-2">
+            <input
+              type="text"
+              aria-label="Search projects"
+              placeholder="Search projects..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="px-3 py-1.5 rounded-md text-xs border border-slate-200 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 w-48"
+            />
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setStatusFilter("all");
+                }}
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Create Project Panel */}
@@ -186,7 +221,11 @@ export default function ProjectsPage() {
         ) : filteredProjects.length === 0 ? (
           <div className="bg-white p-12 text-center rounded-lg border border-slate-200">
             <p className="text-slate-500 text-sm">
-              {projects.length === 0 ? "No projects created yet." : `No ${statusFilter} projects found.`}
+              {projects.length === 0
+                ? "No projects created yet."
+                : hasActiveFilters
+                ? "No projects match your filters."
+                : `No ${statusFilter} projects found.`}
             </p>
             {projects.length === 0 && (
               <button

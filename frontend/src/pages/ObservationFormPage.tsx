@@ -292,8 +292,19 @@ export default function ObservationFormPage() {
               </div>
             </div>
 
-            {/* Hypothesis & Supplementary Notes */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Advanced fields (guidelines §52): collapsed by default so the
+                common path — title, notes, project, save — stays fast. Native
+                <details> keeps it keyboard-accessible without extra JS. */}
+            <details className="group advanced-fields" open={isEdit || undefined}>
+              <summary className="flex items-center gap-2 cursor-pointer select-none text-sm font-semibold text-indigo-700 hover:text-indigo-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-md px-1 py-1.5 w-fit">
+                <span className="group-open:hidden">＋ Advanced Fields</span>
+                <span className="hidden group-open:inline">－ Advanced Fields</span>
+                <span className="text-xs font-normal text-slate-400">(hypothesis, measurements, location, tags)</span>
+              </summary>
+
+              <div className="space-y-6 pt-4">
+                {/* Hypothesis & Supplementary Notes */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="obs-hypothesis" className="block text-sm font-medium text-slate-700 mb-1">Hypothesis (Optional)</label>
                 <textarea
@@ -486,39 +497,47 @@ export default function ObservationFormPage() {
             </div>
 
             {/* Tags Section */}
-            <div className="space-y-2 pt-2 border-t border-slate-200">
-              <label className="block text-sm font-semibold text-slate-800">Tags</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Add a tag and press Add"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  className="flex-1 px-3 py-1.5 border border-slate-300 rounded text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={addTag}
-                  className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm rounded font-medium"
-                >
-                  Add Tag
-                </button>
-              </div>
-
-              <div className="flex flex-wrap gap-2 pt-2">
-                {tags.map((t) => (
-                  <span
-                    key={t}
-                    className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded text-xs"
+              <div className="space-y-2 pt-2 border-t border-slate-200">
+                <label className="block text-sm font-semibold text-slate-800">Tags</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    aria-label="Add a tag"
+                    placeholder="Add a tag and press Add"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    className="flex-1 px-3 py-1.5 border border-slate-300 rounded text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={addTag}
+                    className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm rounded font-medium"
                   >
-                    #{t}
-                    <button type="button" onClick={() => removeTag(t)} className="text-indigo-400 hover:text-indigo-700">
-                      &times;
-                    </button>
-                  </span>
-                ))}
+                    Add Tag
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {tags.map((t) => (
+                    <span
+                      key={t}
+                      className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded text-xs"
+                    >
+                      #{t}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(t)}
+                        aria-label={`Remove tag: ${t}`}
+                        className="text-indigo-400 hover:text-indigo-700"
+                      >
+                        &times;
+                      </button>
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+              </div>
+            </details>
 
             {/* Submit Button */}
             <div className="pt-4 border-t border-slate-200 flex justify-end space-x-3">
