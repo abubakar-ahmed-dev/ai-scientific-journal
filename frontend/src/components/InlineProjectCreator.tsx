@@ -35,7 +35,6 @@ export const InlineProjectCreator: React.FC<InlineProjectCreatorProps> = ({
       const res = await createProject({
         title: title.trim(),
         field: field.trim() || null,
-        status: "active",
       });
       onCreated(res.data);
       setTitle("");
