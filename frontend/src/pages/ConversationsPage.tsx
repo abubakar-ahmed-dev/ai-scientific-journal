@@ -9,8 +9,9 @@ import {
   fetchObservations,
   fetchProjects,
 } from "../lib/api";
-import type { Conversation } from "../lib/api";
+import type { Conversation, Project } from "../lib/api";
 import { ChatWindow } from "../components/ChatWindow";
+import { InlineProjectCreator } from "../components/InlineProjectCreator";
 import {
   MessageSquare,
   Plus,
@@ -54,7 +55,7 @@ export const ConversationsPage: React.FC = () => {
     enabled: isNewChatModalOpen && newContextType === "observation",
   });
 
-  const { data: projData } = useQuery({
+  const { data: projData, refetch: refetchProjects } = useQuery({
     queryKey: ["projects-modal"],
     queryFn: () => fetchProjects({ limit: 50 }),
     enabled: isNewChatModalOpen && newContextType === "project",
@@ -401,6 +402,15 @@ export const ConversationsPage: React.FC = () => {
                       </option>
                     ))}
                   </select>
+                  <div className="mt-2">
+                    <InlineProjectCreator
+                      compact
+                      onCreated={(project: Project) => {
+                        refetchProjects();
+                        setNewContextId(project.id);
+                      }}
+                    />
+                  </div>
                 </div>
               )}
 

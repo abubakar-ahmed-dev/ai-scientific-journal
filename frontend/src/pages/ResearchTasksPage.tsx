@@ -20,6 +20,7 @@ import {
   fetchProjects,
 } from "../lib/api";
 import type { ResearchTask, Project } from "../lib/api";
+import { InlineProjectCreator } from "../components/InlineProjectCreator";
 
 type TaskStatusFilter = "all" | "suggested" | "planned" | "in_progress" | "completed" | "dismissed";
 
@@ -332,6 +333,15 @@ export const ResearchTasksPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
+                <div className="pt-1">
+                  <InlineProjectCreator
+                    compact
+                    onCreated={(project: Project) => {
+                      queryClient.invalidateQueries({ queryKey: ["projects"] });
+                      setNewProjectId(project.id);
+                    }}
+                  />
+                </div>
               </div>
 
               <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">

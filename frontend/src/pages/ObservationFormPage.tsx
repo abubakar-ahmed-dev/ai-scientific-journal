@@ -8,6 +8,7 @@ import {
 } from "../lib/api";
 import type { Project, Measurement } from "../lib/api";
 import { Layout } from "../components/Layout";
+import { InlineProjectCreator } from "../components/InlineProjectCreator";
 import { MapPin, Loader2, Info } from "lucide-react";
 
 export default function ObservationFormPage() {
@@ -252,6 +253,14 @@ export default function ObservationFormPage() {
                     </option>
                   ))}
                 </select>
+                <div className="mt-1.5">
+                  <InlineProjectCreator
+                    onCreated={(project) => {
+                      setProjects((prev) => [...prev, project]);
+                      setProjectId(project.id);
+                    }}
+                  />
+                </div>
               </div>
 
               <div>
