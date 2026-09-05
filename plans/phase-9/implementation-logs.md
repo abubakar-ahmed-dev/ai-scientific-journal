@@ -141,6 +141,24 @@ between projects or unfile it.
 backend lint + tsc clean, frontend typecheck clean, frontend task-page tests 4/4, frontend lint
 unchanged (pre-existing warnings only).
 
+### Follow-up fix: inline project creation failed everywhere it was embedded (user report)
+
+**Problem:** creating a project from the inline creator (task edit/create modal, new-chat modal,
+observation form) always failed, while the projects-page form worked. Root cause:
+`InlineProjectCreator` sent `status: "active"` in the POST body, but the backend's
+`CreateProjectSchema` is `.strict()` with no `status` field → `400 VALIDATION_ERROR` on every
+inline creation. The projects-page form omits `status` (the repository defaults it to
+`"active"`), which is why only that path worked.
+
+**Files changed:**
+* `frontend/src/components/InlineProjectCreator.tsx` — dropped `status` from the
+  `createProject` payload (repository already defaults `status: "active"`).
+* `frontend/src/components/InlineProjectCreator.test.tsx` (new) — regression guard asserting
+  the payload contains only schema-legal fields, plus an error-path case.
+
+**Validation:** creator tests 2/2, dependent suites (ResearchTasksPage, ConversationsPage) 5/5,
+frontend tsc clean, lint 0 errors.
+
 ## 3. Validation Performed (final state)
 
 | Gate | Command | Result |
