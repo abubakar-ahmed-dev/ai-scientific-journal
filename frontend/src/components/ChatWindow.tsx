@@ -8,6 +8,7 @@ import {
   ApiRequestError,
 } from "../lib/api";
 import type { Conversation, Message } from "../lib/api";
+import { MarkdownText } from "./MarkdownText";
 import {
   Send,
   Sparkles,
@@ -213,7 +214,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       : "bg-white text-slate-800 border border-slate-200 rounded-bl-none"
                   }`}
                 >
-                  <div className="whitespace-pre-wrap">{msg.content}</div>
+                  {isUser ? (
+                    // User-typed content stays plain text; only AI-authored
+                    // messages get (untrusted-safe) markdown rendering.
+                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                  ) : (
+                    <MarkdownText content={msg.content} />
+                  )}
 
                   {!isUser && (msg.model || msg.metadata) && (
                     <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-3 text-[10px] text-slate-400">
@@ -315,7 +322,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
           <div className="pt-2 flex items-center justify-between text-[11px] text-slate-400">
             <span>AI suggestions should be experimentally verified. Empirical observations remain authoritative ground truth.</span>
-            <span>Plain text formatted</span>
+            <span>AI replies use light markdown</span>
           </div>
         </form>
       )}
