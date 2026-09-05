@@ -31,6 +31,8 @@ const envSchema = z.object({
   AI_RAG_MAX_CONTEXT_OBSERVATIONS: z.coerce.number().int().positive().default(5),
   AI_RAG_CONTEXT_CHAR_BUDGET: z.coerce.number().int().positive().default(12000),
   STORAGE_BUCKET: z.string().default("ai-scientific-journal-media"),
+  // Optional logging override (e.g. LOG_LEVEL=warn quiets local request logs).
+  LOG_LEVEL: z.enum(["debug", "info", "warn", "error", "silent"]).optional(),
   MEDIA_MAX_IMAGE_SIZE_BYTES: z.coerce.number().int().positive().default(10 * 1024 * 1024),
   MEDIA_MAX_AUDIO_SIZE_BYTES: z.coerce.number().int().positive().default(25 * 1024 * 1024),
   MEDIA_MAX_VIDEO_SIZE_BYTES: z.coerce.number().int().positive().default(100 * 1024 * 1024),
