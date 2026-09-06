@@ -1,6 +1,6 @@
 # AI Evaluation
 
-**Status:** Canonical for AI quality assurance (aligned with ADR-009, ADR-010, ADR-015, ADR-017, ADR-018 and `AI_ARCHITECTURE.md`)
+**Status:** Canonical for AI quality assurance (aligned with ADR-009, ADR-010, ADR-015, ADR-017, ADR-018, ADR-021 and `AI_ARCHITECTURE.md`)
 **Last updated:** 2026-09-02
 **Product:** AI Scientific Journal
 

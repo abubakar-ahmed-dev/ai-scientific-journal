@@ -1,6 +1,6 @@
 # Observability
 
-**Status:** Canonical for observability (aligned with ADR-008, ADR-011, ADR-013 – ADR-018 and the canonical `API.md`, `SECURITY.md`, `AI_ARCHITECTURE.md`, `TESTING.md`)
+**Status:** Canonical for observability (aligned with ADR-008, ADR-011, ADR-013 – ADR-018, ADR-021 and the canonical `API.md`, `SECURITY.md`, `AI_ARCHITECTURE.md`, `TESTING.md`)
 **Last updated:** 2026-09-02
 **Product:** AI Scientific Journal
 

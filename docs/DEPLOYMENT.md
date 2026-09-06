@@ -1,6 +1,6 @@
 # Deployment Guide
 
-**Status:** Canonical for deployment (aligned with ADR-005, ADR-008, ADR-013 – ADR-020 and the canonical `DATABASE_SCHEMA.md`, `API.md`, `SECURITY.md`, `TECHNICAL_ARCHITECTURE.md`)
+**Status:** Canonical for deployment (aligned with ADR-005, ADR-008, ADR-013 – ADR-020, ADR-021 and the canonical `DATABASE_SCHEMA.md`, `API.md`, `SECURITY.md`, `TECHNICAL_ARCHITECTURE.md`)
 **Last updated:** 2026-09-02
 **Product:** AI Scientific Journal
 
@@ -55,7 +55,10 @@ Staging is optional and deferred — introduce it only if a real need emerges. P
 * **Build:** frontend production build + backend TypeScript compilation inside the image build; the running container serves the compiled application.
 * **Port:** the container **must listen on the port provided by Cloud Run** (`PORT` environment variable) — never a hardcoded port.
 * **Start:** a single production start command; the application validates configuration at startup and **fails fast** on missing required values (TA §44).
-* No secrets are present at build time; the image contains code and static assets only.
+* No backend secrets are present at build time; the image contains code and static assets only.
+* Vite frontend configuration is build-time configuration. Public Firebase web identifiers
+  (`VITE_FIREBASE_*`) must be passed into the Docker build as build args; Cloud Run runtime
+  environment variables cannot change an already-built frontend bundle.
 
 ---
 
@@ -70,7 +73,7 @@ The production image:
 * **Excludes** secrets and local artifacts:
 
 ```text
-.env, .env.local, service-account*.json, credentials.json,
+.env, .env.*, service-account*.json, credentials.json,
 private keys, test fixtures, node_modules dev dependencies
 ```
 
@@ -148,7 +151,7 @@ Git commit → GitHub
    ↓
 Automated checks (lint, typecheck, tests, build — per TESTING.md §15)
    ↓
-Docker image build
+Cloud Build / Docker image build
    ↓
 Artifact Registry
    ↓
@@ -158,14 +161,19 @@ Post-deploy smoke tests (§13)
 ```
 
 * **CI/CD scope:** GitHub Actions is the established CI stack (PRD §8) for checks and build. **Production deployment itself may be performed manually via `gcloud` for the MVP** — a fully automated deploy pipeline is not required and must not be introduced merely for convention. If automated deployment is added later, it is a process change, not an architecture change.
-* Example conceptual deploy (exact region/project filled at deployment):
+* MVP deployment uses `infrastructure/cloud-run/cloudbuild.yaml` to build the Dockerfile and
+  pass the public Firebase web config to Vite via Docker build args. The resulting image is
+  deployed with `gcloud run deploy --image ...`.
+* Example conceptual deploy (exact region/project/image filled at deployment):
 
 ```bash
 gcloud run deploy ai-scientific-journal \
-  --source . \
+  --image <REGION>-docker.pkg.dev/<PROJECT>/<REPOSITORY>/app:<TAG> \
   --region <REGION> \
   --service-account <runtime-sa> \
-  --set-secrets GEMINI_API_KEY=<secret>:latest
+  --set-env-vars NODE_ENV=production,FIREBASE_PROJECT_ID=<PROJECT>,STORAGE_BUCKET=<BUCKET>,CORS_ORIGIN=<ORIGIN> \
+  --set-secrets GEMINI_API_KEY=<secret>:latest \
+  --allow-unauthenticated
 ```
 
 ---

@@ -1,6 +1,6 @@
 # Testing
 
-**Status:** Canonical for test strategy (aligned with ADR-009, ADR-010, ADR-013 – ADR-018 and the canonical `DATABASE_SCHEMA.md`, `API.md`, `SECURITY.md`, `AI_ARCHITECTURE.md`)
+**Status:** Canonical for test strategy (aligned with ADR-009, ADR-010, ADR-013 – ADR-018, ADR-021 and the canonical `DATABASE_SCHEMA.md`, `API.md`, `SECURITY.md`, `AI_ARCHITECTURE.md`)
 **Last updated:** 2026-09-02
 **Product:** AI Scientific Journal
 
@@ -46,9 +46,9 @@ Pure logic with no I/O. Targets:
 Real dependencies behind controlled seams (emulators/in-memory stubs, §12):
 
 * Firebase Authentication token verification (valid, expired, malformed, wrong-audience tokens).
-* Firestore operations through the repository layer: CRUD for observations, projects, conversations/messages, analyses, research tasks; transactional counter updates (`messageCount`, `mediaCount`); cascade behaviors per `DATABASE_SCHEMA.md` §19 (observation delete → versions/media/index; project delete → re-file to `null`, never delete; conversation delete → messages).
+* Firestore operations through the repository layer: CRUD for observations, projects, conversations/messages, analyses, research tasks; transactional counter updates (`messageCount`, `mediaCount`); cascade behaviors per `DATABASE_SCHEMA.md` §19 (observation delete → versions/media/index; project delete → re-file user records to `null` but **retain analyses' `projectId`** per ADR-021; conversation delete → messages).
 * **RETAIN semantics:** deleting a source observation leaves its analyses intact with dangling references (`DATABASE_SCHEMA.md` §12).
-* Derived-index lifecycle: `observationSearch` written/updated on observation write, deleted with it (ADR-017).
+* Derived-index lifecycle: `observationSearch` written/updated asynchronously after the observation write (a failed index write never fails the observation — PRD NFR-02), deleted with it; stale/missing entries repaired by retry (ADR-017).
 * Storage integration: upload → backend-derived path → metadata document; delete removes object + metadata (media phase onward).
 
 ---
@@ -155,7 +155,7 @@ Software-level integration of the AI pipeline, with **quality evaluation deliber
 
 Two distinct software-test concerns, both derived-data rules from ADR-017:
 
-1. **Retrieval plumbing** — index written/updated on observation write; deleted with the observation; queries resolve only within the caller's `users/{uid}/observationSearch` subtree; results re-verified against canonical observations before use. Correctness *of relevance/ranking* is an evaluation problem, not a test problem.
+1. **Retrieval plumbing** — index written/updated asynchronously after the observation write (observation success never depends on index success); deleted with the observation; queries resolve only within the caller's `users/{uid}/observationSearch` subtree; results re-verified against canonical observations before use. Correctness *of relevance/ranking* is an evaluation problem, not a test problem.
 2. **Isolation assertions** — with multi-user fixtures, retrieval for User A never returns User B records, regardless of prompt content (assertion on retrieval output, outside any model).
 
 **Evaluation methodology** — retrieval recall/precision, groundedness rates, insufficient-evidence behavior, and all scoring — is defined in `AI_EVALUATION.md` §5 and §9 and is not duplicated here.

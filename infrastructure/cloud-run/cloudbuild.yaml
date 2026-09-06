@@ -1,0 +1,35 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_IMAGE}
+      - --build-arg
+      - VITE_API_BASE_URL=${_VITE_API_BASE_URL}
+      - --build-arg
+      - VITE_FIREBASE_API_KEY=${_VITE_FIREBASE_API_KEY}
+      - --build-arg
+      - VITE_FIREBASE_AUTH_DOMAIN=${_VITE_FIREBASE_AUTH_DOMAIN}
+      - --build-arg
+      - VITE_FIREBASE_PROJECT_ID=${_VITE_FIREBASE_PROJECT_ID}
+      - --build-arg
+      - VITE_FIREBASE_APP_ID=${_VITE_FIREBASE_APP_ID}
+      - --build-arg
+      - VITE_USE_FIREBASE_EMULATORS=
+      - --build-arg
+      - VITE_FIREBASE_AUTH_EMULATOR_HOST=
+      - .
+
+images:
+  - ${_IMAGE}
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _IMAGE: us-central1-docker.pkg.dev/demo-test/ai-scientific-journal/app:manual
+  _VITE_API_BASE_URL: /api/v1
+  _VITE_FIREBASE_API_KEY: demo-key
+  _VITE_FIREBASE_AUTH_DOMAIN: demo-test.firebaseapp.com
+  _VITE_FIREBASE_PROJECT_ID: demo-test
+  _VITE_FIREBASE_APP_ID: 1:123456789:web:abcdef

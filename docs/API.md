@@ -1,6 +1,6 @@
 # API Specification
 
-**Status:** Canonical (aligned with ADR-013 – ADR-018 and the canonical `DATABASE_SCHEMA.md`)
+**Status:** Canonical (aligned with ADR-013 – ADR-018, ADR-021 and the canonical `DATABASE_SCHEMA.md`)
 **Last updated:** 2026-09-02
 **Product:** AI Scientific Journal
 
@@ -257,7 +257,7 @@ Projects are **optional organizational resources** (**ADR-014**). Nothing in the
 | ------ | ------------- |
 | `GET` | `200` — project; `404` if missing or foreign |
 | `PATCH` | Body: `title`?, `description`?, `field`?, `tags`?, `status`? (`active\|archived\|completed`; setting `archived` also sets `archivedAt` server-side) · optional `expectedVersion` for optimistic locking (§6.6 note) · `200` updated |
-| `DELETE` | `204`. **Side effects (per `DATABASE_SCHEMA.md` §19):** observations and other records with `projectId == deleted` are set to `projectId: null` (**unfiled — never deleted**); no cascade deletion of user content. Idempotent: deleting a missing/foreign project returns `404` on first attempt |
+| `DELETE` | `204`. **Side effects (per `DATABASE_SCHEMA.md` §19, ADR-021):** observations, conversations, and research tasks with `projectId == deleted` are set to `projectId: null` (**unfiled — never deleted**); **analyses retain their `projectId` unchanged** as a dangling historical reference (append-only artifacts are never mutated by project deletion); no cascade deletion of user content. Idempotent: deleting a missing/foreign project returns `404` on first attempt |
 
 ---
 
@@ -434,7 +434,8 @@ Tasks are user-level resources (**ADR-014**). **AI never autonomously creates ta
 
 ### `PATCH /api/v1/research-tasks/:taskId`
 
-* Body: `title`?, `description`?, `status`? — transitions follow `suggested → planned → in_progress → completed`, with `dismissed` allowed from any state (`DATABASE_SCHEMA.md` §17); invalid transitions → `400 VALIDATION_ERROR`.
+* Body: `title`?, `description`?, `status`?, `projectId`? — transitions follow `suggested → planned → in_progress → completed`, with `dismissed` allowed from any state (`DATABASE_SCHEMA.md` §17); invalid transitions → `400 VALIDATION_ERROR`.
+* `projectId` moves the task between projects; `null` files it under "Unfiled". Ownership of the target project is validated; unknown or foreign project → `400 VALIDATION_ERROR`.
 * `200` — updated task.
 
 ### `DELETE /api/v1/research-tasks/:taskId`
@@ -497,7 +498,7 @@ All AI endpoints: authenticated, rate-limited (AI tier), `Idempotency-Key`-aware
 
 | Deleted | Cascade | Retained |
 | ------- | ------- | -------- |
-| Project | Referencing records become `projectId: null` (**unfiled**, never deleted) | — |
+| Project | Observations, conversations, research tasks referencing it become `projectId: null` (**unfiled**, never deleted) | **Analyses referencing it** (dangling `projectId` retained — ADR-021) |
 | Observation | versions, media (metadata + binaries), derived index entry | **Analyses referencing it** (dangling refs, §7.2) |
 | Conversation | messages | **Analyses sourced from it** |
 | Media | binary + metadata; `mediaCount` decremented | — |
@@ -505,7 +506,7 @@ All AI endpoints: authenticated, rate-limited (AI tier), `Idempotency-Key`-aware
 
 ### 7.2 Dangling analysis references
 
-Because analyses are historical, append-only records (**ADR-015**; approved RETAIN decision), an analysis may reference an observation that has since been deleted. Contract: API consumers must treat every `observationIds[]` / `supportingObservationIds[]` entry as *possibly missing*, resolve existence via the observations API (or `includeSources=summary`), and render a graceful "source deleted" state. The server never resolves existence from the analysis itself; the canonical `observations` collection is authoritative.
+Because analyses are historical, append-only records (**ADR-015**; approved RETAIN decision), an analysis may reference resources that have since been deleted: entries in `observationIds[]` / `supportingObservationIds[]` **and** a non-null `projectId` whose project no longer exists (project deletion retains analyses' `projectId` — ADR-021; analyses sourced from a deleted conversation are likewise retained). Contract: API consumers must treat every such reference as *possibly missing*, resolve existence via the canonical collections' APIs (or `includeSources=summary` for observations), and render graceful "source deleted" / "deleted project" states. The server never resolves existence from the analysis itself; the canonical collections are authoritative.
 
 ### 7.3 AI failure never loses user content
 

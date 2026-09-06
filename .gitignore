@@ -1,1 +1,27 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+build/
+
+# environment / secrets — never commit
+.env
+.env.*
+!.env.example
+service-account*.json
+credentials.json
+*.pem
+
+# test / coverage
+coverage/
+
+# firebase
+.firebase/
+firebase-debug.log
+
+# misc
+.DS_Store
+*.log
 .claude/
+.playwright-mcp/*.yml

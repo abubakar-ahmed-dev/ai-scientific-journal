@@ -685,7 +685,7 @@ interface Project {
 }
 ```
 
-A project provides an **optional** organizational layer for research (**ADR-014**): it groups observations, conversations, analyses, and research tasks, but is **never a mandatory parent** — every one of those entities may have `projectId: null`. Project deletion re-files affected records (`projectId = null`); it never deletes them.
+A project provides an **optional** organizational layer for research (**ADR-014**): it groups observations, conversations, analyses, and research tasks, but is **never a mandatory parent** — every one of those entities may have `projectId: null`. Project deletion re-files user-owned records (`projectId = null`) and **retains analyses' `projectId` as a dangling historical reference** (ADR-021 — analyses are append-only and never mutated); it never deletes them.
 
 Example:
 

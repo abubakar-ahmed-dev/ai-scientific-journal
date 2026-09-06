@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document records important architectural decisions for Personal Gemini Journal.
+This document records important architectural decisions for the AI Scientific Journal.
 
 The purpose of an Architecture Decision Record (ADR) is to document:
 
@@ -901,6 +901,151 @@ The reconciliation identified two implementation-level choices that do not affec
 ### Negative
 
 * SECURITY.md must gain a Maps-key note when the choice lands.
+
+---
+
+# ADR-021: Analyses Are Never Mutated by Project Deletion
+
+**Status:** Accepted
+**Date:** 2026-09-02
+
+## Context
+
+The deletion-cascade model (`DATABASE_SCHEMA.md` §19) required project deletion to set `projectId = null` on every referencing record, including analyses. This directly mutates **append-only AI artifacts** (ADR-015): an analysis would be edited after creation by an operation that has nothing to do with its provenance. ADR-015's rule is unconditional — *"regeneration creates a new analysis; nothing is overwritten"* — and `AI_ARCHITECTURE.md` §13 repeats that analyses are never edited after creation. The observation-deletion cascade already established the correct precedent for historical AI records: references dangle, sources resolve against canonical data, consumers render a graceful missing-source state (approved RETAIN decision).
+
+## Decision
+
+1. When a project is deleted, **analyses retain their `projectId` unchanged** as a dangling historical reference. Project deletion never mutates an analysis.
+2. Observations, conversations, and research tasks continue to be **re-filed to `projectId = null`** on project deletion — they are user-owned, mutable organizational records (unchanged behavior).
+3. Consumers (API/UI) treat an analysis's non-null `projectId` exactly like its soft `observationIds[]` references: **possibly missing**, resolved against the canonical `projects` collection, rendered as a graceful "deleted project" state (`API.md` §7.2 pattern).
+
+## Alternatives Considered
+
+* Keep re-filing analyses to `projectId: null` — rejected: contradicts append-only semantics (ADR-015), silently rewrites AI-artifact provenance, and is inconsistent with the established observation-RETAIN precedent.
+* Block project deletion while analyses reference it — rejected: traps users; organizational deletion must not be gated by historical AI records.
+
+## Consequences
+
+### Positive
+
+* Append-only semantics hold unconditionally across every deletion path.
+* Consistent dangling-reference model: one pattern (soft reference + canonical resolution) covers observations, projects, and conversations as analysis sources.
+* Analyses remain accurate historical provenance (which project they were produced under).
+
+### Negative
+
+* API consumers must handle a second dangling-reference case (`projectId`) alongside `observationIds[]`/`conversationId`.
+* The analyses list filter `?projectId=` only matches analyses whose project still exists; analyses from deleted projects surface via unfiltered reads.
+
+---
+
+# ADR-022: Lexical Retrieval over Derived Index for RAG (Embeddings Deferred)
+
+**Status:** Accepted
+**Date:** 2026-09-03
+
+## Context
+
+Phase 6 implements the flagship intelligence capabilities of the AI Scientific Journal: **Ask My Journal** (PRD FR-16, grounded Q&A over historical observations) and **Related Observations** (PRD FR-17, retrieval-only semantic references).
+
+The canonical architecture establishes three core constraints:
+1. `users/{uid}/observationSearch` is a derived, user-scoped subcollection (ADR-017) maintaining `searchableText`.
+2. The schema deliberately reserves optional `embeddingReference` and `embeddingVersion` fields (`DATABASE_SCHEMA.md` §14).
+3. The PRD §8 Infrastructure Principle explicitly commands: *"Resist adding a vector database before retrieval quality actually requires it. Production-quality architecture, not unnecessary architectural complexity."*
+
+At personal journal scale (hundreds to low thousands of entries per user), full-collection vector indexing via external vector databases (Pinecone, Weaviate, Milvus) would introduce external cost, operational complexity, multi-tenant network hops, and external authorization risks.
+
+## Decision
+
+1. **Ship lexical retrieval over the derived index (`observationSearch`) for Phase 6.**
+   - Retrieval queries the user's `users/{uid}/observationSearch` subcollection by path.
+   - Relevance is computed using deterministic lexical scoring (weighted token overlap with title prefix boost and term frequency).
+   - Candidate observations are re-checked against canonical `observations` documents; deleted or out-of-scope records are dropped before passing to generation or search response.
+2. **Embeddings and dedicated vector infrastructure remain explicitly deferred.**
+   - If evaluation (`AI_EVALUATION.md` §13) reveals significant lexical vocabulary mismatch or retrieval recall gaps, an embedding-based reranker or vector search strategy will be implemented using the reserved schema fields (`embeddingReference`, `embeddingVersion`) and recorded as a separate ADR.
+3. **Canonical observation operations are isolated from index failures.**
+   - In accordance with ADR-017, observation create/update/delete operations treat index maintenance as best-effort; index failures are logged as warnings and never fail canonical data operations.
+
+## Alternatives Considered
+
+* **Introduce an external vector database (Pinecone, Chroma, pgvector):** Rejected per PRD §8 infrastructure principle. Adds infrastructure complexity, credentials, and third-party tenancy boundaries before empirical evaluation proves necessity.
+* **Compute embeddings via Gemini API synchronously on every observation write:** Rejected for Phase 6 MVP. Adds external network latency and cost to basic journaling CRUD; requires asynchronous background queues or retry semantics not yet warranted.
+* **Direct client-side search:** Rejected. Violates server-side control and context-bounding principles (ADR-003, AI_ARCHITECTURE §6).
+
+## Consequences
+
+### Positive
+
+* **Zero new infrastructure:** Uses existing Cloud Firestore and Node.js backend.
+* **Fast and fully offline-testable:** Retrieval and scoring are deterministic pure functions in unit and integration suites.
+* **Strong security isolation:** Retrieval is strictly user-scoped by Firestore path (`users/{uid}/observationSearch`), guaranteeing zero cross-user leakage before any model invocation.
+* **Preserves upgrade path:** Reserved schema fields (`embeddingReference`, `embeddingVersion`) ensure vector indexing can be added seamlessly without breaking database schema or API contracts.
+
+### Negative
+
+* Pure lexical retrieval does not identify conceptual synonyms without shared vocabulary (e.g., query "canine" may not match an observation mentioning only "fox" unless synonyms or tags are present).
+
+---
+
+# ADR-023: Firebase Admin Storage Client for Observation Media
+
+**Status:** Accepted
+**Date:** 2026-09-03
+**Context source:** `plans/phase-7/plan.md` (resolving storage client deferral from ADR-020)
+
+## Context
+
+Phase 7 implements private observation-scoped evidence media (`users/{uid}/observations/{observationId}/media/{mediaId}`) with binary storage in Cloud Storage. ADR-020 deferred the storage client choice between `firebase-admin/storage` and the standalone `@google-cloud/storage` SDK.
+
+## Decision
+
+Use `firebase-admin/storage` via `getStorage(getFirebaseAdminApp()).bucket(env.STORAGE_BUCKET)`.
+
+1. **Storage Path Derivation:** Storage paths are derived server-side as `users/{uid}/observations/{observationId}/{mediaId}` (omitting `media/` segment per ADR-016).
+2. **Access Control:** Storage paths are internal-only and never exposed in API responses. Authorized read access is granted via short-lived signed URLs (TTL ≤ 15 minutes).
+3. **Emulator Integration:** Automatically integrates with `FIREBASE_STORAGE_EMULATOR_HOST` for offline local development and deterministic integration testing without external cloud credentials.
+4. **Service Abstraction:** Storage operations are encapsulated in `IStorageService` (`FirebaseStorageService` and in-memory `MockStorageService`).
+
+## Consequences
+
+### Positive
+* Single credential lifecycle matching Firebase Authentication and Cloud Firestore Admin.
+* Zero external API key or billing required for local development and test runs.
+* Seamless signed URL generation and prefix deletion cascades.
+
+### Negative
+* Binary uploads pass through the application server memory (bounded by strict size limits: images ≤ 10 MB, audio ≤ 25 MB, video ≤ 100 MB).
+
+---
+
+# ADR-024: Leaflet and OpenStreetMap for Research Map
+
+**Status:** Accepted
+**Date:** 2026-09-03
+**Context source:** `plans/phase-7/plan.md` (resolving maps provider deferral from ADR-020)
+
+## Context
+
+Phase 7 implements an interactive geographic dashboard for user observations (`/map`, PRD FR-13). ADR-020 deferred the map provider choice between commercial map providers (e.g. Google Maps Platform, Mapbox) and open-source alternatives (Leaflet with OpenStreetMap).
+
+## Decision
+
+Adopt Leaflet (`leaflet`, `react-leaflet`) with OpenStreetMap standard tiles for the interactive Research Map and observation detail mini-maps.
+
+1. **Free Tier & Zero Cost:** Requires **zero API keys**, requires no credit card, and incurs zero billing costs.
+2. **Privacy Protection:** Does not track users or transmit user behavior to commercial advertising networks.
+3. **Privacy Rule Enforcement:** Observations marked `precision: "hidden"` are completely excluded from map rendering; `precision: "approximate"` observations are fuzzed or displayed with circle markers.
+4. **Offline / Test Resilient:** Can render in test environments and headless browsers without network-blocked third-party scripts.
+
+## Consequences
+
+### Positive
+* 100% free and open source with no API keys or quota management.
+* High privacy compliance aligned with scientific research ethics.
+* Lightweight bundle with standard CSS and modular components.
+
+### Negative
+* Satellite imagery is not included by default (standard vector/raster OSM tile layers only).
 
 ---
 
