@@ -32,21 +32,40 @@ export const FeatureSection: React.FC<FeatureSectionProps> = ({
   const textFirst = index % 2 === 0;
 
   return (
-    <section id={id} className="lp scroll-mt-24">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
+    <section id={id} className="lp relative scroll-mt-24">
+      {/* Fading dot grid drifting off the outer edge, away from reading text */}
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute top-8 hidden h-56 w-56 lg:block ${
+          textFirst ? "-right-10" : "-left-10"
+        }`}
+        style={{
+          backgroundImage:
+            "radial-gradient(rgba(15,118,110,0.22) 1.5px, transparent 1.5px)",
+          backgroundSize: "18px 18px",
+          maskImage:
+            "radial-gradient(ellipse at center, black 30%, transparent 75%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse at center, black 30%, transparent 75%)",
+        }}
+      />
+
+      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-20">
         {/* Text column */}
-        <div className={`space-y-5 ${textFirst ? "" : "lg:order-2"}`}>
-          <p className="text-sm font-semibold tracking-wide text-lp-primary">{label}</p>
-          <h2 className="text-2xl font-semibold leading-snug text-lp-heading sm:text-3xl">
+        <div className={`space-y-6 ${textFirst ? "" : "lg:order-2"}`}>
+          <p className="text-base font-bold uppercase tracking-wider text-lp-primary">
+            {label}
+          </p>
+          <h3 className="text-3xl font-bold leading-tight tracking-tight text-lp-heading sm:text-4xl">
             {heading}
-          </h2>
-          <p className="max-w-xl leading-relaxed text-lp-muted">{description}</p>
-          <ul className="space-y-2.5">
+          </h3>
+          <p className="max-w-xl text-lg leading-relaxed text-lp-muted">{description}</p>
+          <ul className="space-y-3.5">
             {points.map((point) => (
-              <li key={point} className="flex items-start gap-2.5 text-[15px] text-lp-ink">
+              <li key={point} className="flex items-start gap-3 text-lg text-lp-ink">
                 <span
                   aria-hidden="true"
-                  className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-lp-primary"
+                  className="mt-[11px] h-2 w-2 shrink-0 rounded-full bg-lp-primary"
                 />
                 {point}
               </li>
