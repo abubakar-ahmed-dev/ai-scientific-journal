@@ -1,6 +1,34 @@
 @import "tailwindcss";
 
 /*
+ * Landing page design tokens (plans/UI-polish/homepage-guidelines.md).
+ * Namespaced lp- so utilities only exist where the landing page uses them;
+ * the authenticated app keeps its slate/indigo system untouched.
+ */
+@theme {
+  --color-lp-bg: #f6f8f5; /* page background — warm off-white */
+  --color-lp-surface: #ffffff; /* content surfaces */
+  --color-lp-ink: #17211d; /* main text */
+  --color-lp-muted: #59645f; /* secondary text */
+  --color-lp-border: #dce3df; /* thin borders */
+  --color-lp-heading: #164e43; /* section headings — deep teal */
+  --color-lp-primary: #0f766e; /* primary actions */
+  --color-lp-primary-hover: #115e59; /* primary hover */
+  --color-lp-primary-soft: #e0f0e9; /* soft teal surface (tinted band/CTA) */
+  --color-lp-ai: #6d5bd0; /* AI accent — decoration/borders only */
+  --color-lp-ai-text: #55418f; /* darkened violet — AI text at 4.5:1+ */
+  --color-lp-ai-surface: #f0ecfa; /* AI panel surface */
+  --color-lp-link: #1d4ed8; /* evidence links — dark blue */
+  --color-lp-uncertainty-bg: #fef3c7; /* pale amber */
+  --color-lp-uncertainty-text: #92400e; /* dark amber text on pale amber */
+}
+
+/* Landing page focus ring follows its primary teal instead of app indigo. */
+.lp :focus-visible {
+  outline-color: var(--color-lp-primary);
+}
+
+/*
  * Global accessibility rules (UX guidelines §44/§48).
  */
 
