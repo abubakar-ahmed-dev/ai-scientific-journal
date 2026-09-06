@@ -26,8 +26,11 @@ images:
 options:
   logging: CLOUD_LOGGING_ONLY
 
+# Defaults: _IMAGE points at the real production registry; _VITE_FIREBASE_* remain
+# demo placeholders — production builds MUST override them via --substitutions
+# (real values stay out of Git; see plans/phase-9/deploy-guide.md §0/§11).
 substitutions:
-  _IMAGE: us-central1-docker.pkg.dev/demo-test/ai-scientific-journal/app:manual
+  _IMAGE: asia-south1-docker.pkg.dev/ai-scientific-journal/ai-scientific-journal/app:manual
   _VITE_API_BASE_URL: /api/v1
   _VITE_FIREBASE_API_KEY: demo-key
   _VITE_FIREBASE_AUTH_DOMAIN: demo-test.firebaseapp.com
