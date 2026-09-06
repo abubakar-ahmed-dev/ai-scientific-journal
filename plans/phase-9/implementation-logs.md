@@ -215,3 +215,51 @@ cloud execution follows the deployment runbook.
 4. **Next:** Manual Blocks 1–4 (plan §B–§E) are yours — GCP/Firebase project setup, data-layer
    deploy, first Cloud Run deploy, then E4 smoke via `node scripts/smoke-test.mjs $SERVICE_URL`.
    Agent Block 2 (§F) resumes after the service is live.
+
+## 5. Deployment Log — first production deploy (2026-09-06)
+
+Executed per `deploy-guide.md` (supersedes plan §D–§E commands). Region **asia-south1**,
+project `ai-scientific-journal`. Verified cloud state first (APIs, repo, SA, IAM), then ran:
+
+| Step | Action | Result |
+| :--- | :--- | :--- |
+| Runbook §9 | Bucket `gs://ai-scientific-journal-media` created (uniform access, public-access-prevention) | ✅ |
+| Runbook §9 | Runtime SA: `storage.objectAdmin` on bucket + self `iam.serviceAccountTokenCreator` (signed URLs) | ✅ |
+| Runbook §10 | `firebase deploy --only "firestore:rules,firestore:indexes"` — rules released, indexes deployed, **before** public exposure | ✅ |
+| Runbook §11 | Cloud Build `app:v1` with `_VITE_FIREBASE_*` substitutions (public web identifiers only) | ✅ SUCCESS, 1m55s |
+| Runbook §12 | `gcloud run deploy` — runtime SA, `GEMINI_API_KEY=gemini-api-key:latest`, label `dev-tutorial=cloud-run-ai-challenge`, `--allow-unauthenticated`, port 8080, timeout 60 | ✅ revision `ai-scientific-journal-00001-pc4` |
+| Runbook §12 | CORS locked: `CORS_ORIGIN=https://ai-scientific-journal-291307045855.asia-south1.run.app` | ✅ revision `00002-z4s` serving 100% |
+
+Service URL: `https://ai-scientific-journal-291307045855.asia-south1.run.app`
+
+### Deployed infrastructure inventory (final state)
+
+| Resource | Value |
+| :--- | :--- |
+| Project | `ai-scientific-journal` (number `291307045855`), billing linked |
+| Region (all resources) | `asia-south1` |
+| APIs enabled | run, artifactregistry, cloudbuild, secretmanager, iamcredentials, firestore, firebase, identitytoolkit, storage, logging, monitoring |
+| Artifact Registry | `ai-scientific-journal` (DOCKER), `asia-south1` |
+| Image | `asia-south1-docker.pkg.dev/ai-scientific-journal/ai-scientific-journal/app:v1` |
+| Media bucket | `gs://ai-scientific-journal-media` — uniform bucket-level access, public-access-prevention |
+| Runtime SA | `ai-scientific-journal-runtime@ai-scientific-journal.iam.gserviceaccount.com` |
+| Runtime SA roles | `roles/datastore.user` (project); `roles/secretmanager.secretAccessor` scoped to `gemini-api-key`; `roles/storage.objectAdmin` on media bucket; self `roles/iam.serviceAccountTokenCreator` (signed URLs) |
+| Build SA | `291307045855-compute@developer.gserviceaccount.com` — `roles/artifactregistry.writer` (repo) + `roles/logging.logWriter` (project); broad legacy `roles/editor` noted for later hardening |
+| Secret | `gemini-api-key` v1; bound at runtime as `GEMINI_API_KEY=gemini-api-key:latest` |
+| Cloud Run env | `NODE_ENV=production`, `FIREBASE_PROJECT_ID`, `STORAGE_BUCKET=ai-scientific-journal-media`, `CORS_ORIGIN=<service URL>` (locked post-deploy), `USE_FAKE_AI=false` |
+| Cloud Run settings | port 8080, timeout 60s (AI_TIMEOUT_MS default 30s fits), ingress default, `--allow-unauthenticated` (app-level auth on `/api/v1`; only `/api/health` open) |
+| Firestore | `(default)` DB `asia-south1`; `firebase/firestore.rules` + `firebase/firestore.indexes.json` deployed before exposure |
+| Revisions | `00001-pc4` (placeholder CORS) → `00002-z4s` (CORS locked), 100% traffic |
+
+CLI smoke (runbook §14, `scripts/smoke-test.mjs`): health 200, SPA 200,
+unauthenticated `/api/v1` → 401, label verified on service.
+
+### Remaining (phase exit §322)
+
+1. **👤 E3 (blocks browser sign-in):** Firebase console → Authentication → Settings →
+   Authorized domains → add `ai-scientific-journal-291307045855.asia-south1.run.app`.
+2. **👤 E4 browser checklist:** sign-in, observation CRUD persistence, chat, analysis,
+   retrieval, media upload, second-account isolation, logout.
+3. **F2–F5:** §13 full smoke documentation, observability dashboard/alerts (F3),
+   SECURITY §16 checklist + real-Gemini injection probe (F4), regression gates + PR (F5).
+4. `deploy-values.md` stays untracked (contains Firebase web config + project values).

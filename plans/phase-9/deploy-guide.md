@@ -13,7 +13,7 @@ Set these once in PowerShell:
 
 ```powershell
 $PROJECT_ID = "<your-gcp-and-firebase-project-id>"
-$REGION = "us-central1" # or your chosen Firestore/Cloud Run/Storage region
+$REGION = "asia-south1" # decided at first deploy (2026-09-06); Firestore/Cloud Run/Storage/Artifact Registry all pinned here — keep stable
 $SERVICE = "ai-scientific-journal"
 $REPOSITORY = "ai-scientific-journal"
 $IMAGE = "$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/app:v1"

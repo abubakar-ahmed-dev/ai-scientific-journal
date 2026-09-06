@@ -291,6 +291,8 @@ Highlights:
 * Firestore Security Rules deployed and tested before public exposure.
 * Revision-based rollback if a deployment misbehaves.
 
+**Current deployment:** live on Cloud Run in `asia-south1` — service `ai-scientific-journal`, labeled `dev-tutorial=cloud-run-ai-challenge`.
+
 Full procedure and pre-launch checklists: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ---

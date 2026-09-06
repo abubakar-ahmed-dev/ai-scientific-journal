@@ -86,7 +86,10 @@ private keys, test fixtures, node_modules dev dependencies
 Production service configuration (ADR-019):
 
 * **Service name:** `ai-scientific-journal`, with label `dev-tutorial=cloud-run-ai-challenge`.
-* **Region:** chosen at first deployment and kept stable (document the chosen region here once deployed).
+* **Region:** `asia-south1` — fixed at first production deploy (2026-09-06) and kept stable.
+  Firestore `(default)` database, Cloud Run, the `ai-scientific-journal-media` bucket, and
+  the Artifact Registry repository are all pinned to this region.
+* **Deployed service URL:** `https://ai-scientific-journal-291307045855.asia-south1.run.app` (first deploy 2026-09-06).
 * CPU/memory, min/max instances, and request timeout: set at deployment and tuned from observed behavior — values are operational choices, not architecture. Request timeout must accommodate AI endpoints without inviting abuse (rate limits in `API.md` §4.1 bound the exposure).
 * **Ingress:** default Cloud Run HTTPS ingress; the API requires Firebase authentication on all `/api/v1` routes; `GET /api/health` is the only unauthenticated endpoint.
 
