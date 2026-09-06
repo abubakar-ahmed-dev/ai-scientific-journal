@@ -85,7 +85,7 @@ export const Dialog: React.FC<DialogProps> = ({ open, onClose, title, children, 
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="p-1 text-slate-400 hover:text-slate-600 rounded-lg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="p-1 text-slate-400 hover:text-slate-600 rounded-lg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
           >
             <X className="w-4 h-4" />
           </button>

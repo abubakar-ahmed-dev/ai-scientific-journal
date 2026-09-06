@@ -134,9 +134,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="flex flex-col h-full bg-white rounded-xl border border-app-border shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+      <div className="px-6 py-4 border-b border-app-border bg-slate-50/70 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold text-slate-900">
@@ -150,13 +150,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
           <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500">
             {conversation.contextType === "general" ? (
-              <span className="inline-flex items-center gap-1 font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+              <span className="inline-flex items-center gap-1 font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded">
                 <Sparkles className="w-3 h-3" />
                 Context: Global Journal
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded">
-                <Sparkles className="w-3 h-3 text-indigo-600" />
+              <span className="inline-flex items-center gap-1 font-medium text-brand-700 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded">
+                <Sparkles className="w-3 h-3 text-brand-600" />
                 <span>
                   Discussing {conversation.contextType === "observation" ? "Observation" : "Project"}:{" "}
                   <strong>{contextTitle || (conversation.contextId ? `${conversation.contextId.slice(0, 12)}...` : "Unfiled")}</strong>
@@ -188,7 +188,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center text-slate-400">
-            <Bot className="w-12 h-12 text-indigo-200 mb-3" />
+            <Bot className="w-12 h-12 text-brand-200 mb-3" />
             <p className="text-base font-medium text-slate-700">Start the Discussion</p>
             <p className="text-xs text-slate-500 max-w-sm mt-1">
               Ask questions about your observations, propose hypotheses, or request scientific analysis.
@@ -203,15 +203,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}
               >
                 {!isUser && (
-                  <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm mt-1">
+                  <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center shrink-0 shadow-sm mt-1">
                     <Bot className="w-4 h-4" />
                   </div>
                 )}
                 <div
                   className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
                     isUser
-                      ? "bg-indigo-600 text-white rounded-br-none"
-                      : "bg-white text-slate-800 border border-slate-200 rounded-bl-none"
+                      ? "bg-brand-600 text-white rounded-br-none"
+                      : "bg-white text-slate-800 border border-app-border rounded-bl-none"
                   }`}
                 >
                   {isUser ? (
@@ -256,11 +256,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
         {sendMutation.isPending && (
           <div className="flex gap-3 justify-start">
-            <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 animate-pulse">
+            <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center shrink-0 animate-pulse">
               <Bot className="w-4 h-4" />
             </div>
-            <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex items-center gap-2 text-slate-500 text-xs">
-              <Sparkles className="w-4 h-4 text-indigo-500 animate-spin" />
+            <div className="bg-white border border-app-border rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex items-center gap-2 text-slate-500 text-xs">
+              <Sparkles className="w-4 h-4 text-brand-500 animate-spin" />
               <span>Analyzing context and reasoning...</span>
             </div>
           </div>
@@ -280,7 +280,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <button
               onClick={handleRetry}
               disabled={sendMutation.isPending}
-              className="flex items-center gap-1 font-semibold text-indigo-600 hover:text-indigo-800 px-2 py-1 bg-white rounded border border-amber-200 shadow-xs"
+              className="flex items-center gap-1 font-semibold text-brand-600 hover:text-brand-800 px-2 py-1 bg-white rounded border border-amber-200 shadow-xs"
             >
               <RefreshCw className="w-3 h-3" />
               Retry AI Generation
@@ -291,12 +291,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
       {/* Input Area */}
       {conversation.status === "archived" ? (
-        <div className="p-4 bg-slate-100 text-center text-xs text-slate-500 border-t border-slate-200">
+        <div className="p-4 bg-slate-100 text-center text-xs text-slate-500 border-t border-app-border">
           This conversation is archived. Unarchive it or start a new chat to continue.
         </div>
       ) : (
-        <form onSubmit={handleSend} className="p-4 border-t border-slate-200 bg-white">
-          <div className="relative flex items-end gap-2 bg-slate-50 border border-slate-300 rounded-xl p-2 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all">
+        <form onSubmit={handleSend} className="p-4 border-t border-app-border bg-white">
+          <div className="relative flex items-end gap-2 bg-slate-50 border border-slate-300 rounded-xl p-2 focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-transparent transition-all">
             <textarea
               rows={2}
               value={inputContent}
@@ -313,7 +313,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <button
                 type="submit"
                 disabled={!inputContent.trim() || sendMutation.isPending}
-                className="p-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition-colors shadow-xs"
+                className="p-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition-colors shadow-xs"
                 title="Send Message"
               >
                 <Send className="w-4 h-4" />

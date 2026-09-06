@@ -172,7 +172,7 @@ export const ResearchMapPage: React.FC = () => {
             observationsQuery.refetch();
             projectsQuery.refetch();
           }}
-          className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition"
+          className="px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition"
         >
           Retry
         </button>
@@ -183,10 +183,10 @@ export const ResearchMapPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-app-border pb-5">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5">
-            <MapPin className="w-7 h-7 text-indigo-600" />
+          <h1 className="text-2xl font-bold text-app-heading flex items-center gap-2.5">
+            <MapPin className="w-7 h-7 text-brand-600" />
             <span>Research Map</span>
           </h1>
           <p className="text-sm text-slate-500 mt-1">
@@ -196,12 +196,12 @@ export const ResearchMapPage: React.FC = () => {
 
         {/* Stats Chips */}
         <div className="flex items-center gap-2 text-xs">
-          <span className="px-3 py-1 bg-indigo-50 text-indigo-700 font-semibold rounded-full border border-indigo-200">
+          <span className="px-3 py-1 bg-brand-50 text-brand-700 font-semibold rounded-full border border-brand-200">
             {plottableObservations.length} Plotted Pins
           </span>
           {hiddenCount > 0 && (
             <span
-              className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full flex items-center gap-1 border border-slate-200"
+              className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full flex items-center gap-1 border border-app-border"
               title="Locations hidden by user privacy settings are excluded from map visualization"
             >
               <EyeOff className="w-3.5 h-3.5" />
@@ -212,9 +212,9 @@ export const ResearchMapPage: React.FC = () => {
       </div>
 
       {/* Filter Controls Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center gap-4 text-xs">
+      <div className="bg-white p-4 rounded-xl border border-app-border shadow-2xs flex flex-wrap items-center gap-4 text-xs">
         <div className="flex items-center gap-1.5 text-slate-500 font-semibold uppercase tracking-wide">
-          <Filter className="w-4 h-4 text-indigo-600" />
+          <Filter className="w-4 h-4 text-brand-600" />
           <span>Filter Map:</span>
         </div>
 
@@ -225,7 +225,7 @@ export const ResearchMapPage: React.FC = () => {
             aria-label="Filter by project"
             value={selectedProjectId}
             onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+            className="px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-brand-500"
           >
             <option value="all">All Projects</option>
             <option value="unfiled">Unfiled Only</option>
@@ -244,7 +244,7 @@ export const ResearchMapPage: React.FC = () => {
             aria-label="Filter by tag"
             value={selectedTag}
             onChange={(e) => setSelectedTag(e.target.value)}
-            className="px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+            className="px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-brand-500"
           >
             <option value="all">All Tags</option>
             {allTags.map((tag) => (
@@ -262,7 +262,7 @@ export const ResearchMapPage: React.FC = () => {
             aria-label="Filter by date"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+            className="px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-brand-500"
           >
             <option value="all">All Recorded Dates</option>
             <option value="30days">Last 30 Days</option>
@@ -280,7 +280,7 @@ export const ResearchMapPage: React.FC = () => {
               setSelectedTag("all");
               setDateFilter("all");
             }}
-            className="text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer underline ml-auto"
+            className="text-brand-600 hover:text-brand-800 font-semibold cursor-pointer underline ml-auto"
           >
             Reset Filters
           </button>
@@ -288,19 +288,19 @@ export const ResearchMapPage: React.FC = () => {
       </div>
 
       {/* Map Container */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden relative">
+      <div className="bg-white rounded-2xl border border-app-border shadow-xs overflow-hidden relative">
         {loading ? (
           <div className="h-[600px] flex flex-col items-center justify-center text-slate-400 gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+            <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
             <p className="text-sm font-medium">Loading research map tiles and coordinates...</p>
           </div>
         ) : plottableObservations.length === 0 ? (
           <div className="h-[500px] flex flex-col items-center justify-center p-8 text-center space-y-4 bg-slate-50/50">
-            <div className="p-4 bg-indigo-50 rounded-full text-indigo-600">
+            <div className="p-4 bg-brand-50 rounded-full text-brand-600">
               <MapPin className="w-8 h-8" />
             </div>
             <div className="max-w-md space-y-1">
-              <h3 className="text-base font-bold text-slate-900">No Mappable Observations Found</h3>
+              <h3 className="text-base font-bold text-app-heading">No Mappable Observations Found</h3>
               <p className="text-xs text-slate-500 leading-relaxed">
                 {totalWithLocation === 0
                   ? "None of your current observations have geographic locations attached. Create a new observation and check 'Attach Geographic Location' to view it here."
@@ -309,7 +309,7 @@ export const ResearchMapPage: React.FC = () => {
             </div>
             <Link
               to="/observations/new"
-              className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-2xs transition"
+              className="px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-2xs transition"
             >
               + Create New Observation
             </Link>
@@ -367,7 +367,7 @@ export const ResearchMapPage: React.FC = () => {
                                 </span>
                               )}
                             </div>
-                            <h4 className="font-bold text-sm text-slate-900 leading-snug">
+                            <h4 className="font-bold text-sm text-app-heading leading-snug">
                               {obs.title}
                             </h4>
                             <p className="text-[11px] text-slate-400 mt-0.5">
@@ -399,7 +399,7 @@ export const ResearchMapPage: React.FC = () => {
                           <div className="pt-2 border-t border-slate-100 flex justify-end">
                             <Link
                               to={`/observations/${obs.id}`}
-                              className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-800"
                             >
                               <span>View Observation Detail</span>
                               <ExternalLink className="w-3 h-3" />
@@ -421,10 +421,10 @@ export const ResearchMapPage: React.FC = () => {
 
 function Header({ plottableCount, hiddenCount }: { plottableCount: number; hiddenCount: number }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-app-border pb-5">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5">
-          <MapPin className="w-7 h-7 text-indigo-600" />
+        <h1 className="text-2xl font-bold text-app-heading flex items-center gap-2.5">
+          <MapPin className="w-7 h-7 text-brand-600" />
           <span>Research Map</span>
         </h1>
         <p className="text-sm text-slate-500 mt-1">
@@ -432,11 +432,11 @@ function Header({ plottableCount, hiddenCount }: { plottableCount: number; hidde
         </p>
       </div>
       <div className="flex items-center gap-2 text-xs">
-        <span className="px-3 py-1 bg-indigo-50 text-indigo-700 font-semibold rounded-full border border-indigo-200">
+        <span className="px-3 py-1 bg-brand-50 text-brand-700 font-semibold rounded-full border border-brand-200">
           {plottableCount} Plotted Pins
         </span>
         {hiddenCount > 0 && (
-          <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full flex items-center gap-1 border border-slate-200">
+          <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full flex items-center gap-1 border border-app-border">
             <EyeOff className="w-3.5 h-3.5" />
             <span>{hiddenCount} Hidden for Privacy</span>
           </span>

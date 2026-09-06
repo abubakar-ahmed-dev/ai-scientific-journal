@@ -31,7 +31,7 @@ export const ObservationMiniMap: React.FC<ObservationMiniMapProps> = ({
 
   if (!safe || safe.precision === "hidden") {
     return (
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center gap-3">
+      <div className="bg-slate-50 border border-app-border rounded-xl p-4 flex items-center gap-3">
         <div className="p-2 bg-slate-200 text-slate-700 rounded-lg">
           <EyeOff className="w-5 h-5" />
         </div>
@@ -58,10 +58,10 @@ export const ObservationMiniMap: React.FC<ObservationMiniMapProps> = ({
   const hasCoords = typeof displayLat === "number" && typeof displayLng === "number";
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden">
+    <div className="bg-white border border-app-border rounded-xl shadow-2xs overflow-hidden">
       <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
         <div className="flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-indigo-600" />
+          <MapPin className="w-4 h-4 text-brand-600" />
           <span className="text-xs font-bold text-slate-800">
             {safe.label || "Geographic Location"}
           </span>
