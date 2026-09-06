@@ -1,12 +1,12 @@
 import React from "react";
 
 interface FeatureSectionProps {
-  /** Small section label, e.g. "01 · Structured observations". */
+  /** Small section label, e.g. "01 · Structured Observations". */
   label: string;
   heading: string;
   description: string;
   /** At most two supporting points (guidelines §6). */
-  points: string[];
+  points: { icon: React.ComponentType<{ className?: string }>; text: string }[];
   /** Illustrative product preview rendered beside the text. */
   preview: React.ReactNode;
   /** Even sections place text on the left; odd sections place it on the right. */
@@ -16,9 +16,9 @@ interface FeatureSectionProps {
 
 /**
  * Reusable feature-showcase section (homepage guidelines §6): label, heading,
- * short paragraph, at most two supporting points, one illustrative preview.
- * Text and preview alternate placement on desktop; text always precedes the
- * preview in mobile reading order.
+ * short paragraph, at most two icon points, one illustrative preview.
+ * Text and preview alternate placement on desktop (5/7 ratio); text always
+ * precedes the preview in mobile reading order.
  */
 export const FeatureSection: React.FC<FeatureSectionProps> = ({
   label,
@@ -50,24 +50,24 @@ export const FeatureSection: React.FC<FeatureSectionProps> = ({
         }}
       />
 
-      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-20">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 lg:grid-cols-[5fr_7fr] lg:gap-20">
         {/* Text column */}
-        <div className={`space-y-6 ${textFirst ? "" : "lg:order-2"}`}>
-          <p className="text-base font-bold uppercase tracking-wider text-lp-primary">
+        <div className={`space-y-7 ${textFirst ? "" : "lg:order-2"}`}>
+          <p className="inline-flex items-center gap-2.5 text-sm font-bold uppercase tracking-[0.16em] text-lp-primary">
+            <span aria-hidden="true" className="h-px w-8 bg-lp-primary/50" />
             {label}
           </p>
           <h3 className="text-3xl font-bold leading-tight tracking-tight text-lp-heading sm:text-4xl">
             {heading}
           </h3>
           <p className="max-w-xl text-lg leading-relaxed text-lp-muted">{description}</p>
-          <ul className="space-y-3.5">
-            {points.map((point) => (
-              <li key={point} className="flex items-start gap-3 text-lg text-lp-ink">
-                <span
-                  aria-hidden="true"
-                  className="mt-[11px] h-2 w-2 shrink-0 rounded-full bg-lp-primary"
-                />
-                {point}
+          <ul className="space-y-4">
+            {points.map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-center gap-4 text-[17px] font-medium text-lp-ink">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-lp-primary-soft">
+                  <Icon className="h-5.5 w-5.5 text-lp-primary" aria-hidden="true" />
+                </span>
+                {text}
               </li>
             ))}
           </ul>

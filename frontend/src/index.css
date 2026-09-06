@@ -1,3 +1,5 @@
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/fraunces";
 @import "tailwindcss";
 
 /*
@@ -21,6 +23,22 @@
   --color-lp-link: #1d4ed8; /* evidence links — dark blue */
   --color-lp-uncertainty-bg: #fef3c7; /* pale amber */
   --color-lp-uncertainty-text: #92400e; /* dark amber text on pale amber */
+
+  /* Landing typography: Fraunces for display/headings, Inter for UI/body. */
+  --font-lp-display: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --font-lp-body: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Landing page typography scope: display font on headings, Inter on the page. */
+.lp {
+  font-family: var(--font-lp-body);
+}
+.lp h1,
+.lp h2,
+.lp h3,
+.lp .font-display {
+  font-family: var(--font-lp-display);
+  font-optical-sizing: auto;
 }
 
 /* Landing page focus ring follows its primary teal instead of app indigo. */

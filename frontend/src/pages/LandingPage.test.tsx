@@ -53,8 +53,8 @@ describe("LandingPage (redesigned)", () => {
 
     renderLanding();
 
-    expect(screen.getByText(/Example observation — sample data/i)).toBeInTheDocument();
-    expect(screen.getByText(/Gemini analysis — sample data/i)).toBeInTheDocument();
+    expect(screen.getByText(/Field entry · Sample/i)).toBeInTheDocument();
+    expect(screen.getByText(/Gemini Analysis · Sample/i)).toBeInTheDocument();
     expect(screen.getByText(/Illustrative map/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Example sources/i).length).toBeGreaterThan(0);
   });
@@ -87,7 +87,7 @@ describe("LandingPage (redesigned)", () => {
     renderLanding();
 
     expect(screen.getByText("Record")).toBeInTheDocument();
-    expect(screen.getByText("Add evidence")).toBeInTheDocument();
+    expect(screen.getByText("Add Evidence")).toBeInTheDocument();
     expect(screen.getByText("Analyze")).toBeInTheDocument();
     expect(screen.getByText("Investigate")).toBeInTheDocument();
     expect(
