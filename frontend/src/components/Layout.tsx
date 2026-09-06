@@ -160,10 +160,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const userInitial = (currentUser?.displayName?.[0] || currentUser?.email?.[0] || "U").toUpperCase();
 
-  const renderNavItem = (link: NavLinkItem, onNavigate?: () => void) => {
+  const renderNavItem = (
+    link: NavLinkItem,
+    onNavigate?: () => void,
+    surface: "dark" | "light" = "dark"
+  ) => {
     const Icon = link.icon;
     const active = isActive(link.to);
-    const collapsed = sidebarCollapsed;
+    const collapsed = surface === "dark" && sidebarCollapsed;
+    const onDark = surface === "dark";
     return (
       <Link
         key={link.to}
@@ -172,19 +177,25 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         aria-current={active ? "page" : undefined}
         title={collapsed ? link.label : undefined}
         aria-label={collapsed ? link.label : undefined}
-        className={`relative flex items-center rounded-md text-sm transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-white/60 ${
-          collapsed ? "justify-center mx-1" : "gap-3.5"
-        } ${
+        className={`relative flex items-center rounded-md text-sm transition focus:outline-hidden focus-visible:ring-2 ${
+          onDark ? "focus-visible:ring-white/60" : "focus-visible:ring-brand-500"
+        } ${collapsed ? "justify-center mx-1" : "gap-3.5"} ${
           active
-            ? "bg-brand-950/80 font-semibold text-white"
-            : "font-medium text-[#E5F2ED]/80 hover:bg-white/10 hover:text-white"
+            ? onDark
+              ? "bg-brand-950/80 font-semibold text-white"
+              : "bg-brand-100 font-semibold text-brand-800"
+            : onDark
+            ? "font-medium text-[#E5F2ED]/80 hover:bg-white/10 hover:text-white"
+            : "font-medium text-slate-600 hover:bg-brand-50 hover:text-app-heading"
         }`}
       >
         {/* Non-color active indicator (guidelines §5.2): left accent bar + weight + background */}
         {active && !collapsed && (
           <span
             aria-hidden="true"
-            className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-brand-300"
+            className={`absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full ${
+              onDark ? "bg-brand-300" : "bg-brand-600"
+            }`}
           />
         )}
         {/* Collapsed active state: filled dot below the icon (not color-only, §5.2) */}
@@ -195,7 +206,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           />
         )}
         <Icon className={`h-4 w-4 shrink-0 ${collapsed ? "my-2.5" : "ml-2.5"} ${
-          active ? "text-white" : "text-[#E5F2ED]/60"
+          active
+            ? onDark
+              ? "text-white"
+              : "text-brand-600"
+            : onDark
+            ? "text-[#E5F2ED]/60"
+            : "text-slate-400"
         }`} />
         {!collapsed && <span className="py-2 pr-2">{link.label}</span>}
       </Link>
@@ -266,7 +283,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           </div>
 
           {/* User Profile, Command Palette trigger & Sign Out */}
-          <div className="flex items-center space-x-3">
+          <div className="hidden md:flex items-center space-x-3">
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
@@ -337,7 +354,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     </p>
                   )}
                   <div className="space-y-1">
-                    {section.links.map((link) => renderNavItem(link, () => setMobileMenuOpen(false)))}
+                    {section.links.map((link) => renderNavItem(link, () => setMobileMenuOpen(false), "light"))}
                   </div>
                 </div>
               ))}
