@@ -18,7 +18,27 @@ export function createApp(): express.Express {
 
   // Canonical middleware order (TA §77): requestId → headers → CORS → body → logging → rate limit
   app.use(requestId);
-  app.use(helmet());
+  // Helmet defaults harden every response; the CSP additions below are the
+  // minimum third-party origins Firebase Auth (Google Sign-In popup) needs to
+  // load its scripts/iframes from the served SPA. All other directives keep
+  // helmet defaults. COOP must be `same-origin-allow-popups` (not the default
+  // `same-origin`): the OAuth popup chain (firebaseapp.com handler →
+  // accounts.google.com) sets its own COOP, which would otherwise sever the
+  // window.opener relation and break the postMessage credential handoff
+  // (observed as auth/popup-closed-by-user).
+  app.use(
+    helmet({
+      crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+      contentSecurityPolicy: {
+        directives: {
+          scriptSrc: ["'self'", "https://apis.google.com", "https://accounts.google.com"],
+          frameSrc: ["'self'", "https://*.firebaseapp.com", "https://accounts.google.com"],
+          connectSrc: ["'self'", "https://*.googleapis.com"],
+          imgSrc: ["'self'", "data:", "https://www.gstatic.com", "https://*.googleusercontent.com"],
+        },
+      },
+    }),
+  );
   app.use(cors({ origin: env.CORS_ORIGIN }));
   app.use(express.json({ limit: "1mb" }));
   app.use(requestLogger);
