@@ -60,3 +60,21 @@ See `implementation-logs.md` §3 table — all green: backend 191/191 under emul
    real-Auth verification.
 3. Log-privacy spot-check on production logs (`gcloud run services logs read`) — confirm
    `ai operation` lines carry lengths/IDs only, never content.
+
+## 5. CI follow-up: frontend Vitest worker OOM
+
+GitHub Actions run `34039653867` failed only in the frontend `npm test` step. Backend passed;
+frontend lint/typecheck passed; individual frontend tests were passing until a Vitest worker
+process exceeded Node's heap limit (`FATAL ERROR: Ineffective mark-compacts near heap limit
+Allocation failed - JavaScript heap out of memory`), producing an unhandled worker exit.
+
+Root cause: `MarkdownText` rendered heading lines without incrementing the parser line index,
+creating an infinite render loop for markdown headings. In the full suite, the affected
+`MarkdownText.test.tsx` worker eventually exceeded Node's heap and surfaced as a Vitest worker
+OOM rather than a normal assertion failure. Fix: advance `i` after rendering a heading. The
+initial Vitest worker/heap workaround was reverted because the component loop was the actual
+failure.
+
+Validation after fix: targeted `MarkdownText.test.tsx` passed (6/6); full frontend tests passed
+(19 files, 70/70); frontend lint/typecheck/build passed. Lint still reports the known warning
+set but exits 0.

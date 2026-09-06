@@ -157,6 +157,7 @@ export const MarkdownText: React.FC<{ content: string }> = ({ content }) => {
           {text}
         </Tag>
       );
+      i += 1;
       continue;
     }
 

@@ -28,9 +28,9 @@ describe("MarkdownText (AI chat renderer)", () => {
         content={"Next steps:\n\n1. Repeat the count\n2. Record rainfall\n\n- Control site A\n- Control site B"}
       />
     );
-    expect(screen.getByRole("listitem", { name: /repeat the count/i })).toBeInTheDocument();
-    expect(screen.getByRole("listitem", { name: /control site b/i })).toBeInTheDocument();
-    expect(screen.getByRole("list")).toBeInTheDocument();
+    expect(screen.getByText("Repeat the count").tagName).toBe("LI");
+    expect(screen.getByText("Control site B").tagName).toBe("LI");
+    expect(screen.getAllByRole("list")).toHaveLength(2);
   });
 
   it("renders fenced code blocks literally without executing markup", () => {
