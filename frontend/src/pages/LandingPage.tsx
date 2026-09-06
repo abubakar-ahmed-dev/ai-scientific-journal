@@ -118,6 +118,51 @@ const SectionBreak: React.FC<{ className?: string }> = ({ className = "" }) => (
   />
 );
 
+/** Mid-page CTA as a styled arrow link (no button weight). */
+const ArrowCta: React.FC<{
+  href?: string;
+  to?: string;
+  onClick?: () => void;
+  children: React.ReactNode;
+}> = ({ href, to, onClick, children }) => {
+  const className =
+    "cursor-pointer group inline-flex items-center gap-2 text-lg font-bold text-lp-primary transition-colors hover:text-lp-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-primary focus-visible:ring-offset-2 rounded-md";
+  const inner = (
+    <>
+      <span className="border-b-2 border-lp-primary/30 pb-0.5 transition-colors group-hover:border-lp-primary-hover">
+        {children}
+      </span>
+      <ArrowRight
+        aria-hidden="true"
+        className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1"
+      />
+    </>
+  );
+  if (to) {
+    return (
+      <Link to={to} className={className}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <a
+      href={href}
+      onClick={
+        onClick
+          ? (e) => {
+              e.preventDefault();
+              onClick();
+            }
+          : undefined
+      }
+      className={className}
+    >
+      {inner}
+    </a>
+  );
+};
+
 /**
  * Public landing page ("Modern Field Research Notebook", homepage guidelines).
  * Scoped lp- tokens keep the authenticated app untouched. Static previews are
@@ -172,7 +217,7 @@ export default function LandingPage() {
       type="button"
       onClick={() => signInWithGoogle()}
       disabled={loading}
-      className="inline-flex items-center justify-center gap-2 rounded-xl bg-lp-primary px-8 py-4 text-lg font-bold text-white shadow-md shadow-lp-primary/20 transition hover:bg-lp-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-primary focus-visible:ring-offset-2 disabled:opacity-60"
+      className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-lp-primary px-8 py-4 text-lg font-bold text-white shadow-md shadow-lp-primary/20 transition hover:bg-lp-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-primary focus-visible:ring-offset-2 disabled:opacity-60"
     >
       {loading ? "Signing in…" : "Start Your Journal"}
     </button>
@@ -191,7 +236,11 @@ export default function LandingPage() {
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-lp-border bg-lp-bg/95 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
-          <div className="flex items-center gap-2.5">
+          <Link
+            to={currentUser ? "/dashboard" : "/"}
+            aria-label="AI Scientific Journal — home"
+            className="flex items-center gap-2.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-primary focus-visible:ring-offset-2"
+          >
             <span
               aria-hidden="true"
               className="flex h-9 w-9 items-center justify-center rounded-lg bg-lp-primary text-white"
@@ -201,7 +250,7 @@ export default function LandingPage() {
             <span className="font-display text-xl font-bold text-lp-heading">
               AI Scientific Journal
             </span>
-          </div>
+          </Link>
 
           <nav aria-label="Site" className="hidden items-center gap-8 md:flex">
             {NAV_LINKS.map((link) => (
@@ -225,7 +274,7 @@ export default function LandingPage() {
                 type="button"
                 onClick={() => signInWithGoogle()}
                 disabled={loading}
-                className="rounded-lg bg-lp-primary px-5 py-2.5 text-[15px] font-bold text-white transition hover:bg-lp-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-primary focus-visible:ring-offset-2 disabled:opacity-60"
+                className="cursor-pointer rounded-lg bg-lp-primary px-5 py-2.5 text-[15px] font-bold text-white transition hover:bg-lp-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-primary focus-visible:ring-offset-2 disabled:opacity-60"
               >
                 Sign in with Google
               </button>
@@ -240,7 +289,7 @@ export default function LandingPage() {
             aria-expanded={menuOpen}
             aria-controls="landing-mobile-menu"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
-            className="rounded-md p-2 text-lp-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-primary md:hidden"
+            className="cursor-pointer rounded-md p-2 text-lp-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-primary md:hidden"
           >
             {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -283,7 +332,7 @@ export default function LandingPage() {
                     signInWithGoogle();
                   }}
                   disabled={loading}
-                  className="w-full rounded-lg bg-lp-primary px-4 py-3 text-center text-base font-bold text-white hover:bg-lp-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-primary disabled:opacity-60"
+                  className="cursor-pointer w-full rounded-lg bg-lp-primary px-4 py-3 text-center text-base font-bold text-white hover:bg-lp-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-primary disabled:opacity-60"
                 >
                   Sign in with Google
                 </button>
@@ -497,6 +546,16 @@ export default function LandingPage() {
               <ObservationPreview />
               <AnalysisPreview className="md:mt-12" />
             </div>
+
+            <div className="mt-12 flex justify-center">
+              <ArrowCta
+                to={currentUser ? "/dashboard" : undefined}
+                onClick={currentUser ? undefined : () => signInWithGoogle()}
+                href={currentUser ? undefined : "#"}
+              >
+                {currentUser ? "Open Your Journal" : "Start Your Journal"}
+              </ArrowCta>
+            </div>
           </div>
         </section>
 
@@ -636,6 +695,10 @@ export default function LandingPage() {
                 </details>
               </div>
             </div>
+
+            <div className="mt-12 flex justify-center">
+              <ArrowCta href="#how-it-works">Review the Workflow</ArrowCta>
+            </div>
           </div>
         </section>
 
@@ -662,7 +725,11 @@ export default function LandingPage() {
           <div className="flex flex-col items-center justify-between gap-8 md:flex-row md:items-start">
             {/* Brand */}
             <div className="flex flex-col items-center gap-3 text-center md:items-start md:text-left">
-              <div className="flex items-center gap-2.5">
+              <Link
+                to={currentUser ? "/dashboard" : "/"}
+                aria-label="AI Scientific Journal — home"
+                className="flex items-center gap-2.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
                 <span
                   aria-hidden="true"
                   className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10"
@@ -672,7 +739,7 @@ export default function LandingPage() {
                 <span className="font-display text-lg font-bold text-white">
                   AI Scientific Journal
                 </span>
-              </div>
+              </Link>
               <p className="max-w-xs text-sm leading-relaxed text-white/60">
                 A calm, evidence-oriented research notebook for field and lab
                 work.
