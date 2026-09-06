@@ -159,6 +159,35 @@ inline creation. The projects-page form omits `status` (the repository defaults 
 **Validation:** creator tests 2/2, dependent suites (ResearchTasksPage, ConversationsPage) 5/5,
 frontend tsc clean, lint 0 errors.
 
+## 2c. Deployment preparation fix: Vite build-time Firebase config
+
+**Problem:** the Phase 9 manual/source-deploy path did not guarantee that production Firebase
+web config reached the Vite build. `.dockerignore` excludes `.env.production`, and Cloud Run
+runtime env vars cannot change an already-built SPA bundle. A deployment could therefore load
+the app with demo Firebase identifiers and fail Google sign-in.
+
+**Files changed:**
+* `Dockerfile` — added frontend-stage `ARG`/`ENV` entries for the public `VITE_*` Firebase
+  web config values before `npm run build`. Backend secrets are still runtime-only.
+* `.gcloudignore` — added explicit source-upload exclusions for `.env*`, credentials,
+  service-account files, `node_modules`, `dist`, logs, and local agent metadata.
+* `infrastructure/cloud-run/cloudbuild.yaml` — added a deterministic Cloud Build Docker build
+  that passes public Firebase config build args and pushes the image to Artifact Registry.
+* `plans/phase-9/deploy-guide.md` — replaced the advisory notes with a PowerShell runbook:
+  region before Firestore, Secret Manager console/key rotation, private bucket with public
+  access prevention, scoped IAM, build image with substitutions, deploy image, lock CORS, and
+  run smoke checks.
+* `docs/DEPLOYMENT.md` — documented the build-time Vite config requirement and the
+  Cloud Build -> Artifact Registry -> Cloud Run image deploy path.
+
+**Validation:** `npm.cmd --prefix frontend run build` passed (same >500 kB entry chunk warning
+as before). `docker build -t asj-deploy-preflight ...` passed with dummy public Firebase build
+args after Docker Desktop was started. Docker's static check warns on `VITE_FIREBASE_API_KEY`
+and related names because they look secret-like; these Firebase web config values are public
+identifiers embedded in the browser bundle by design. The backend Gemini key remains
+runtime-only via Secret Manager. `gcloud` and `firebase.cmd` are installed and authenticated;
+cloud execution follows the deployment runbook.
+
 ## 3. Validation Performed (final state)
 
 | Gate | Command | Result |
