@@ -91,7 +91,7 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
             href={href}
             target="_blank"
             rel="noreferrer noopener"
-            className="text-indigo-600 underline underline-offset-2 hover:text-indigo-800"
+            className="text-brand-600 underline underline-offset-2 hover:text-brand-800"
           >
             {label}
           </a>

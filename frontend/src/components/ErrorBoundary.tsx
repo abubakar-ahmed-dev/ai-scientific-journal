@@ -37,7 +37,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-lg max-w-md w-full p-6 text-center space-y-4">
+          <div className="bg-white rounded-2xl border border-app-border shadow-lg max-w-md w-full p-6 text-center space-y-4">
             <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
               <AlertOctagon className="w-6 h-6" />
             </div>
@@ -50,7 +50,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
 
             {this.state.error && (
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-left text-[11px] font-mono text-slate-700 max-h-32 overflow-y-auto">
+              <div className="bg-slate-50 p-3 rounded-lg border border-app-border text-left text-[11px] font-mono text-slate-700 max-h-32 overflow-y-auto">
                 {this.state.error.message}
               </div>
             )}
@@ -65,7 +65,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </button>
               <button
                 onClick={this.handleReset}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition shadow-xs"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition shadow-xs"
               >
                 <Home className="w-3.5 h-3.5" />
                 Go to Dashboard

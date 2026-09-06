@@ -16,7 +16,6 @@ import {
   ListPlus,
   Sparkles,
   ClipboardList,
-  ArrowDownRight,
   ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../lib/firebase/authContext";
@@ -512,7 +511,6 @@ export default function LandingPage() {
                     Suggestions are never turned into tasks on their own.
                   </p>
                 </div>
-                <ArrowDownRight className="hidden h-6 w-6 shrink-0 text-lp-primary-soft sm:block" aria-hidden="true" />
               </div>
             </div>
           </div>

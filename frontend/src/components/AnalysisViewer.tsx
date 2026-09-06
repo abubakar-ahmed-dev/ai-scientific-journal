@@ -126,7 +126,7 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ analysis, onTask
       case "medium":
         return <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">Medium Confidence</span>;
       case "low":
-        return <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">Low Confidence</span>;
+        return <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-app-border">Low Confidence</span>;
       default:
         return null;
     }
@@ -143,12 +143,12 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ analysis, onTask
   });
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden space-y-5 p-5">
+    <div className="bg-white rounded-xl border border-app-border shadow-xs overflow-hidden space-y-5 p-5">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200">
+            <Sparkles className="w-3.5 h-3.5 text-brand-600" />
             <span className="capitalize">{analysis.type.replace("_", " ")}</span>
           </span>
           <span className="text-xs text-slate-400">
@@ -203,11 +203,11 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ analysis, onTask
       {analysis.hypotheses && analysis.hypotheses.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" /> Formulated Hypotheses
+            <Sparkles className="w-3.5 h-3.5 text-brand-600" /> Formulated Hypotheses
           </h4>
           <div className="space-y-2.5">
             {analysis.hypotheses.map((h, idx) => (
-              <div key={idx} className="p-3 bg-indigo-50/40 border border-indigo-100 rounded-lg space-y-1.5">
+              <div key={idx} className="p-3 bg-brand-50/40 border border-brand-100 rounded-lg space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-slate-900">{h.statement}</span>
                   {getConfidenceBadge(h.confidence)}
@@ -221,7 +221,7 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ analysis, onTask
                         return (
                           <span
                             key={obsId}
-                            className="text-slate-400 bg-slate-100 italic px-1.5 py-0.5 rounded border border-slate-200"
+                            className="text-slate-400 bg-slate-100 italic px-1.5 py-0.5 rounded border border-app-border"
                             title={`Observation ${obsId} was deleted`}
                           >
                             [Observation deleted]
@@ -232,7 +232,7 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ analysis, onTask
                         <Link
                           key={obsId}
                           to={`/observations/${obsId}`}
-                          className="font-mono text-indigo-700 bg-white hover:bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 transition"
+                          className="font-mono text-brand-700 bg-white hover:bg-brand-50 px-1.5 py-0.5 rounded border border-brand-100 transition"
                         >
                           {summary?.title || obsId}
                         </Link>
@@ -267,12 +267,12 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ analysis, onTask
       {analysis.suggestedQuestions && analysis.suggestedQuestions.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-            <HelpCircle className="w-3.5 h-3.5 text-indigo-600" /> Follow-up Questions
+            <HelpCircle className="w-3.5 h-3.5 text-brand-600" /> Follow-up Questions
           </h4>
           <ul className="space-y-1">
             {analysis.suggestedQuestions.map((q, idx) => (
               <li key={idx} className="text-xs text-slate-700 flex items-start gap-2">
-                <ArrowRight className="w-3.5 h-3.5 text-indigo-500 mt-0.5 shrink-0" />
+                <ArrowRight className="w-3.5 h-3.5 text-brand-500 mt-0.5 shrink-0" />
                 <span>{q}</span>
               </li>
             ))}
@@ -284,7 +284,7 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ analysis, onTask
       {analysis.suggestedNextSteps && analysis.suggestedNextSteps.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-            <ListChecks className="w-3.5 h-3.5 text-indigo-600" /> Recommended Experimental Tasks
+            <ListChecks className="w-3.5 h-3.5 text-brand-600" /> Recommended Experimental Tasks
           </h4>
           <div className="space-y-2">
             {analysis.suggestedNextSteps.map((step, idx) => {
@@ -294,7 +294,7 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ analysis, onTask
               return (
                 <div
                   key={idx}
-                  className="flex items-center justify-between gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg transition-colors"
+                  className="flex items-center justify-between gap-3 p-3 bg-slate-50 border border-app-border rounded-lg transition-colors"
                 >
                   <span className="text-xs text-slate-800 flex-1">{step}</span>
                   {isAccepted ? (
@@ -306,7 +306,7 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ analysis, onTask
                       type="button"
                       onClick={() => handleAcceptSuggestion(idx)}
                       disabled={isAccepting}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-md transition-colors shadow-xs shrink-0"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 rounded-md transition-colors shadow-xs shrink-0"
                     >
                       {isAccepting ? "Adding..." : "+ Accept as Task"}
                     </button>
@@ -333,14 +333,14 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ analysis, onTask
             ) : projectState.exists ? (
               <Link
                 to={`/projects/${analysis.projectId}`}
-                className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 rounded border border-indigo-200 text-xs transition"
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-50/70 hover:bg-brand-100 text-brand-700 rounded border border-brand-200 text-xs transition"
               >
                 <FolderKanban className="w-3 h-3" />
                 <span>{projectState.title || analysis.projectId}</span>
               </Link>
             ) : (
               <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-400 italic rounded border border-slate-200 text-xs"
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-400 italic rounded border border-app-border text-xs"
                 title={`Project ${analysis.projectId} was deleted from canonical records`}
               >
                 [Unfiled project]
@@ -358,7 +358,7 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ analysis, onTask
                 return (
                   <span
                     key={src.observationId}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-400 italic rounded border border-slate-200 text-xs"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-400 italic rounded border border-app-border text-xs"
                     title={`Observation ${src.observationId} was deleted from canonical records`}
                   >
                     [Observation {src.observationId.slice(0, 8)}... deleted]
@@ -369,7 +369,7 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ analysis, onTask
                 <Link
                   key={src.observationId}
                   to={`/observations/${src.observationId}`}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 rounded border border-indigo-200 text-xs transition"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-50/70 hover:bg-brand-100 text-brand-700 rounded border border-brand-200 text-xs transition"
                 >
                   <span>{src.title || src.observationId}</span>
                 </Link>

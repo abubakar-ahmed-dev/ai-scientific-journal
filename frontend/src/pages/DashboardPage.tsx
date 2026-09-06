@@ -222,7 +222,7 @@ export default function DashboardPage() {
         {/* Contextual greeting header (guidelines §10) */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{greeting()}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-app-heading">{greeting()}</h1>
             <p className="text-sm text-slate-500 mt-1">
               Continue your research where you left off.
             </p>
@@ -230,7 +230,7 @@ export default function DashboardPage() {
 
           <Link
             to="/observations/new"
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-md transition shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
           >
             <Plus className="w-4 h-4" />
             <span>New Observation</span>
@@ -257,16 +257,16 @@ export default function DashboardPage() {
 
         {/* New-user onboarding state (guidelines §20.1) */}
         {isEmptyWorkspace ? (
-          <div className="bg-white rounded-xl border border-slate-200 p-10 text-center space-y-4">
-            <Rocket className="w-10 h-10 text-indigo-500 mx-auto" />
-            <h2 className="text-lg font-bold text-slate-900">Your research workspace is ready.</h2>
+          <div className="bg-white rounded-xl border border-app-border p-10 text-center space-y-4">
+            <Rocket className="w-10 h-10 text-brand-500 mx-auto" />
+            <h2 className="text-lg font-bold text-app-heading">Your research workspace is ready.</h2>
             <p className="text-sm text-slate-500 max-w-md mx-auto">
               Create your first project and record your first observation — then let the
               journal AI help you analyze and plan.
             </p>
             <Link
               to="/projects"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700 transition"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 text-white rounded-md text-sm font-semibold hover:bg-brand-700 transition"
             >
               <FolderKanban className="w-4 h-4" />
               Create Project
@@ -281,20 +281,20 @@ export default function DashboardPage() {
           <>
             {/* Current Research hero (guidelines §11) — honest stats, no fabricated progress */}
             {loading ? (
-              <div className="bg-white rounded-xl border border-slate-200 p-6 animate-pulse space-y-3">
+              <div className="bg-white rounded-xl border border-app-border p-6 animate-pulse space-y-3">
                 <div className="h-3 bg-slate-200 rounded w-1/4"></div>
                 <div className="h-6 bg-slate-200 rounded w-1/2"></div>
                 <div className="h-3 bg-slate-100 rounded w-3/4"></div>
                 <div className="h-8 bg-slate-100 rounded w-40"></div>
               </div>
             ) : currentResearch ? (
-              <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
+              <div className="bg-white rounded-xl border border-app-border p-6 shadow-xs">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1.5 min-w-0">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                       Current Research
                     </p>
-                    <h2 className="text-xl font-bold text-slate-900 truncate">
+                    <h2 className="text-xl font-bold text-app-heading truncate">
                       {currentResearch.title}
                     </h2>
                     {currentResearch.description && (
@@ -322,14 +322,14 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-3 pt-4">
                   <Link
                     to={`/projects/${currentResearch.id}`}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700 transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 text-white rounded-md text-sm font-semibold hover:bg-brand-700 transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
                   >
                     <PlayCircle className="w-4 h-4" />
                     Continue Research
                   </Link>
                   <Link
                     to="/projects"
-                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1"
+                    className="text-xs font-semibold text-brand-600 hover:text-brand-800 inline-flex items-center gap-1"
                   >
                     View all projects
                     <ArrowRight className="w-3 h-3" />
@@ -337,7 +337,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-slate-200 p-6 text-center space-y-2">
+              <div className="bg-white rounded-xl border border-app-border p-6 text-center space-y-2">
                 <FolderKanban className="w-8 h-8 text-slate-300 mx-auto" />
                 <p className="text-sm font-semibold text-slate-700">No active research project.</p>
                 <p className="text-xs text-slate-500">
@@ -345,7 +345,7 @@ export default function DashboardPage() {
                 </p>
                 <Link
                   to="/projects"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-700 transition"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 text-white rounded-md text-xs font-semibold hover:bg-brand-700 transition"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Create Project
@@ -355,56 +355,56 @@ export default function DashboardPage() {
 
             {/* Quick actions (guidelines §12): the four canonical actions, flat cards */}
             <div>
-              <h2 className="text-sm font-bold text-slate-900 pb-3">What do you want to do?</h2>
+              <h2 className="text-sm font-bold text-app-heading pb-3">What do you want to do?</h2>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <Link
                   to="/observations/new"
-                  className="p-4 bg-white border border-slate-200 rounded-xl hover:border-indigo-300 hover:shadow-xs transition flex items-center gap-3 group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  className="p-4 bg-white border border-app-border rounded-xl hover:border-brand-300 hover:shadow-xs transition flex items-center gap-3 group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
                 >
-                  <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-brand-600 text-white flex items-center justify-center shrink-0">
                     <Plus className="w-4.5 h-4.5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-900 group-hover:text-indigo-700 transition">New Observation</h3>
+                    <h3 className="text-sm font-semibold text-app-heading group-hover:text-brand-700 transition">New Observation</h3>
                     <p className="text-xs text-slate-500">Record research</p>
                   </div>
                 </Link>
 
                 <Link
                   to="/ask"
-                  className="p-4 bg-white border border-slate-200 rounded-xl hover:border-purple-300 hover:shadow-xs transition flex items-center gap-3 group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  className="p-4 bg-white border border-app-border rounded-xl hover:border-purple-300 hover:shadow-xs transition flex items-center gap-3 group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
                 >
                   <div className="w-9 h-9 rounded-lg bg-purple-600 text-white flex items-center justify-center shrink-0">
                     <Search className="w-4.5 h-4.5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-900 group-hover:text-purple-700 transition">Ask Journal</h3>
+                    <h3 className="text-sm font-semibold text-app-heading group-hover:text-purple-700 transition">Ask Journal</h3>
                     <p className="text-xs text-slate-500">Search your knowledge</p>
                   </div>
                 </Link>
 
                 <Link
                   to="/conversations"
-                  className="p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-300 hover:shadow-xs transition flex items-center gap-3 group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  className="p-4 bg-white border border-app-border rounded-xl hover:border-blue-300 hover:shadow-xs transition flex items-center gap-3 group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
                 >
                   <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
                     <MessageSquare className="w-4.5 h-4.5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-900 group-hover:text-blue-700 transition">AI Chat</h3>
+                    <h3 className="text-sm font-semibold text-app-heading group-hover:text-blue-700 transition">AI Chat</h3>
                     <p className="text-xs text-slate-500">Work with AI</p>
                   </div>
                 </Link>
 
                 <Link
                   to="/tasks"
-                  className="p-4 bg-white border border-slate-200 rounded-xl hover:border-emerald-300 hover:shadow-xs transition flex items-center gap-3 group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  className="p-4 bg-white border border-app-border rounded-xl hover:border-emerald-300 hover:shadow-xs transition flex items-center gap-3 group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
                 >
                   <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
                     <ListTodo className="w-4.5 h-4.5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-900 group-hover:text-emerald-700 transition">Add Task</h3>
+                    <h3 className="text-sm font-semibold text-app-heading group-hover:text-emerald-700 transition">Add Task</h3>
                     <p className="text-xs text-slate-500">Plan your work</p>
                   </div>
                 </Link>
@@ -436,21 +436,21 @@ export default function DashboardPage() {
 
             {/* Metrics (guidelines §9: below active work) — honest counts with hasMore "+" */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-1">
+              <div className="bg-white p-4 rounded-xl border border-app-border shadow-xs space-y-1">
                 <div className="flex items-center justify-between text-slate-500">
                   <span className="text-xs font-semibold">Observations</span>
-                  <FileText className="w-4 h-4 text-indigo-600" />
+                  <FileText className="w-4 h-4 text-brand-600" />
                 </div>
                 <p className="text-2xl font-bold text-slate-900">
                   {observations.length}
                   {obsHasMore && <span className="text-base font-normal text-slate-400">+</span>}
                 </p>
-                <Link to="/observations" className="text-xs font-medium text-indigo-600 hover:text-indigo-800">
+                <Link to="/observations" className="text-xs font-medium text-brand-600 hover:text-brand-800">
                   View journal
                 </Link>
               </div>
 
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-1">
+              <div className="bg-white p-4 rounded-xl border border-app-border shadow-xs space-y-1">
                 <div className="flex items-center justify-between text-slate-500">
                   <span className="text-xs font-semibold">Active Projects</span>
                   <FolderKanban className="w-4 h-4 text-amber-600" />
@@ -459,12 +459,12 @@ export default function DashboardPage() {
                   {activeProjects.length}
                   {projHasMore && <span className="text-base font-normal text-slate-400">+</span>}
                 </p>
-                <Link to="/projects" className="text-xs font-medium text-indigo-600 hover:text-indigo-800">
+                <Link to="/projects" className="text-xs font-medium text-brand-600 hover:text-brand-800">
                   Manage projects
                 </Link>
               </div>
 
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-1">
+              <div className="bg-white p-4 rounded-xl border border-app-border shadow-xs space-y-1">
                 <div className="flex items-center justify-between text-slate-500">
                   <span className="text-xs font-semibold">Open Tasks</span>
                   <CheckSquare className="w-4 h-4 text-emerald-600" />
@@ -473,12 +473,12 @@ export default function DashboardPage() {
                   {pendingTasks.length}
                   {tasksHasMore && <span className="text-base font-normal text-slate-400">+</span>}
                 </p>
-                <Link to="/tasks" className="text-xs font-medium text-indigo-600 hover:text-indigo-800">
+                <Link to="/tasks" className="text-xs font-medium text-brand-600 hover:text-brand-800">
                   Open tasks board
                 </Link>
               </div>
 
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-1">
+              <div className="bg-white p-4 rounded-xl border border-app-border shadow-xs space-y-1">
                 <div className="flex items-center justify-between text-slate-500">
                   <span className="text-xs font-semibold">AI Analyses</span>
                   <Sparkles className="w-4 h-4 text-purple-600" />
@@ -487,7 +487,7 @@ export default function DashboardPage() {
                   {analyses.length}
                   {analysesHasMore && <span className="text-base font-normal text-slate-400">+</span>}
                 </p>
-                <Link to="/ask" className="text-xs font-medium text-indigo-600 hover:text-indigo-800">
+                <Link to="/ask" className="text-xs font-medium text-brand-600 hover:text-brand-800">
                   Ask My Journal
                 </Link>
               </div>
@@ -497,12 +497,12 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Left Column (2/3): Recent Observations */}
               <div className="lg:col-span-2 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                  <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-indigo-600" />
+                <div className="flex items-center justify-between border-b border-app-border pb-3">
+                  <h2 className="text-lg font-bold text-app-heading flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-brand-600" />
                     <span>Recent Observations</span>
                   </h2>
-                  <Link to="/observations" className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                  <Link to="/observations" className="text-xs font-semibold text-brand-600 hover:text-brand-800">
                     View All &rarr;
                   </Link>
                 </div>
@@ -510,7 +510,7 @@ export default function DashboardPage() {
                 {loading ? (
                   <div className="space-y-3">
                     {[1, 2, 3].map((n) => (
-                      <div key={n} className="bg-white p-5 rounded-xl border border-slate-200 animate-pulse space-y-2">
+                      <div key={n} className="bg-white p-5 rounded-xl border border-app-border animate-pulse space-y-2">
                         <div className="h-4 bg-slate-200 rounded w-1/3"></div>
                         <div className="h-3 bg-slate-100 rounded w-full"></div>
                         <div className="h-3 bg-slate-100 rounded w-2/3"></div>
@@ -524,18 +524,18 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       onClick={loadDashboardData}
-                      className="text-xs text-indigo-600 font-semibold hover:underline"
+                      className="text-xs text-brand-600 font-semibold hover:underline"
                     >
                       Retry loading observations
                     </button>
                   </div>
                 ) : observations.length === 0 ? (
-                  <div className="bg-white p-10 rounded-xl border border-slate-200 text-center space-y-3">
+                  <div className="bg-white p-10 rounded-xl border border-app-border text-center space-y-3">
                     <FileText className="w-10 h-10 text-slate-300 mx-auto" />
                     <p className="text-sm text-slate-600 font-medium">No observations logged yet.</p>
                     <Link
                       to="/observations/new"
-                      className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-700 transition"
+                      className="inline-flex items-center gap-1 px-4 py-2 bg-brand-600 text-white rounded-md text-xs font-semibold hover:bg-brand-700 transition"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       Log First Observation
@@ -546,13 +546,13 @@ export default function DashboardPage() {
                     {observations.map((obs) => (
                       <div
                         key={obs.id}
-                        className="bg-white p-5 rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-xs transition space-y-2"
+                        className="bg-white p-5 rounded-xl border border-app-border hover:border-slate-300 hover:shadow-xs transition space-y-2"
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div>
                             <Link
                               to={`/observations/${obs.id}`}
-                              className="text-base font-semibold text-slate-900 hover:text-indigo-600 transition"
+                              className="text-base font-semibold text-slate-900 hover:text-brand-600 transition"
                             >
                               {obs.title}
                             </Link>
@@ -596,14 +596,14 @@ export default function DashboardPage() {
               <div className="space-y-8">
                 {/* Prioritized task summary (guidelines §14) */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <div className="flex items-center justify-between border-b border-app-border pb-2">
+                    <h3 className="text-sm font-bold text-app-heading flex items-center gap-2">
                       <ListTodo className="w-4 h-4 text-amber-600" />
                       <span>Today's Tasks</span>
                     </h3>
                     <Link
                       to="/tasks"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-brand-700 bg-brand-50 border border-brand-200 hover:bg-brand-100 transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
                     >
                       View all
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -611,7 +611,7 @@ export default function DashboardPage() {
                   </div>
 
                   {loading ? (
-                    <div className="p-4 bg-white rounded-xl border border-slate-200 animate-pulse space-y-2">
+                    <div className="p-4 bg-white rounded-xl border border-app-border animate-pulse space-y-2">
                       <div className="h-3 bg-slate-200 rounded w-1/2"></div>
                       <div className="h-3 bg-slate-100 rounded w-3/4"></div>
                     </div>
@@ -621,17 +621,17 @@ export default function DashboardPage() {
                       <button
                         type="button"
                         onClick={loadDashboardData}
-                        className="text-xs text-indigo-600 font-semibold hover:underline"
+                        className="text-xs text-brand-600 font-semibold hover:underline"
                       >
                         Retry
                       </button>
                     </div>
                   ) : summaryTasks.length === 0 ? (
-                    <div className="p-5 bg-white rounded-xl border border-slate-200 text-center text-xs text-slate-500 space-y-2">
+                    <div className="p-5 bg-white rounded-xl border border-app-border text-center text-xs text-slate-500 space-y-2">
                       <p>You're all caught up — no open tasks right now.</p>
                       <Link
                         to="/tasks"
-                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-700 transition"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-600 text-white rounded-md text-xs font-semibold hover:bg-brand-700 transition"
                       >
                         <Plus className="w-3 h-3" />
                         Add Task
@@ -643,7 +643,7 @@ export default function DashboardPage() {
                         <Link
                           key={task.id}
                           to="/tasks"
-                          className="block p-3 bg-white rounded-lg border border-slate-200 hover:shadow-2xs hover:border-slate-300 transition text-xs space-y-1 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
+                          className="block p-3 bg-white rounded-lg border border-app-border hover:shadow-2xs hover:border-slate-300 transition text-xs space-y-1 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-semibold text-slate-800 line-clamp-1">{task.title}</span>
@@ -668,20 +668,20 @@ export default function DashboardPage() {
 
                 {/* Clickable recent activity (guidelines §17) */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <div className="flex items-center justify-between border-b border-app-border pb-2">
+                    <h3 className="text-sm font-bold text-app-heading flex items-center gap-2">
                       <BookOpen className="w-4 h-4 text-slate-500" />
                       <span>Recent Activity</span>
                     </h3>
                   </div>
 
                   {loading ? (
-                    <div className="p-4 bg-white rounded-xl border border-slate-200 animate-pulse space-y-2">
+                    <div className="p-4 bg-white rounded-xl border border-app-border animate-pulse space-y-2">
                       <div className="h-3 bg-slate-200 rounded w-2/3"></div>
                       <div className="h-3 bg-slate-100 rounded w-1/2"></div>
                     </div>
                   ) : activity.length === 0 ? (
-                    <div className="p-5 bg-white rounded-xl border border-slate-200 text-center text-xs text-slate-500">
+                    <div className="p-5 bg-white rounded-xl border border-app-border text-center text-xs text-slate-500">
                       Activity from your observations, tasks, and analyses will appear here.
                     </div>
                   ) : (
@@ -690,7 +690,7 @@ export default function DashboardPage() {
                         <li key={item.id}>
                           <Link
                             to={item.to}
-                            className="flex items-start justify-between gap-3 p-2.5 rounded-lg hover:bg-white hover:shadow-2xs border border-transparent hover:border-slate-200 transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            className="flex items-start justify-between gap-3 p-2.5 rounded-lg hover:bg-white hover:shadow-2xs border border-transparent hover:border-app-border transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
                           >
                             <span className="text-xs text-slate-700 line-clamp-1">
                               {item.kind === "analysis" && (

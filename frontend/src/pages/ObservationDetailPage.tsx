@@ -215,7 +215,7 @@ export default function ObservationDetailPage() {
             <button
               onClick={handleRunAnalysis}
               disabled={analyzing || loading || !observation}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-md shadow-xs transition"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 rounded-md shadow-xs transition"
             >
               <Sparkles className="w-4 h-4" />
               {analyzing ? "Analyzing..." : "Analyze with AI"}
@@ -233,9 +233,9 @@ export default function ObservationDetailPage() {
             <button
               onClick={handleStartDiscussion}
               disabled={startingChat || loading || !observation}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 disabled:opacity-50 rounded-md transition"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 disabled:opacity-50 rounded-md transition"
             >
-              <MessageSquare className="w-4 h-4 text-indigo-600" />
+              <MessageSquare className="w-4 h-4 text-brand-600" />
               {startingChat ? "Opening..." : "Discuss with AI"}
             </button>
 
@@ -270,7 +270,7 @@ export default function ObservationDetailPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+            <div className="bg-white rounded-lg border border-app-border shadow-sm p-6 sm:p-8 space-y-6">
               <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-6">
                 <div>
                   <span
@@ -284,7 +284,7 @@ export default function ObservationDetailPage() {
                   >
                     {observation.status}
                   </span>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{observation.title}</h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-app-heading">{observation.title}</h1>
                   <p className="text-xs text-slate-400 mt-1">
                     Observed: {new Date(observation.observedAt).toLocaleString()} &bull; Version: v{observation.version}
                   </p>
@@ -292,7 +292,7 @@ export default function ObservationDetailPage() {
 
                 <button
                   onClick={loadVersionHistory}
-                  className="text-xs text-indigo-600 hover:text-indigo-800 border border-indigo-200 px-2.5 py-1.5 rounded"
+                  className="text-xs text-brand-600 hover:text-brand-800 border border-brand-200 px-2.5 py-1.5 rounded"
                 >
                   {showVersions ? "Hide Version History" : "View Version History"}
                 </button>
@@ -300,16 +300,16 @@ export default function ObservationDetailPage() {
 
               {/* Version History Drawer/Section */}
               {showVersions && (
-                <div className="bg-slate-50 p-4 rounded-md border border-slate-200 space-y-3">
+                <div className="bg-slate-50 p-4 rounded-md border border-app-border space-y-3">
                   <h3 className="text-sm font-semibold text-slate-800">Version History Snapshots</h3>
                   {versions.length === 0 ? (
                     <p className="text-xs text-slate-500">No previous edit snapshots for this observation.</p>
                   ) : (
                     <ul className="space-y-3">
                       {versions.map((ver) => (
-                        <li key={ver.id} className="p-3.5 bg-white rounded-lg border border-slate-200 text-xs space-y-1.5 hover:border-indigo-200 transition">
+                        <li key={ver.id} className="p-3.5 bg-white rounded-lg border border-app-border text-xs space-y-1.5 hover:border-brand-200 transition">
                           <div className="flex justify-between font-medium">
-                            <span className="font-bold text-indigo-700">Revision v{ver.version}</span>
+                            <span className="font-bold text-brand-700">Revision v{ver.version}</span>
                             <span className="text-slate-400">{new Date(ver.editedAt).toLocaleString()}</span>
                           </div>
                           <p className="text-slate-800"><strong>Title:</strong> {ver.title}</p>
@@ -318,7 +318,7 @@ export default function ObservationDetailPage() {
                             <button
                               type="button"
                               onClick={() => setSelectedVersion(ver)}
-                              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1 focus:outline-hidden"
+                              className="text-xs font-semibold text-brand-600 hover:text-brand-800 inline-flex items-center gap-1 focus:outline-hidden"
                             >
                               <span>Inspect Snapshot & Compare</span> &rarr;
                             </button>
@@ -338,9 +338,9 @@ export default function ObservationDetailPage() {
 
               {/* Hypothesis */}
               {observation.hypothesis && (
-                <div className="space-y-2 bg-indigo-50/50 p-4 rounded-md border border-indigo-100">
-                  <h2 className="text-sm font-semibold text-indigo-900">User Hypothesis</h2>
-                  <p className="text-indigo-950 text-sm leading-relaxed">{observation.hypothesis}</p>
+                <div className="space-y-2 bg-brand-50/50 p-4 rounded-md border border-brand-100">
+                  <h2 className="text-sm font-semibold text-brand-900">User Hypothesis</h2>
+                  <p className="text-brand-950 text-sm leading-relaxed">{observation.hypothesis}</p>
                 </div>
               )}
 
@@ -356,7 +356,7 @@ export default function ObservationDetailPage() {
               {observation.measurements.length > 0 && (
                 <div className="space-y-3">
                   <h2 className="text-sm font-semibold text-slate-700">Measurements</h2>
-                  <div className="overflow-x-auto border border-slate-200 rounded-md">
+                  <div className="overflow-x-auto border border-app-border rounded-md">
                     <table className="min-w-full divide-y divide-slate-200 text-sm">
                       <thead className="bg-slate-50">
                         <tr>
@@ -387,7 +387,7 @@ export default function ObservationDetailPage() {
                   <h2 className="text-sm font-semibold text-slate-700">Geographic Location</h2>
                   <Suspense
                     fallback={
-                      <div className="h-44 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-xs text-slate-400">
+                      <div className="h-44 bg-slate-50 border border-app-border rounded-xl flex items-center justify-center text-xs text-slate-400">
                         Loading map…
                       </div>
                     }
@@ -415,16 +415,16 @@ export default function ObservationDetailPage() {
             </div>
 
             {/* Evidence Media Gallery Section */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 sm:p-8">
+            <div className="bg-white rounded-xl border border-app-border shadow-xs p-6 sm:p-8">
               <MediaGallery observationId={id!} />
             </div>
 
             {/* Related Observations Section */}
             {relatedObservations.length > 0 && (
-              <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-4">
+              <div className="bg-white rounded-xl border border-app-border shadow-xs p-6 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-indigo-600" />
+                  <h3 className="text-base font-bold text-app-heading flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-brand-600" />
                     <span>Related Observations ({relatedObservations.length})</span>
                   </h3>
                   <span className="text-xs text-slate-400">Lexical similarity over journal</span>
@@ -434,10 +434,10 @@ export default function ObservationDetailPage() {
                     <Link
                       key={item.observationId}
                       to={`/observations/${item.observationId}`}
-                      className="group block p-4 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/20 transition shadow-2xs"
+                      className="group block p-4 rounded-lg border border-app-border hover:border-brand-300 hover:bg-brand-50/20 transition shadow-2xs"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-sm font-semibold text-slate-900 group-hover:text-indigo-600 transition line-clamp-1">
+                        <h4 className="text-sm font-semibold text-app-heading group-hover:text-brand-600 transition line-clamp-1">
                           {item.title}
                         </h4>
                         <span className="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded shrink-0">
@@ -468,8 +468,8 @@ export default function ObservationDetailPage() {
             {analyses.length > 0 && (
               <div className="space-y-4 pt-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <ListChecks className="w-5 h-5 text-indigo-600" />
+                  <h2 className="text-lg font-bold text-app-heading flex items-center gap-2">
+                    <ListChecks className="w-5 h-5 text-brand-600" />
                     AI Analyses & Structured Insights ({analyses.length})
                   </h2>
                 </div>

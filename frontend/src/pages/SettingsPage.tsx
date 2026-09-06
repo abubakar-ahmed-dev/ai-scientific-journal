@@ -70,7 +70,7 @@ export default function SettingsPage() {
     <Layout>
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">User Profile & Settings</h1>
+          <h1 className="text-2xl font-bold text-app-heading">User Profile & Settings</h1>
           <p className="text-sm text-slate-500">
             Manage your researcher profile, timezone, and journal preferences.
           </p>
@@ -91,9 +91,9 @@ export default function SettingsPage() {
         {loading ? (
           <div className="p-12 text-center text-slate-500">Loading settings...</div>
         ) : (
-          <form onSubmit={handleSave} className="bg-white p-6 sm:p-8 rounded-lg border border-slate-200 shadow-sm space-y-6">
+          <form onSubmit={handleSave} className="bg-white p-6 sm:p-8 rounded-lg border border-app-border shadow-sm space-y-6">
             {/* Read-Only Account Details */}
-            <div className="bg-slate-50 p-4 rounded-md border border-slate-200 space-y-2 text-xs text-slate-600">
+            <div className="bg-slate-50 p-4 rounded-md border border-app-border space-y-2 text-xs text-slate-600">
               <h2 className="text-sm font-semibold text-slate-800">Account</h2>
               <div>
                 <strong>Firebase UID:</strong> {profile?.ownerId}
@@ -125,7 +125,7 @@ export default function SettingsPage() {
                 maxLength={100}
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
@@ -138,13 +138,13 @@ export default function SettingsPage() {
                 placeholder="https://example.com/avatar.jpg"
                 value={photoURL}
                 onChange={(e) => setPhotoURL(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-brand-500"
               />
             </div>
             </fieldset>
 
             {/* Preferences */}
-            <fieldset className="space-y-4 border-0 p-0 pt-4 border-t border-slate-200">
+            <fieldset className="space-y-4 border-0 p-0 pt-4 border-t border-app-border">
               <legend className="text-sm font-semibold text-slate-800 pb-1">Application Preferences</legend>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -182,7 +182,7 @@ export default function SettingsPage() {
                     id="locToggle"
                     checked={locationEnabled}
                     onChange={(e) => setLocationEnabled(e.target.checked)}
-                    className="h-4 w-4 text-indigo-600 border-slate-300 rounded"
+                    className="h-4 w-4 text-brand-600 border-slate-300 rounded"
                   />
                   <label htmlFor="locToggle" className="text-sm text-slate-700">
                     Enable geographic location capture by default
@@ -195,7 +195,7 @@ export default function SettingsPage() {
                     id="aiToggle"
                     checked={aiSuggestionsEnabled}
                     onChange={(e) => setAiSuggestionsEnabled(e.target.checked)}
-                    className="h-4 w-4 text-indigo-600 border-slate-300 rounded"
+                    className="h-4 w-4 text-brand-600 border-slate-300 rounded"
                   />
                   <label htmlFor="aiToggle" className="text-sm text-slate-700">
                     Show AI suggestions and insights
@@ -205,7 +205,7 @@ export default function SettingsPage() {
             </fieldset>
 
             {/* Data Safety note (guidelines §54): honest, no unsupported claims */}
-            <div className="p-4 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
+            <div className="p-4 rounded-md bg-slate-50 border border-app-border text-xs text-slate-600 space-y-1">
               <p className="font-semibold text-slate-700">Your research data</p>
               <p>
                 Observations, projects, and media are stored privately under your account and
@@ -213,13 +213,13 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            <div className="pt-4 border-t border-slate-200 flex justify-end">
+            <div className="pt-4 border-t border-app-border flex justify-end">
               <button
                 type="submit"
                 disabled={saving}
                 aria-live="polite"
                 className={`px-6 py-2 text-white rounded text-sm font-medium transition disabled:opacity-50 ${
-                  justSaved && !saving ? "bg-emerald-600" : "bg-indigo-600 hover:bg-indigo-700"
+                  justSaved && !saving ? "bg-emerald-600" : "bg-brand-600 hover:bg-brand-700"
                 }`}
               >
                 {saving ? "Saving..." : justSaved ? "✓ Saved" : "Save Preferences"}

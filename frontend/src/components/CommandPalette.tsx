@@ -212,7 +212,7 @@ export const CommandPalette: React.FC<{ open: boolean; onClose: () => void }> = 
             aria-label="Search commands"
             className="w-full py-3.5 text-sm bg-transparent focus:outline-hidden placeholder:text-slate-400"
           />
-          <kbd className="shrink-0 text-[10px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5">
+          <kbd className="shrink-0 text-[10px] font-semibold text-slate-400 bg-slate-100 border border-app-border rounded px-1.5 py-0.5">
             ESC
           </kbd>
         </div>
@@ -239,16 +239,16 @@ export const CommandPalette: React.FC<{ open: boolean; onClose: () => void }> = 
                     aria-selected={active}
                     onMouseEnter={() => setActiveIndex(idx)}
                     onClick={item.action}
-                    className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-                      active ? "bg-indigo-50 text-indigo-900" : "text-slate-700"
+                    className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500 ${
+                      active ? "bg-brand-50 text-brand-900" : "text-slate-700"
                     }`}
                   >
-                    <Icon className={`w-4 h-4 shrink-0 ${active ? "text-indigo-600" : "text-slate-400"}`} />
+                    <Icon className={`w-4 h-4 shrink-0 ${active ? "text-brand-600" : "text-slate-400"}`} />
                     <span className="flex-1 text-left font-medium truncate">{item.label}</span>
                     {item.hint && (
                       <span className="shrink-0 text-[10px] text-slate-400">{item.hint}</span>
                     )}
-                    {active && <CornerDownLeft className="w-3 h-3 shrink-0 text-indigo-400" />}
+                    {active && <CornerDownLeft className="w-3 h-3 shrink-0 text-brand-400" />}
                   </button>
                 </React.Fragment>
               );
