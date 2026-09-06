@@ -59,28 +59,29 @@ export default function ObservationsPage() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Observations</h1>
+            <h1 className="text-2xl font-bold text-app-heading">Observations</h1>
             <p className="text-sm text-slate-500">
               Your recorded field notes, scientific observations, and journal entries.
             </p>
           </div>
           <Link
             to="/observations/new"
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 shadow-sm transition"
+            className="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-md hover:bg-brand-700 shadow-sm transition"
           >
             + New Observation
           </Link>
         </div>
 
         {/* Filter Toolbar */}
-        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm space-y-4">
+        <div className="bg-white p-4 rounded-lg border border-app-border shadow-sm space-y-4">
           <form onSubmit={handleSearchSubmit} className="flex gap-2">
             <input
               type="text"
+              aria-label="Search observations"
               placeholder="Search title, description, hypothesis, tags..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
             <button
               type="submit"
@@ -93,8 +94,9 @@ export default function ObservationsPage() {
           <div className="flex flex-wrap gap-4 items-center justify-between text-sm">
             <div className="flex flex-wrap gap-4 items-center">
               <div>
-                <label className="text-xs font-medium text-slate-500 mr-2">Project:</label>
+                <label htmlFor="filter-project" className="text-xs font-medium text-slate-500 mr-2">Project:</label>
                 <select
+                  id="filter-project"
                   value={selectedProject}
                   onChange={(e) => setSelectedProject(e.target.value)}
                   className="px-2.5 py-1.5 border border-slate-300 rounded-md text-sm bg-white"
@@ -110,8 +112,9 @@ export default function ObservationsPage() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-slate-500 mr-2">Status:</label>
+                <label htmlFor="filter-status" className="text-xs font-medium text-slate-500 mr-2">Status:</label>
                 <select
+                  id="filter-status"
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
                   className="px-2.5 py-1.5 border border-slate-300 rounded-md text-sm bg-white"
@@ -126,8 +129,9 @@ export default function ObservationsPage() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-500 mr-2">Sort By:</label>
+              <label htmlFor="sort-by" className="text-xs font-medium text-slate-500 mr-2">Sort By:</label>
               <select
+                id="sort-by"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as "updated" | "observed")}
                 className="px-2.5 py-1.5 border border-slate-300 rounded-md text-sm bg-white"
@@ -140,7 +144,7 @@ export default function ObservationsPage() {
         </div>
 
         {/* Observations List */}
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-lg border border-app-border shadow-sm overflow-hidden">
           {loading ? (
             <div className="p-8 text-center text-slate-500 text-sm">Loading observations...</div>
           ) : observations.length === 0 ? (
@@ -148,7 +152,7 @@ export default function ObservationsPage() {
               <p className="text-slate-500 text-sm">No observations match your current filter.</p>
               <Link
                 to="/observations/new"
-                className="inline-block px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+                className="inline-block px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-md hover:bg-brand-700"
               >
                 Create Observation
               </Link>
@@ -161,7 +165,7 @@ export default function ObservationsPage() {
                     <div>
                       <Link
                         to={`/observations/${obs.id}`}
-                        className="text-lg font-semibold text-indigo-600 hover:text-indigo-800"
+                        className="text-lg font-semibold text-brand-600 hover:text-brand-800"
                       >
                         {obs.title}
                       </Link>
@@ -209,7 +213,7 @@ export default function ObservationsPage() {
 
           {/* Pagination */}
           {hasMore && nextCursor && (
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-center">
+            <div className="p-4 bg-slate-50 border-t border-app-border flex justify-center">
               <button
                 onClick={() => loadObservations(nextCursor)}
                 className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-100 transition shadow-sm"

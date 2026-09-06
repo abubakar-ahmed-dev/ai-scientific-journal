@@ -1,15 +1,93 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, LogOut } from "lucide-react";
+import {
+  Menu,
+  X,
+  LogOut,
+  NotebookPen,
+  LayoutDashboard,
+  FileText,
+  Map,
+  Search,
+  ListTodo,
+  FolderKanban,
+  MessageSquare,
+  Settings,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import { useAuth } from "../lib/firebase/authContext";
+import { CommandPalette } from "./CommandPalette";
+
+interface NavLinkItem {
+  to: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+interface NavSection {
+  heading?: string;
+  links: NavLinkItem[];
+}
+
+/**
+ * Canonical grouped navigation (UX guidelines §3/§5). One model feeds both the
+ * desktop sidebar and the mobile drawer so the two never drift.
+ */
+const NAV_SECTIONS: NavSection[] = [
+  { heading: "Workspace", links: [{ to: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] },
+  {
+    heading: "Research",
+    links: [
+      { to: "/observations", label: "Observations", icon: FileText },
+      { to: "/map", label: "Research Map", icon: Map },
+      { to: "/ask", label: "Ask Journal", icon: Search },
+    ],
+  },
+  {
+    heading: "Work",
+    links: [
+      { to: "/tasks", label: "Tasks", icon: ListTodo },
+      { to: "/projects", label: "Projects", icon: FolderKanban },
+    ],
+  },
+  { heading: "AI", links: [{ to: "/conversations", label: "AI Chat", icon: MessageSquare }] },
+];
+
+const SETTINGS_LINK: NavLinkItem = { to: "/settings", label: "Settings", icon: Settings };
+
+/** Sidebar collapse preference (guidelines §5.3). Persisted locally. */
+const SIDEBAR_COLLAPSED_KEY = "asj.sidebar.collapsed";
+
+function readSidebarCollapsed(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, signOut } = useAuth();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed);
   const [prevPath, setPrevPath] = useState(location.pathname);
   const drawerRef = React.useRef<HTMLDivElement>(null);
   const hamburgerBtnRef = React.useRef<HTMLButtonElement>(null);
+
+  // Global Ctrl/Cmd+K opens the command palette (guidelines §6/§45).
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Close mobile drawer on route change without cascading effect
   if (location.pathname !== prevPath) {
@@ -65,38 +143,120 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     };
   }, [mobileMenuOpen]);
 
-  const navLinks = [
-    { to: "/dashboard", label: "Dashboard" },
-    { to: "/observations", label: "Observations" },
-    { to: "/map", label: "Research Map" },
-    { to: "/ask", label: "Ask Journal" },
-    { to: "/tasks", label: "Tasks" },
-    { to: "/conversations", label: "AI Chat" },
-    { to: "/projects", label: "Projects" },
-    { to: "/settings", label: "Settings" },
-  ];
+  const isActive = (to: string) =>
+    location.pathname === to || (to !== "/dashboard" && location.pathname.startsWith(to));
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
+      } catch {
+        // Storage unavailable (private mode) — preference just won't persist.
+      }
+      return next;
+    });
+  };
 
   const userInitial = (currentUser?.displayName?.[0] || currentUser?.email?.[0] || "U").toUpperCase();
 
+  const renderNavItem = (
+    link: NavLinkItem,
+    onNavigate?: () => void,
+    surface: "dark" | "light" = "dark"
+  ) => {
+    const Icon = link.icon;
+    const active = isActive(link.to);
+    const collapsed = surface === "dark" && sidebarCollapsed;
+    const onDark = surface === "dark";
+    return (
+      <Link
+        key={link.to}
+        to={link.to}
+        onClick={onNavigate}
+        aria-current={active ? "page" : undefined}
+        title={collapsed ? link.label : undefined}
+        aria-label={collapsed ? link.label : undefined}
+        className={`relative flex items-center rounded-md text-sm transition focus:outline-hidden focus-visible:ring-2 ${
+          onDark ? "focus-visible:ring-white/60" : "focus-visible:ring-brand-500"
+        } ${collapsed ? "justify-center mx-1" : "gap-3.5"} ${
+          active
+            ? onDark
+              ? "bg-brand-950/80 font-semibold text-white"
+              : "bg-brand-100 font-semibold text-brand-800"
+            : onDark
+            ? "font-medium text-[#E5F2ED]/80 hover:bg-white/10 hover:text-white"
+            : "font-medium text-slate-600 hover:bg-brand-50 hover:text-app-heading"
+        }`}
+      >
+        {/* Non-color active indicator (guidelines §5.2): left accent bar + weight + background */}
+        {active && !collapsed && (
+          <span
+            aria-hidden="true"
+            className={`absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full ${
+              onDark ? "bg-brand-300" : "bg-brand-600"
+            }`}
+          />
+        )}
+        {/* Collapsed active state: filled dot below the icon (not color-only, §5.2) */}
+        {active && collapsed && (
+          <span
+            aria-hidden="true"
+            className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-brand-300"
+          />
+        )}
+        <Icon className={`h-4 w-4 shrink-0 ${collapsed ? "my-2.5" : "ml-2.5"} ${
+          active
+            ? onDark
+              ? "text-white"
+              : "text-brand-600"
+            : onDark
+            ? "text-[#E5F2ED]/60"
+            : "text-slate-400"
+        }`} />
+        {!collapsed && <span className="py-2 pr-2">{link.label}</span>}
+      </Link>
+    );
+  };
+
+  const sidebarContent = (
+    <nav aria-label="Main Navigation" className="flex h-full flex-col gap-5 overflow-y-auto px-3 py-5">
+      {NAV_SECTIONS.map((section) => (
+        <div key={section.heading} className="space-y-1">
+          {!sidebarCollapsed && section.heading && (
+            <p className="px-2.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-[#E5F2ED]/50">
+              {section.heading}
+            </p>
+          )}
+          {section.links.map((link) => renderNavItem(link))}
+        </div>
+      ))}
+
+      <div className="mt-auto space-y-1 border-t border-white/15 pt-4">
+        {renderNavItem(SETTINGS_LINK)}
+      </div>
+    </nav>
+  );
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+    <div className="min-h-screen bg-app-bg text-slate-900">
       {/* Accessible Skip Link */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-md focus:shadow-md focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-brand-600 focus:text-white focus:rounded-md focus:shadow-md focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
       >
         Skip to main content
       </a>
 
-      <header role="banner" className="bg-white border-b border-slate-200 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-4 sm:space-x-8">
+      <header role="banner" className="bg-app-bg/90 backdrop-blur-sm border-b border-app-border sticky top-0 z-20">
+        <div className="h-16 px-4 sm:px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             {/* Mobile Hamburger Toggle */}
             <button
               ref={hamburgerBtnRef}
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+              className="md:hidden p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
               aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-nav-drawer"
@@ -106,39 +266,41 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
             <Link
               to="/dashboard"
-              className="flex items-center space-x-2 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 rounded-md"
+              aria-label="AI Scientific Journal — dashboard"
+              className="flex items-center gap-2.5 rounded-lg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
+              title="Go to dashboard"
             >
-              <span className="text-xl font-bold bg-linear-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+              <span
+                aria-hidden="true"
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white"
+              >
+                <NotebookPen className="h-5 w-5" />
+              </span>
+              <span className="font-display text-lg font-bold text-app-heading">
                 AI Scientific Journal
               </span>
             </Link>
-
-            {/* Desktop Navigation */}
-            <nav aria-label="Main Navigation" className="hidden md:flex space-x-1 lg:space-x-2">
-              {navLinks.map((link) => {
-                const isActive = location.pathname === link.to || (link.to !== "/dashboard" && location.pathname.startsWith(link.to));
-                return (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition focus:outline-hidden focus:ring-2 focus:ring-indigo-500 ${
-                      isActive
-                        ? "bg-indigo-50 text-indigo-700 font-semibold shadow-2xs"
-                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                );
-              })}
-            </nav>
           </div>
 
-          {/* User Profile & Sign Out (Desktop) */}
-          <div className="flex items-center space-x-3">
+          {/* User Profile, Command Palette trigger & Sign Out */}
+          <div className="hidden md:flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              aria-label="Open command palette"
+              aria-haspopup="dialog"
+              className="hidden sm:flex items-center gap-2 pl-2.5 pr-1.5 py-1.5 text-xs text-slate-400 bg-slate-50 hover:bg-slate-100 border border-app-border rounded-md transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span className="font-medium">Search…</span>
+              <kbd className="text-[10px] font-semibold text-slate-400 bg-white border border-app-border rounded px-1 py-0.5">
+                Ctrl K
+              </kbd>
+            </button>
+
             {currentUser && (
-              <div className="hidden sm:flex items-center space-x-2 text-xs text-slate-600 bg-slate-50 py-1 px-2.5 rounded-full border border-slate-200">
-                <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-[10px]">
+              <div className="flex items-center space-x-2 text-xs text-slate-600 bg-slate-50 py-1 px-2.5 rounded-full border border-app-border">
+                <div className="w-5 h-5 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-[10px]">
                   {userInitial}
                 </div>
                 <span className="max-w-[150px] truncate font-medium">
@@ -148,7 +310,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             )}
             <button
               onClick={() => signOut()}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
               title="Sign out of your account"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -161,17 +323,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         {mobileMenuOpen && (
           <div
             id="mobile-nav-drawer"
+            aria-label="Mobile navigation"
             className="md:hidden fixed inset-0 top-16 z-30 bg-slate-900/40 backdrop-blur-xs flex flex-col"
             onClick={() => setMobileMenuOpen(false)}
           >
             <div
               ref={drawerRef}
-              className="bg-white border-b border-slate-200 p-4 space-y-2 shadow-xl"
+              className="bg-white border-b border-app-border p-4 space-y-2 shadow-xl"
               onClick={(e) => e.stopPropagation()}
             >
               {currentUser && (
-                <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg border border-slate-200 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm">
+                <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg border border-app-border mb-2">
+                  <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-sm">
                     {userInitial}
                   </div>
                   <div className="truncate">
@@ -183,27 +346,21 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </div>
               )}
 
-              <nav aria-label="Mobile Navigation" className="space-y-1">
-                {navLinks.map((link) => {
-                  const isActive = location.pathname === link.to || (link.to !== "/dashboard" && location.pathname.startsWith(link.to));
-                  return (
-                    <Link
-                      key={link.to}
-                      to={link.to}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`block px-3 py-2.5 rounded-md text-sm font-medium transition ${
-                        isActive
-                          ? "bg-indigo-50 text-indigo-700 font-semibold"
-                          : "text-slate-700 hover:bg-slate-100"
-                      }`}
-                    >
-                      {link.label}
-                    </Link>
-                  );
-                })}
-              </nav>
+              {NAV_SECTIONS.map((section) => (
+                <div key={section.heading}>
+                  {section.heading && (
+                    <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      {section.heading}
+                    </p>
+                  )}
+                  <div className="space-y-1">
+                    {section.links.map((link) => renderNavItem(link, () => setMobileMenuOpen(false), "light"))}
+                  </div>
+                </div>
+              ))}
 
-              <div className="pt-3 border-t border-slate-200">
+              <div className="pt-3 mt-2 border-t border-app-border space-y-1">
+                {renderNavItem(SETTINGS_LINK, () => setMobileMenuOpen(false))}
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
@@ -220,9 +377,50 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         )}
       </header>
 
-      <main id="main-content" role="main" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {children}
-      </main>
+      <div className="flex">
+        {/* Desktop persistent sidebar (guidelines §4–§5), full height under header */}
+        <aside
+          aria-label="Sidebar navigation"
+          className={`hidden md:flex md:flex-col md:fixed md:top-16 md:bottom-0 md:left-0 border-r border-app-border bg-brand-950 transition-[width] duration-200 ${
+            sidebarCollapsed ? "md:w-16" : "md:w-60"
+          }`}
+        >
+          {sidebarContent}
+
+          {/* Collapse toggle pinned at the sidebar bottom */}
+          <div className="border-t border-white/15 p-2">
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              aria-pressed={sidebarCollapsed}
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              className="w-full flex items-center justify-center rounded-md p-2 text-[#E5F2ED]/60 hover:text-white hover:bg-white/10 transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-white/60"
+            >
+              {sidebarCollapsed ? (
+                <PanelLeftOpen className="h-4 w-4" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
+              {!sidebarCollapsed && (
+                <span className="ml-2.5 text-xs font-medium">Collapse</span>
+              )}
+            </button>
+          </div>
+        </aside>
+
+        <main
+          id="main-content"
+          role="main"
+          className={`flex-1 w-full transition-[padding] duration-200 ${
+            sidebarCollapsed ? "md:pl-16" : "md:pl-60"
+          }`}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</div>
+        </main>
+      </div>
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   );
 };

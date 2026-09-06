@@ -76,13 +76,13 @@ export const VersionSnapshotModal: React.FC<VersionSnapshotModalProps> = ({
     >
       <div
         ref={modalRef}
-        className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-white rounded-2xl shadow-xl border border-app-border w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+        <div className="px-6 py-4 bg-slate-50 border-b border-app-border flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">
+            <div className="w-9 h-9 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-sm">
               v{version.version}
             </div>
             <div>
@@ -113,13 +113,13 @@ export const VersionSnapshotModal: React.FC<VersionSnapshotModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="px-6 pt-3 border-b border-slate-200 flex space-x-4">
+        <div className="px-6 pt-3 border-b border-app-border flex space-x-4">
           <button
             type="button"
             onClick={() => setActiveTab("details")}
             className={`pb-2.5 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition ${
               activeTab === "details"
-                ? "border-indigo-600 text-indigo-600"
+                ? "border-brand-600 text-brand-600"
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
@@ -133,7 +133,7 @@ export const VersionSnapshotModal: React.FC<VersionSnapshotModalProps> = ({
               onClick={() => setActiveTab("compare")}
               className={`pb-2.5 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition ${
                 activeTab === "compare"
-                  ? "border-indigo-600 text-indigo-600"
+                  ? "border-brand-600 text-brand-600"
                   : "border-transparent text-slate-500 hover:text-slate-800"
               }`}
             >
@@ -164,7 +164,7 @@ export const VersionSnapshotModal: React.FC<VersionSnapshotModalProps> = ({
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                   Description
                 </h3>
-                <p className="text-slate-800 whitespace-pre-wrap bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs leading-relaxed">
+                <p className="text-slate-800 whitespace-pre-wrap bg-slate-50 p-3.5 rounded-lg border border-app-border text-xs leading-relaxed">
                   {version.description}
                 </p>
               </div>
@@ -174,7 +174,7 @@ export const VersionSnapshotModal: React.FC<VersionSnapshotModalProps> = ({
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                     Hypothesis at this revision
                   </h3>
-                  <p className="text-indigo-950 bg-indigo-50/60 p-3 rounded-lg border border-indigo-100 text-xs leading-relaxed">
+                  <p className="text-brand-950 bg-brand-50/60 p-3 rounded-lg border border-brand-100 text-xs leading-relaxed">
                     {version.hypothesis}
                   </p>
                 </div>
@@ -187,7 +187,7 @@ export const VersionSnapshotModal: React.FC<VersionSnapshotModalProps> = ({
                 {!version.measurements || version.measurements.length === 0 ? (
                   <p className="text-xs text-slate-400 italic">No scientific measurements recorded in this snapshot.</p>
                 ) : (
-                  <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                  <div className="overflow-x-auto border border-app-border rounded-lg">
                     <table className="min-w-full divide-y divide-slate-200 text-xs text-left">
                       <thead className="bg-slate-50 font-semibold text-slate-600">
                         <tr>
@@ -215,9 +215,9 @@ export const VersionSnapshotModal: React.FC<VersionSnapshotModalProps> = ({
             <div className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Historical Revision Card */}
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                <div className="p-4 bg-slate-50 rounded-xl border border-app-border space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                    <span className="text-xs font-bold uppercase tracking-wider text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
                       Revision v{version.version}
                     </span>
                     <span className="text-[10px] text-slate-400">
@@ -232,7 +232,7 @@ export const VersionSnapshotModal: React.FC<VersionSnapshotModalProps> = ({
 
                   <div>
                     <p className="text-xs text-slate-500 font-medium">Description</p>
-                    <p className="text-xs text-slate-700 whitespace-pre-wrap line-clamp-4 bg-white p-2.5 rounded border border-slate-200">
+                    <p className="text-xs text-slate-700 whitespace-pre-wrap line-clamp-4 bg-white p-2.5 rounded border border-app-border">
                       {version.description}
                     </p>
                   </div>
@@ -279,7 +279,7 @@ export const VersionSnapshotModal: React.FC<VersionSnapshotModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <div className="px-6 py-3.5 bg-slate-50 border-t border-app-border flex justify-end">
           <button
             type="button"
             onClick={onClose}

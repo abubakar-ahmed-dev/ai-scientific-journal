@@ -567,6 +567,8 @@ export async function updateResearchTask(
     title?: string;
     description?: string;
     status?: "suggested" | "planned" | "in_progress" | "completed" | "dismissed";
+    /** Move the task to a project; null files it under "Unfiled". */
+    projectId?: string | null;
     relatedObservationIds?: string[];
   }
 ) {

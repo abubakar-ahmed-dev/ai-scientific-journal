@@ -1,1 +1,105 @@
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/fraunces";
 @import "tailwindcss";
+
+/*
+ * Landing page design tokens (plans/UI-polish/homepage-guidelines.md).
+ * Namespaced lp- so utilities only exist where the landing page uses them;
+ * the authenticated app keeps its slate/indigo system untouched.
+ */
+@theme {
+  /*
+   * App theme scale (plans/UI-polish/UI-Guidelines.md §3): teal brand scale
+   * replacing indigo, plus mint app background and stronger borders.
+   */
+  --color-brand-50: #eef7f2;
+  --color-brand-100: #ddefe6;
+  --color-brand-200: #bce0cf;
+  --color-brand-300: #93ccba;
+  --color-brand-400: #4da691;
+  --color-brand-500: #0f766e; /* primary */
+  --color-brand-600: #0f766e; /* primary */
+  --color-brand-700: #115e59; /* primary hover */
+  --color-brand-800: #0e4f48;
+  --color-brand-900: #0c403a;
+  --color-brand-950: #123d36; /* sidebar deep teal */
+
+  --color-app-bg: #eef5f2; /* app background — mint tint */
+  --color-app-border: #cbddd4; /* slightly stronger borders */
+  --color-app-heading: #164e43; /* page titles + section headings */
+
+  --color-lp-bg: #f6f8f5; /* page background — warm off-white */
+  --color-lp-surface: #ffffff; /* content surfaces */
+  --color-lp-ink: #17211d; /* main text */
+  --color-lp-muted: #59645f; /* secondary text */
+  --color-lp-border: #dce3df; /* thin borders */
+  --color-lp-heading: #164e43; /* section headings — deep teal */
+  --color-lp-primary: #0f766e; /* primary actions */
+  --color-lp-primary-hover: #115e59; /* primary hover */
+  --color-lp-primary-soft: #e0f0e9; /* soft teal surface (tinted band/CTA) */
+  --color-lp-ai: #6d5bd0; /* AI accent — decoration/borders only */
+  --color-lp-ai-text: #55418f; /* darkened violet — AI text at 4.5:1+ */
+  --color-lp-ai-surface: #f0ecfa; /* AI panel surface */
+  --color-lp-link: #1d4ed8; /* evidence links — dark blue */
+  --color-lp-uncertainty-bg: #fef3c7; /* pale amber */
+  --color-lp-uncertainty-text: #92400e; /* dark amber text on pale amber */
+
+  /* Landing typography: Fraunces for display/headings, Inter for UI/body. */
+  --font-lp-display: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --font-lp-body: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Landing page typography scope: display font on headings, Inter on the page. */
+.lp {
+  font-family: var(--font-lp-body);
+}
+.lp h1,
+.lp h2,
+.lp h3 {
+  font-family: var(--font-lp-display);
+  font-optical-sizing: auto;
+}
+
+/* App font: Inter for UI text; Fraunces only where .font-display is set
+   (dashboard header wordmark, page-approved editorial headings). */
+#root {
+  font-family: var(--font-lp-body);
+}
+.font-display {
+  font-family: var(--font-lp-display);
+  font-optical-sizing: auto;
+}
+
+/* Landing page focus ring follows its primary teal instead of app indigo. */
+.lp :focus-visible {
+  outline-color: var(--color-lp-primary);
+}
+
+/*
+ * Global accessibility rules (UX guidelines §44/§48).
+ */
+
+/* Focus visibility: keyboard users always get a clear ring on any focusable
+   element; mouse users do not (:focus-visible only). Elements that provide
+   their own visible focus context can opt out with data-no-focus-ring. */
+:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+}
+
+[data-no-focus-ring]:focus-visible {
+  outline: none;
+}
+
+/* Respect prefers-reduced-motion: pulse placeholders become effectively static
+   and transitions are minimized (guidelines §48). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

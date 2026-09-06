@@ -9,8 +9,11 @@ import {
   fetchObservations,
   fetchProjects,
 } from "../lib/api";
-import type { Conversation } from "../lib/api";
+import type { Conversation, Project } from "../lib/api";
 import { ChatWindow } from "../components/ChatWindow";
+import { InlineProjectCreator } from "../components/InlineProjectCreator";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { useToast } from "../components/ui/Toast";
 import {
   MessageSquare,
   Plus,
@@ -38,6 +41,8 @@ export const ConversationsPage: React.FC = () => {
   const [newContextType, setNewContextType] = useState<"general" | "observation" | "project">("general");
   const [newContextId, setNewContextId] = useState("");
   const [modalError, setModalError] = useState<string | null>(null);
+  const [conversationPendingDelete, setConversationPendingDelete] = useState<Conversation | null>(null);
+  const toast = useToast();
 
   // Query conversations
   const { data: convsData, isLoading } = useQuery({
@@ -54,7 +59,7 @@ export const ConversationsPage: React.FC = () => {
     enabled: isNewChatModalOpen && newContextType === "observation",
   });
 
-  const { data: projData } = useQuery({
+  const { data: projData, refetch: refetchProjects } = useQuery({
     queryKey: ["projects-modal"],
     queryFn: () => fetchProjects({ limit: 50 }),
     enabled: isNewChatModalOpen && newContextType === "project",
@@ -106,6 +111,10 @@ export const ConversationsPage: React.FC = () => {
       if (activeConvId === selectedConversation?.id) {
         setSearchParams({});
       }
+      toast.success("Conversation deleted.");
+    },
+    onError: (err: unknown) => {
+      toast.error(err instanceof Error ? err.message : "Failed to delete conversation");
     },
   });
 
@@ -131,17 +140,17 @@ export const ConversationsPage: React.FC = () => {
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col md:flex-row gap-6">
       {/* Sidebar List */}
-      <div className="w-full md:w-80 flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden shrink-0">
+      <div className="w-full md:w-80 flex flex-col bg-white rounded-xl border border-app-border shadow-sm overflow-hidden shrink-0">
         {/* Sidebar Header */}
-        <div className="p-4 border-b border-slate-200 bg-slate-50/50 space-y-3">
+        <div className="p-4 border-b border-app-border bg-slate-50/50 space-y-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-indigo-600" />
+            <h1 className="text-base font-bold text-app-heading flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-brand-600" />
               Conversations
             </h1>
             <button
               onClick={() => setIsNewChatModalOpen(true)}
-              className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-xs"
+              className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-colors shadow-xs"
             >
               <Plus className="w-3.5 h-3.5" />
               New Chat
@@ -153,10 +162,11 @@ export const ConversationsPage: React.FC = () => {
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
+              aria-label="Search conversations"
               placeholder="Search chats..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-app-border rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
           </div>
 
@@ -194,9 +204,18 @@ export const ConversationsPage: React.FC = () => {
               return (
                 <div
                   key={conv.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
                   onClick={() => setSearchParams({ id: conv.id })}
-                  className={`p-3 cursor-pointer transition-colors group flex items-start justify-between gap-2 ${
-                    isSelected ? "bg-indigo-50/70 border-l-4 border-indigo-600" : "hover:bg-slate-50"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSearchParams({ id: conv.id });
+                    }
+                  }}
+                  className={`p-3 cursor-pointer transition-colors group flex items-start justify-between gap-2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500 ${
+                    isSelected ? "bg-brand-50/70 border-l-4 border-brand-600" : "hover:bg-slate-50"
                   }`}
                 >
                   <div className="min-w-0 flex-1">
@@ -206,7 +225,7 @@ export const ConversationsPage: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500">
-                      <span className="capitalize text-indigo-600 bg-indigo-50/80 px-1.5 py-0.2 rounded font-medium">
+                      <span className="capitalize text-brand-600 bg-brand-50/80 px-1.5 py-0.2 rounded font-medium">
                         {conv.contextType}
                       </span>
                       <span>{conv.messageCount} msgs</span>
@@ -223,20 +242,21 @@ export const ConversationsPage: React.FC = () => {
                           status: conv.status === "active" ? "archived" : "active",
                         });
                       }}
+                      aria-label={conv.status === "active" ? `Archive conversation: ${conv.title}` : `Unarchive conversation: ${conv.title}`}
                       title={conv.status === "active" ? "Archive" : "Unarchive"}
-                      className="p-1 hover:text-indigo-600 text-slate-400 rounded"
+                      className="p-1 hover:text-brand-600 text-slate-400 rounded focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
                     >
                       <Archive className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (window.confirm("Are you sure you want to delete this conversation and its messages?")) {
-                          deleteMutation.mutate(conv.id);
-                        }
+                        setConversationPendingDelete(conv);
                       }}
+                      aria-haspopup="dialog"
+                      aria-label={`Delete conversation: ${conv.title}`}
                       title="Delete"
-                      className="p-1 hover:text-red-600 text-slate-400 rounded"
+                      className="p-1 hover:text-red-600 text-slate-400 rounded focus:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -258,15 +278,15 @@ export const ConversationsPage: React.FC = () => {
             }
           />
         ) : (
-          <div className="h-full bg-white rounded-xl border border-slate-200 flex flex-col items-center justify-center p-8 text-center text-slate-400">
-            <Bot className="w-16 h-16 text-indigo-200 mb-4" />
+          <div className="h-full bg-white rounded-xl border border-app-border flex flex-col items-center justify-center p-8 text-center text-slate-400">
+            <Bot className="w-16 h-16 text-brand-200 mb-4" />
             <h2 className="text-lg font-bold text-slate-800">Select or Start a Conversation</h2>
             <p className="text-sm text-slate-500 max-w-md mt-1 mb-6">
               Discuss research observations, explore hypotheses, and synthesize scientific data with the AI assistant.
             </p>
             <button
               onClick={() => setIsNewChatModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors"
             >
               <Plus className="w-4 h-4" />
               Start New Chat
@@ -278,10 +298,10 @@ export const ConversationsPage: React.FC = () => {
       {/* New Chat Modal */}
       {isNewChatModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-600" />
+          <div className="bg-white rounded-xl shadow-xl border border-app-border w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+            <div className="px-6 py-4 border-b border-app-border flex items-center justify-between bg-slate-50">
+              <h3 className="font-bold text-app-heading flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-brand-600" />
                 Start New AI Discussion
               </h3>
               <button
@@ -306,7 +326,7 @@ export const ConversationsPage: React.FC = () => {
                   placeholder="e.g., Feeder Activity & Weather Analysis"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
                   maxLength={200}
                 />
               </div>
@@ -324,8 +344,8 @@ export const ConversationsPage: React.FC = () => {
                     }}
                     className={`py-2 px-3 text-xs font-medium rounded-lg border text-center transition-all ${
                       newContextType === "general"
-                        ? "border-indigo-600 bg-indigo-50 text-indigo-700 font-semibold shadow-xs"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                        ? "border-brand-600 bg-brand-50 text-brand-700 font-semibold shadow-xs"
+                        : "border-app-border text-slate-600 hover:bg-slate-50"
                     }`}
                   >
                     General
@@ -338,8 +358,8 @@ export const ConversationsPage: React.FC = () => {
                     }}
                     className={`py-2 px-3 text-xs font-medium rounded-lg border text-center flex items-center justify-center gap-1 transition-all ${
                       newContextType === "observation"
-                        ? "border-indigo-600 bg-indigo-50 text-indigo-700 font-semibold shadow-xs"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                        ? "border-brand-600 bg-brand-50 text-brand-700 font-semibold shadow-xs"
+                        : "border-app-border text-slate-600 hover:bg-slate-50"
                     }`}
                   >
                     <FileText className="w-3 h-3" />
@@ -353,8 +373,8 @@ export const ConversationsPage: React.FC = () => {
                     }}
                     className={`py-2 px-3 text-xs font-medium rounded-lg border text-center flex items-center justify-center gap-1 transition-all ${
                       newContextType === "project"
-                        ? "border-indigo-600 bg-indigo-50 text-indigo-700 font-semibold shadow-xs"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                        ? "border-brand-600 bg-brand-50 text-brand-700 font-semibold shadow-xs"
+                        : "border-app-border text-slate-600 hover:bg-slate-50"
                     }`}
                   >
                     <Folder className="w-3 h-3" />
@@ -372,7 +392,7 @@ export const ConversationsPage: React.FC = () => {
                   <select
                     value={newContextId}
                     onChange={(e) => setNewContextId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
                   >
                     <option value="">-- Choose Observation --</option>
                     {(obsData?.data || []).map((obs) => (
@@ -392,7 +412,7 @@ export const ConversationsPage: React.FC = () => {
                   <select
                     value={newContextId}
                     onChange={(e) => setNewContextId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
                   >
                     <option value="">-- Choose Project --</option>
                     {(projData?.data || []).map((proj) => (
@@ -401,6 +421,15 @@ export const ConversationsPage: React.FC = () => {
                       </option>
                     ))}
                   </select>
+                  <div className="mt-2">
+                    <InlineProjectCreator
+                      compact
+                      onCreated={(project: Project) => {
+                        refetchProjects();
+                        setNewContextId(project.id);
+                      }}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -415,7 +444,7 @@ export const ConversationsPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-xs transition-colors"
+                  className="px-4 py-2 text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white rounded-lg shadow-xs transition-colors"
                 >
                   {createMutation.isPending ? "Creating..." : "Start Discussion"}
                 </button>
@@ -424,6 +453,25 @@ export const ConversationsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={conversationPendingDelete !== null}
+        title="Delete conversation?"
+        destructive
+        confirmLabel="Delete Conversation"
+        message={
+          <p>
+            This permanently deletes{" "}
+            <strong>{conversationPendingDelete?.title || "this conversation"}</strong> and all of
+            its messages. This action cannot be undone.
+          </p>
+        }
+        onConfirm={() => {
+          if (conversationPendingDelete) deleteMutation.mutate(conversationPendingDelete.id);
+          setConversationPendingDelete(null);
+        }}
+        onCancel={() => setConversationPendingDelete(null)}
+      />
     </div>
   );
 };

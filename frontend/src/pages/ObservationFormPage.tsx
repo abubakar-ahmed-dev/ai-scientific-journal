@@ -8,6 +8,7 @@ import {
 } from "../lib/api";
 import type { Project, Measurement } from "../lib/api";
 import { Layout } from "../components/Layout";
+import { InlineProjectCreator } from "../components/InlineProjectCreator";
 import { MapPin, Loader2, Info } from "lucide-react";
 
 export default function ObservationFormPage() {
@@ -186,7 +187,7 @@ export default function ObservationFormPage() {
     <Layout>
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-2xl font-bold text-app-heading">
             {isEdit ? "Edit Observation" : "New Observation"}
           </h1>
           <Link to="/observations" className="text-sm font-medium text-slate-600 hover:text-slate-900">
@@ -203,44 +204,47 @@ export default function ObservationFormPage() {
         {loading ? (
           <div className="p-12 text-center text-slate-500">Loading form...</div>
         ) : (
-          <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-lg border border-slate-200 shadow-sm space-y-6">
+          <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-lg border border-app-border shadow-sm space-y-6">
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="obs-title" className="block text-sm font-medium text-slate-700 mb-1">
                 Title <span className="text-red-500">*</span>
               </label>
               <input
+                id="obs-title"
                 type="text"
                 required
                 maxLength={200}
                 placeholder="e.g. Feeder activity before temperature drop"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="obs-description" className="block text-sm font-medium text-slate-700 mb-1">
                 Description / Field Notes <span className="text-red-500">*</span>
               </label>
               <textarea
+                id="obs-description"
                 required
                 rows={5}
                 maxLength={20000}
                 placeholder="Detailed description of what you observed..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
             {/* Project & Status & Observed Date */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Project</label>
+                <label htmlFor="obs-project" className="block text-sm font-medium text-slate-700 mb-1">Project</label>
                 <select
+                  id="obs-project"
                   value={projectId}
                   onChange={(e) => setProjectId(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white"
@@ -252,11 +256,20 @@ export default function ObservationFormPage() {
                     </option>
                   ))}
                 </select>
+                <div className="mt-1.5">
+                  <InlineProjectCreator
+                    onCreated={(project) => {
+                      setProjects((prev) => [...prev, project]);
+                      setProjectId(project.id);
+                    }}
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                <label htmlFor="obs-status" className="block text-sm font-medium text-slate-700 mb-1">Status</label>
                 <select
+                  id="obs-status"
                   value={status}
                   onChange={(e) => setStatus(e.target.value as any)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white"
@@ -268,8 +281,9 @@ export default function ObservationFormPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Observed Date/Time</label>
+                <label htmlFor="obs-observed-at" className="block text-sm font-medium text-slate-700 mb-1">Observed Date/Time</label>
                 <input
+                  id="obs-observed-at"
                   type="datetime-local"
                   value={observedAt}
                   onChange={(e) => setObservedAt(e.target.value)}
@@ -278,11 +292,23 @@ export default function ObservationFormPage() {
               </div>
             </div>
 
-            {/* Hypothesis & Supplementary Notes */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Advanced fields (guidelines §52): collapsed by default so the
+                common path — title, notes, project, save — stays fast. Native
+                <details> keeps it keyboard-accessible without extra JS. */}
+            <details className="group advanced-fields" open={isEdit || undefined}>
+              <summary className="flex items-center gap-2 cursor-pointer select-none text-sm font-semibold text-brand-700 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500 rounded-md px-1 py-1.5 w-fit">
+                <span className="group-open:hidden">＋ Advanced Fields</span>
+                <span className="hidden group-open:inline">－ Advanced Fields</span>
+                <span className="text-xs font-normal text-slate-400">(hypothesis, measurements, location, tags)</span>
+              </summary>
+
+              <div className="space-y-6 pt-4">
+                {/* Hypothesis & Supplementary Notes */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Hypothesis (Optional)</label>
+                <label htmlFor="obs-hypothesis" className="block text-sm font-medium text-slate-700 mb-1">Hypothesis (Optional)</label>
                 <textarea
+                  id="obs-hypothesis"
                   rows={3}
                   placeholder="Your initial hypothesis..."
                   value={hypothesis}
@@ -292,8 +318,9 @@ export default function ObservationFormPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Notes (Optional)</label>
+                <label htmlFor="obs-notes" className="block text-sm font-medium text-slate-700 mb-1">Notes (Optional)</label>
                 <textarea
+                  id="obs-notes"
                   rows={3}
                   placeholder="Additional context, equipment used..."
                   value={notes}
@@ -304,13 +331,13 @@ export default function ObservationFormPage() {
             </div>
 
             {/* Measurements Section */}
-            <div className="space-y-3 pt-2 border-t border-slate-200">
+            <div className="space-y-3 pt-2 border-t border-app-border">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-semibold text-slate-800">Scientific Measurements</label>
                 <button
                   type="button"
                   onClick={addMeasurement}
-                  className="text-xs font-medium text-indigo-600 hover:text-indigo-800"
+                  className="text-xs font-medium text-brand-600 hover:text-brand-800"
                 >
                   + Add Measurement Row
                 </button>
@@ -352,7 +379,7 @@ export default function ObservationFormPage() {
             </div>
 
             {/* Location Section */}
-            <div className="space-y-3 pt-2 border-t border-slate-200">
+            <div className="space-y-3 pt-2 border-t border-app-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <input
@@ -360,7 +387,7 @@ export default function ObservationFormPage() {
                     id="hasLocation"
                     checked={hasLocation}
                     onChange={(e) => setHasLocation(e.target.checked)}
-                    className="h-4 w-4 text-indigo-600 border-slate-300 rounded"
+                    className="h-4 w-4 text-brand-600 border-slate-300 rounded"
                   />
                   <label htmlFor="hasLocation" className="text-sm font-semibold text-slate-800">
                     Attach Geographic Location
@@ -372,7 +399,7 @@ export default function ObservationFormPage() {
                     type="button"
                     onClick={handleGetCurrentLocation}
                     disabled={fetchingGps}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded transition disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded transition disabled:opacity-50"
                   >
                     {fetchingGps ? (
                       <>
@@ -390,7 +417,7 @@ export default function ObservationFormPage() {
               </div>
 
               {hasLocation && (
-                <div className="space-y-3 bg-slate-50 p-4 rounded-md border border-slate-200">
+                <div className="space-y-3 bg-slate-50 p-4 rounded-md border border-app-border">
                   {gpsMessage && (
                     <div
                       className={`text-xs p-2 rounded flex items-start gap-1.5 ${
@@ -406,8 +433,9 @@ export default function ObservationFormPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Latitude</label>
+                      <label htmlFor="loc-lat" className="block text-xs font-medium text-slate-600 mb-1">Latitude</label>
                       <input
+                        id="loc-lat"
                         type="number"
                         step="any"
                         min={-90}
@@ -418,8 +446,9 @@ export default function ObservationFormPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Longitude</label>
+                      <label htmlFor="loc-lng" className="block text-xs font-medium text-slate-600 mb-1">Longitude</label>
                       <input
+                        id="loc-lng"
                         type="number"
                         step="any"
                         min={-180}
@@ -430,8 +459,9 @@ export default function ObservationFormPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Location Label</label>
+                      <label htmlFor="loc-label" className="block text-xs font-medium text-slate-600 mb-1">Location Label</label>
                       <input
+                        id="loc-label"
                         type="text"
                         placeholder="e.g. Field Station A"
                         value={locationLabel}
@@ -440,8 +470,9 @@ export default function ObservationFormPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Precision</label>
+                      <label htmlFor="loc-precision" className="block text-xs font-medium text-slate-600 mb-1">Precision</label>
                       <select
+                        id="loc-precision"
                         value={precision}
                         onChange={(e) => setPrecision(e.target.value as "exact" | "approximate" | "hidden")}
                         className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm bg-white"
@@ -466,42 +497,50 @@ export default function ObservationFormPage() {
             </div>
 
             {/* Tags Section */}
-            <div className="space-y-2 pt-2 border-t border-slate-200">
-              <label className="block text-sm font-semibold text-slate-800">Tags</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Add a tag and press Add"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  className="flex-1 px-3 py-1.5 border border-slate-300 rounded text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={addTag}
-                  className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm rounded font-medium"
-                >
-                  Add Tag
-                </button>
-              </div>
-
-              <div className="flex flex-wrap gap-2 pt-2">
-                {tags.map((t) => (
-                  <span
-                    key={t}
-                    className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded text-xs"
+              <div className="space-y-2 pt-2 border-t border-app-border">
+                <label className="block text-sm font-semibold text-slate-800">Tags</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    aria-label="Add a tag"
+                    placeholder="Add a tag and press Add"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    className="flex-1 px-3 py-1.5 border border-slate-300 rounded text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={addTag}
+                    className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm rounded font-medium"
                   >
-                    #{t}
-                    <button type="button" onClick={() => removeTag(t)} className="text-indigo-400 hover:text-indigo-700">
-                      &times;
-                    </button>
-                  </span>
-                ))}
+                    Add Tag
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {tags.map((t) => (
+                    <span
+                      key={t}
+                      className="inline-flex items-center gap-1 bg-brand-50 text-brand-700 px-2.5 py-1 rounded text-xs"
+                    >
+                      #{t}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(t)}
+                        aria-label={`Remove tag: ${t}`}
+                        className="text-brand-400 hover:text-brand-700"
+                      >
+                        &times;
+                      </button>
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+              </div>
+            </details>
 
             {/* Submit Button */}
-            <div className="pt-4 border-t border-slate-200 flex justify-end space-x-3">
+            <div className="pt-4 border-t border-app-border flex justify-end space-x-3">
               <Link
                 to="/observations"
                 className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50"
@@ -511,7 +550,7 @@ export default function ObservationFormPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 shadow-sm transition disabled:opacity-50"
+                className="px-6 py-2 text-sm font-medium text-white bg-brand-600 rounded-md hover:bg-brand-700 shadow-sm transition disabled:opacity-50"
               >
                 {saving ? "Saving..." : isEdit ? "Update Observation" : "Save Observation"}
               </button>

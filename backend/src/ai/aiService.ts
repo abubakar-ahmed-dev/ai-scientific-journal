@@ -10,8 +10,10 @@ export function getAiService(): IAIService {
     return activeAiService;
   }
 
-  // Default to FakeAIService in test mode or GeminiAdapter in production/development
-  if (env.NODE_ENV === "test") {
+  // The fake service is a local-development/test affordance (TESTING.md §13);
+  // env validation forbids it in production (NODE_ENV=production + USE_FAKE_AI
+  // fails fast in config/env.ts), so this branch is unreachable there.
+  if (env.NODE_ENV === "test" || env.USE_FAKE_AI) {
     activeAiService = fakeAiService;
   } else {
     activeAiService = new GeminiAdapter();

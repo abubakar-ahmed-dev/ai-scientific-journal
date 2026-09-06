@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ResearchTasksPage } from "@/pages/ResearchTasksPage";
+import * as api from "@/lib/api";
 
 vi.mock("../lib/firebase/authContext", () => ({
   useAuth: () => ({
@@ -10,6 +11,11 @@ vi.mock("../lib/firebase/authContext", () => ({
     loading: false,
     signOut: vi.fn(),
   }),
+}));
+
+vi.mock("@/components/ui/Toast", () => ({
+  ToastProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useToast: () => ({ success: vi.fn(), error: vi.fn() }),
 }));
 
 vi.mock("../lib/api", () => ({
@@ -33,11 +39,15 @@ vi.mock("../lib/api", () => ({
   }),
   fetchProjects: vi.fn().mockResolvedValue({ data: [] }),
   createResearchTask: vi.fn(),
-  updateResearchTask: vi.fn(),
+  updateResearchTask: vi.fn().mockResolvedValue({ data: { id: "task-1" } }),
   deleteResearchTask: vi.fn(),
 }));
 
 describe("ResearchTasksPage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("renders research tasks header and task cards", async () => {
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -58,5 +68,113 @@ describe("ResearchTasksPage", () => {
       await screen.findByText("Deploy barometric pressure sensor array")
     ).toBeInTheDocument();
     expect(screen.getByText("AI Suggested")).toBeInTheDocument();
+  });
+
+  it("opens the edit modal with prefilled fields and submits a patch", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ResearchTasksPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await screen.findByText("Deploy barometric pressure sensor array");
+
+    fireEvent.click(screen.getByTitle("Edit task"));
+
+    const titleInput = await screen.findByDisplayValue("Deploy barometric pressure sensor array");
+    expect(titleInput).toBeInTheDocument();
+
+    fireEvent.change(titleInput, {
+      target: { value: "Deploy barometric sensors for 7 days" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(api.updateResearchTask).toHaveBeenCalledWith("task-1", {
+        title: "Deploy barometric sensors for 7 days",
+      });
+    });
+  });
+
+  it("offers only valid status transitions in the card status select", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ResearchTasksPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await screen.findByText("Deploy barometric pressure sensor array");
+
+    // Task is "suggested": select should offer current + planned/dismissed only.
+    const statusSelect = screen.getByRole("combobox", {
+      name: /change status for task/i,
+    }) as HTMLSelectElement;
+    const options = Array.from(statusSelect.options).map((o) => o.value);
+    expect(options).toEqual(["suggested", "planned", "dismissed"]);
+
+    fireEvent.change(statusSelect, { target: { value: "planned" } });
+    await waitFor(() => {
+      expect(api.updateResearchTask).toHaveBeenCalledWith("task-1", { status: "planned" });
+    });
+  });
+
+  it("edit modal allows reassigning the task to another project", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    vi.mocked(api.fetchProjects).mockResolvedValue({
+      data: [
+        {
+          id: "proj-42",
+          ownerId: "test-user",
+          title: "Urban Bird Ecology",
+          description: null,
+          field: "ecology",
+          status: "active",
+          tags: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      meta: { hasMore: false, nextCursor: null },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ResearchTasksPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await screen.findByText("Deploy barometric pressure sensor array");
+
+    fireEvent.click(screen.getByTitle("Edit task"));
+
+    // Project select is prefilled to the task's current project (Unfiled here).
+    const projectSelect = await screen.findByLabelText(/project association/i) as HTMLSelectElement;
+    expect(projectSelect.value).toBe("");
+
+    fireEvent.change(projectSelect, { target: { value: "proj-42" } });
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(api.updateResearchTask).toHaveBeenCalledWith("task-1", {
+        projectId: "proj-42",
+      });
+    });
   });
 });

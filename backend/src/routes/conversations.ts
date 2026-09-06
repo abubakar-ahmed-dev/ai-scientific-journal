@@ -13,6 +13,7 @@ import {
   ListMessagesQuerySchema,
 } from "../schemas/messageSchema";
 import { chatRateLimiter } from "../middleware/rateLimiter";
+import { logAiSignal } from "../lib/aiSignals";
 import { AppError } from "../types/errors";
 
 export const conversationsRouter = Router();
@@ -231,7 +232,34 @@ conversationsRouter.post("/:conversationId/messages", chatRateLimiter, async (re
 
     // Step 3: Invoke AI Service
     const aiService = getAiService();
-    const generationResult = await aiService.generateChatReply(contextPayload);
+    const aiStart = process.hrtime.bigint();
+    let generationResult;
+    try {
+      generationResult = await aiService.generateChatReply(contextPayload);
+    } catch (err) {
+      logAiSignal({
+        operation: "chat-turn",
+        req,
+        status: "failure",
+        durationMs: Math.round(Number(process.hrtime.bigint() - aiStart) / 1e6),
+        errorType:
+          err instanceof AppError && (err.code === "AI_INVALID_RESPONSE" || err.code === "AI_UNAVAILABLE")
+            ? (err.code as "AI_INVALID_RESPONSE" | "AI_UNAVAILABLE")
+            : "RETRIEVAL_ERROR",
+      });
+      throw err;
+    }
+    logAiSignal({
+      operation: "chat-turn",
+      req,
+      status: "success",
+      durationMs: Math.round(Number(process.hrtime.bigint() - aiStart) / 1e6),
+      model: generationResult.model,
+      inputLength: userMessage.content.length,
+      outputLength: generationResult.content.length,
+      contextLength: contextPayload.conversationHistory.length,
+      tokenUsage: generationResult.metadata.tokenUsage,
+    });
 
     // Step 4: Validate output
     if (!generationResult.content || generationResult.content.trim().length === 0) {

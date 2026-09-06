@@ -9,11 +9,14 @@ import {
 } from "../lib/api";
 import type { Project, Observation, ResearchTask } from "../lib/api";
 import { Layout } from "../components/Layout";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { useToast } from "../components/ui/Toast";
 import { FileText, CheckSquare, Plus, Edit2, Trash2, ArrowLeft } from "lucide-react";
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [project, setProject] = useState<Project | null>(null);
   const [observations, setObservations] = useState<Observation[]>([]);
@@ -25,6 +28,7 @@ export default function ProjectDetailPage() {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<"active" | "archived" | "completed">("active");
   const [field, setField] = useState("");
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   async function loadData() {
     if (!id) return;
@@ -65,24 +69,21 @@ export default function ProjectDetailPage() {
       });
       setEditing(false);
       loadData();
+      toast.success("Project updated.");
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to update project");
+      toast.error(err instanceof Error ? err.message : "Failed to update project");
     }
   }
 
   async function handleDelete() {
     if (!id) return;
-    if (
-      window.confirm(
-        "Are you sure you want to delete this project? Note: Associated observations will NOT be deleted; they will be set to unfiled."
-      )
-    ) {
-      try {
-        await deleteProject(id);
-        navigate("/projects");
-      } catch (err: unknown) {
-        alert(err instanceof Error ? err.message : "Failed to delete project");
-      }
+    setConfirmDeleteOpen(false);
+    try {
+      await deleteProject(id);
+      toast.success("Project deleted.");
+      navigate("/projects");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete project");
     }
   }
 
@@ -92,7 +93,7 @@ export default function ProjectDetailPage() {
         <div className="flex items-center justify-between">
           <Link
             to="/projects"
-            className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-800"
+            className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-800"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Projects</span>
@@ -106,8 +107,9 @@ export default function ProjectDetailPage() {
               <span>{editing ? "Cancel" : "Edit Project"}</span>
             </button>
             <button
-              onClick={handleDelete}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition"
+              onClick={() => setConfirmDeleteOpen(true)}
+              aria-haspopup="dialog"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Delete</span>
@@ -118,13 +120,13 @@ export default function ProjectDetailPage() {
         {loading ? (
           <div className="p-12 text-center text-slate-500 text-sm">Loading project details...</div>
         ) : !project ? (
-          <div className="bg-white p-12 text-center rounded-lg border border-slate-200">
+          <div className="bg-white p-12 text-center rounded-lg border border-app-border">
             <p className="text-slate-500 text-sm">Project not found.</p>
           </div>
         ) : (
           <div className="space-y-6">
             {/* Project Header Card */}
-            <div className="bg-white p-6 sm:p-8 rounded-xl border border-slate-200 shadow-xs">
+            <div className="bg-white p-6 sm:p-8 rounded-xl border border-app-border shadow-xs">
               {editing ? (
                 <form onSubmit={handleUpdate} className="space-y-4">
                   <div>
@@ -134,7 +136,7 @@ export default function ProjectDetailPage() {
                       required
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-brand-500"
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -180,7 +182,7 @@ export default function ProjectDetailPage() {
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-indigo-600 text-white rounded text-xs font-medium hover:bg-indigo-700"
+                      className="px-4 py-2 bg-brand-600 text-white rounded text-xs font-medium hover:bg-brand-700"
                     >
                       Save Changes
                     </button>
@@ -201,12 +203,12 @@ export default function ProjectDetailPage() {
                       {project.status}
                     </span>
                     {project.field && (
-                      <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                      <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded">
                         {project.field}
                       </span>
                     )}
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{project.title}</h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-app-heading">{project.title}</h1>
                   {project.description && (
                     <p className="text-slate-600 text-sm leading-relaxed">{project.description}</p>
                   )}
@@ -224,13 +226,13 @@ export default function ProjectDetailPage() {
             </div>
 
             {/* Tabs for Associated Observations and Tasks */}
-            <div className="flex space-x-2 border-b border-slate-200">
+            <div className="flex space-x-2 border-b border-app-border">
               <button
                 type="button"
                 onClick={() => setActiveTab("observations")}
                 className={`pb-3 px-1 text-sm font-semibold flex items-center gap-2 border-b-2 transition ${
                   activeTab === "observations"
-                    ? "border-indigo-600 text-indigo-600"
+                    ? "border-brand-600 text-brand-600"
                     : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
@@ -243,7 +245,7 @@ export default function ProjectDetailPage() {
                 onClick={() => setActiveTab("tasks")}
                 className={`pb-3 px-1 text-sm font-semibold flex items-center gap-2 border-b-2 transition ${
                   activeTab === "tasks"
-                    ? "border-indigo-600 text-indigo-600"
+                    ? "border-brand-600 text-brand-600"
                     : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
@@ -254,14 +256,14 @@ export default function ProjectDetailPage() {
 
             {/* Tab Contents */}
             {activeTab === "observations" ? (
-              <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+              <div className="bg-white rounded-xl border border-app-border shadow-xs overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-slate-900">
+                  <h2 className="text-sm font-semibold text-app-heading">
                     Project Observations ({observations.length})
                   </h2>
                   <Link
                     to={`/observations/new?projectId=${project.id}`}
-                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                    className="text-xs font-semibold text-brand-600 hover:text-brand-800 flex items-center gap-1"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Add Observation to Project
@@ -273,7 +275,7 @@ export default function ProjectDetailPage() {
                     <p>No observations currently filed under this project.</p>
                     <Link
                       to={`/observations/new?projectId=${project.id}`}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-700 font-semibold rounded text-xs hover:bg-indigo-100 transition"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-50 text-brand-700 font-semibold rounded text-xs hover:bg-brand-100 transition"
                     >
                       <Plus className="w-3.5 h-3.5" /> Record Observation
                     </Link>
@@ -285,7 +287,7 @@ export default function ProjectDetailPage() {
                         <div className="flex items-center justify-between">
                           <Link
                             to={`/observations/${obs.id}`}
-                            className="text-sm font-semibold text-indigo-600 hover:text-indigo-800"
+                            className="text-sm font-semibold text-brand-600 hover:text-brand-800"
                           >
                             {obs.title}
                           </Link>
@@ -304,14 +306,14 @@ export default function ProjectDetailPage() {
               </div>
             ) : (
               /* Tasks Tab */
-              <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+              <div className="bg-white rounded-xl border border-app-border shadow-xs overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-slate-900">
+                  <h2 className="text-sm font-semibold text-app-heading">
                     Linked Research Tasks ({tasks.length})
                   </h2>
                   <Link
                     to="/tasks"
-                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                    className="text-xs font-semibold text-brand-600 hover:text-brand-800"
                   >
                     Open Tasks Board &rarr;
                   </Link>
@@ -341,6 +343,26 @@ export default function ProjectDetailPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="Delete project?"
+        destructive
+        confirmLabel="Delete Project"
+        message={
+          <>
+            <p>
+              This permanently deletes <strong>{project?.title || "this project"}</strong>. This
+              action cannot be undone.
+            </p>
+            <p className="mt-2">
+              Observations and tasks are not deleted — they will be kept as unfiled.
+            </p>
+          </>
+        }
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDeleteOpen(false)}
+      />
     </Layout>
   );
 }

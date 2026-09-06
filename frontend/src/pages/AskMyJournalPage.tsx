@@ -45,10 +45,10 @@ export const AskMyJournalPage: React.FC = () => {
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-600">
+          <div className="p-2 bg-brand-50 border border-brand-200 rounded-lg text-brand-600">
             <Search className="w-5 h-5" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Ask My Journal</h1>
+          <h1 className="text-2xl font-bold text-app-heading tracking-tight">Ask My Journal</h1>
         </div>
         <p className="text-sm text-slate-600">
           Ask questions across your entire personal observation history. Answers are evidence-grounded
@@ -57,7 +57,7 @@ export const AskMyJournalPage: React.FC = () => {
       </div>
 
       {/* Question Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-app-border shadow-xs p-5 space-y-4">
         <div className="space-y-2">
           <label htmlFor="journal-question" className="block text-sm font-semibold text-slate-800">
             Your Research Question
@@ -66,7 +66,7 @@ export const AskMyJournalPage: React.FC = () => {
             <textarea
               id="journal-question"
               rows={3}
-              className="w-full rounded-lg border border-slate-300 p-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition disabled:bg-slate-50"
+              className="w-full rounded-lg border border-slate-300 p-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition disabled:bg-slate-50"
               placeholder="e.g., Have I observed any hawks or falcons in the valley during winter? What patterns appeared in feeding times?"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
@@ -85,7 +85,7 @@ export const AskMyJournalPage: React.FC = () => {
           <button
             type="submit"
             disabled={!question.trim() || askMutation.isPending}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-xs"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-xs"
           >
             {askMutation.isPending ? (
               <>
@@ -104,9 +104,9 @@ export const AskMyJournalPage: React.FC = () => {
 
       {/* Loading Skeleton */}
       {askMutation.isPending && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-4 animate-pulse">
+        <div className="bg-white rounded-xl border border-app-border shadow-xs p-6 space-y-4 animate-pulse">
           <div className="flex items-center gap-2">
-            <RotateCw className="w-4 h-4 text-indigo-500 animate-spin" />
+            <RotateCw className="w-4 h-4 text-brand-500 animate-spin" />
             <span className="text-sm font-medium text-slate-600">
               Retrieving relevant observations and synthesizing grounded answer...
             </span>
@@ -144,11 +144,11 @@ export const AskMyJournalPage: React.FC = () => {
       {result && !askMutation.isPending && (
         <div className="space-y-6">
           {/* Main Answer Card */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-5">
+          <div className="bg-white rounded-xl border border-app-border shadow-xs p-6 space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200">
+                  <Sparkles className="w-3.5 h-3.5 text-brand-600" />
                   <span>Grounded Research Answer</span>
                 </span>
                 {result.model && result.model !== "none" && (
@@ -186,9 +186,9 @@ export const AskMyJournalPage: React.FC = () => {
 
           {/* Supporting Evidence Section */}
           {result.evidence.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-4">
+            <div className="bg-white rounded-xl border border-app-border shadow-xs p-6 space-y-4">
               <div className="flex items-center gap-2 text-slate-900 font-semibold text-sm border-b border-slate-100 pb-3">
-                <BookOpen className="w-4 h-4 text-indigo-600" />
+                <BookOpen className="w-4 h-4 text-brand-600" />
                 <span>Supporting Journal Evidence ({result.evidence.length})</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -196,13 +196,13 @@ export const AskMyJournalPage: React.FC = () => {
                   <Link
                     key={ev.observationId}
                     to={`/observations/${ev.observationId}`}
-                    className="group block p-4 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/30 transition shadow-2xs"
+                    className="group block p-4 rounded-lg border border-app-border hover:border-brand-300 hover:bg-brand-50/30 transition shadow-2xs"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-sm font-semibold text-slate-900 group-hover:text-indigo-600 transition line-clamp-1">
+                      <h4 className="text-sm font-semibold text-app-heading group-hover:text-brand-600 transition line-clamp-1">
                         {ev.title}
                       </h4>
-                      <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500 shrink-0 mt-0.5" />
+                      <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-brand-500 shrink-0 mt-0.5" />
                     </div>
                     {ev.observedAt && (
                       <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">

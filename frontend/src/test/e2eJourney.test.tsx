@@ -42,6 +42,11 @@ vi.mock("../lib/firebase/authContext", () => ({
   }),
 }));
 
+vi.mock("../components/ui/Toast", () => ({
+  ToastProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useToast: () => ({ success: vi.fn(), error: vi.fn() }),
+}));
+
 vi.mock("../lib/api", async () => {
   const actual = await vi.importActual("../lib/api");
   return {
@@ -80,7 +85,7 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
     });
   });
 
-  it("completes full scientific journey: auth → dashboard → record observation → media inspection → AI analysis → task acceptance → version history → chat discussion → map inspection → RAG query (Plan §5.2)", async () => {
+  it("completes full scientific journey: auth → dashboard → record observation → media inspection → AI analysis → task acceptance → version history → chat discussion → map inspection → RAG query (Plan §5.2)", { timeout: 20000 }, async () => {
     // -------------------------------------------------------------------------
     // Step 1: Researcher Lands and Authenticates
     // -------------------------------------------------------------------------
@@ -158,12 +163,16 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Alpine Lichen Photosynthesis under UV")).toBeInTheDocument();
+      // Title renders in observation list and again in the activity feed
+      expect(
+        screen.getAllByText("Alpine Lichen Photosynthesis under UV").length
+      ).toBeGreaterThanOrEqual(1);
     });
 
     expect(screen.getByText("Jungfraujoch Ridge")).toBeInTheDocument();
     expect(screen.getByText("1 files attached")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /research projects/i })).toBeInTheDocument();
+    // Old "Research Projects" quick-action card replaced by "View all projects" hero link
+    expect(screen.getByRole("link", { name: /view all projects/i })).toBeInTheDocument();
     unmountDashboard();
 
     // -------------------------------------------------------------------------

@@ -48,11 +48,12 @@ describe("Layout Component", () => {
 
     fireEvent.click(toggleButton);
     expect(screen.getByRole("button", { name: /close navigation menu/i })).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("navigation", { name: /mobile navigation/i })).toBeInTheDocument();
+    // Drawer reuses the grouped nav model; the drawer container is rendered when open.
+    expect(screen.getByLabelText(/mobile navigation/i)).toBeInTheDocument();
 
     // Clicking close toggles it back
     fireEvent.click(screen.getByRole("button", { name: /close navigation menu/i }));
-    expect(screen.queryByRole("navigation", { name: /mobile navigation/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/mobile navigation/i)).not.toBeInTheDocument();
   });
 
   it("triggers signOut when clicking Sign Out button", () => {
@@ -67,5 +68,30 @@ describe("Layout Component", () => {
     const signOutBtn = screen.getAllByRole("button", { name: /sign out/i })[0];
     fireEvent.click(signOutBtn);
     expect(mockSignOut).toHaveBeenCalled();
+  });
+
+  it("collapses the sidebar and persists the preference", () => {
+    localStorage.removeItem("asj.sidebar.collapsed");
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <Layout>
+          <div>Content</div>
+        </Layout>
+      </MemoryRouter>
+    );
+
+    // Expanded by default: labels visible, toggle says "Collapse"
+    expect(screen.getByRole("button", { name: /collapse sidebar/i })).toBeInTheDocument();
+    expect(screen.getAllByText("Observations").length).toBeGreaterThanOrEqual(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /collapse sidebar/i }));
+
+    // Collapsed: preference persisted, toggle flips, nav labels hidden
+    expect(localStorage.getItem("asj.sidebar.collapsed")).toBe("true");
+    expect(screen.getByRole("button", { name: /expand sidebar/i })).toBeInTheDocument();
+    expect(screen.queryByText("Ask Journal")).not.toBeInTheDocument();
+    // Icon-only items keep accessible names
+    expect(screen.getAllByRole("link", { name: "Ask Journal" }).length).toBeGreaterThanOrEqual(1);
   });
 });

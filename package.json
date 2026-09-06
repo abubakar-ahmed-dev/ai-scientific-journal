@@ -2,6 +2,7 @@
   "name": "ai-scientific-journal",
   "private": true,
   "scripts": {
+    "emulators": "npx firebase-tools emulators:start --project demo-test",
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "build": "npm --prefix backend run build && npm --prefix frontend run build",

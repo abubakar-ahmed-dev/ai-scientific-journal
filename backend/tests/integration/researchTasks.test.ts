@@ -41,10 +41,44 @@ vi.mock("../../src/lib/firebaseAdmin", () => {
         },
       });
 
+      const idempotencyLookup = (
+        rootColl: string,
+        uid: string,
+        subColl: string,
+        lim: number
+      ): Promise<{ docs: Array<{ id?: string; data: () => Record<string, unknown>; get: (f: string) => unknown }> }> => {
+        // findByIdempotencyKey: users/{uid}/researchTasks where ownerId==uid
+        // AND idempotencyKey==key — filter the in-memory store for tasks
+        // carrying a key (the mock does not model field comparators).
+        const prefix = `${rootColl}/${uid}/${subColl}/`;
+        const docs: Array<{ id?: string; data: () => Record<string, unknown>; get: (f: string) => unknown }> = [];
+        inMemoryDb.forEach((val, key) => {
+          if (key.startsWith(prefix) && val.idempotencyKey) {
+            docs.push({
+              id: key.split("/").pop(),
+              data: () => val,
+              get: (f: string) => val[f],
+            });
+          }
+        });
+        return Promise.resolve({ docs: docs.slice(0, lim) });
+      };
+
+      const whereChain = (rootColl: string, uid: string, subColl: string): Record<string, unknown> => ({
+        where: () => whereChain(rootColl, uid, subColl),
+        limit: (lim: number) => ({
+          get: async () => {
+            const result = await idempotencyLookup(rootColl, uid, subColl, lim);
+            return { ...result, empty: result.docs.length === 0 };
+          },
+        }),
+      });
+
       return {
         collection: (rootColl: string) => ({
           doc: (uid: string) => ({
             collection: (subColl: string) => ({
+              where: () => whereChain(rootColl, uid, subColl),
               doc: (id?: string) => {
                 const docId = id || `doc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
                 const fullPath = `${rootColl}/${uid}/${subColl}/${docId}`;
@@ -69,11 +103,6 @@ vi.mock("../../src/lib/firebaseAdmin", () => {
                     });
                     return { docs: docs.slice(0, lim) };
                   },
-                }),
-                where: () => ({
-                  limit: () => ({
-                    get: async () => ({ docs: [] }),
-                  }),
                 }),
               }),
             }),
@@ -138,6 +167,55 @@ describe("Research Tasks API (/api/v1/research-tasks)", () => {
     expect(res.body.data.sourceAnalysisId).toBe("anl_test_1");
     expect(res.body.data.status).toBe("suggested");
     expect(res.body.data.title).toContain("Deploy second feeder 50 meters north");
+  });
+
+  it("Idempotency-Key on suggestion acceptance prevents double-accepting (API.md §6.14)", async () => {
+    // Seed analysis for the acceptance flow
+    const aPath = `users/${USER_A.uid}/analyses/anl_idem_1`;
+    inMemoryDb.set(aPath, {
+      id: "anl_idem_1",
+      ownerId: USER_A.uid,
+      type: "research_suggestions",
+      summary: "Suggestions for idempotency verification",
+      suggestedNextSteps: ["Replicate the pH assay with a control group"],
+      observationIds: ["obs_1"],
+    });
+
+    const key = "idem-accept-123";
+
+    // First acceptance creates the task
+    const first = await request(app)
+      .post("/api/v1/research-tasks")
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
+      .set("Idempotency-Key", key)
+      .send({
+        source: "gemini",
+        sourceAnalysisId: "anl_idem_1",
+        suggestionIndex: 0,
+      });
+    expect(first.status).toBe(201);
+
+    // Retried acceptance with the same key replays the original task (200, not 201)
+    const replay = await request(app)
+      .post("/api/v1/research-tasks")
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
+      .set("Idempotency-Key", key)
+      .send({
+        source: "gemini",
+        sourceAnalysisId: "anl_idem_1",
+        suggestionIndex: 0,
+      });
+    expect(replay.status).toBe(200);
+    expect(replay.body.data.id).toBe(first.body.data.id);
+
+    // Exactly one task was created for this acceptance
+    const list = await request(app)
+      .get("/api/v1/research-tasks")
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`);
+    const matching = list.body.data.filter(
+      (t: { sourceAnalysisId?: string | null }) => t.sourceAnalysisId === "anl_idem_1"
+    );
+    expect(matching).toHaveLength(1);
   });
 
   it("rejects out-of-bounds suggestion index with 400 VALIDATION_ERROR", async () => {
@@ -234,5 +312,55 @@ describe("Research Tasks API (/api/v1/research-tasks)", () => {
 
     expect(getRes.status).toBe(404);
     expect(getRes.body.error.code).toBe("NOT_FOUND");
+  });
+
+  it("PATCH moves a task between projects and validates ownership", async () => {
+    // 1. Seed two owned projects + one task filed under project A
+    const projectAPath = `users/${USER_A.uid}/projects/proj_a`;
+    const projectBPath = `users/${USER_A.uid}/projects/proj_b`;
+    inMemoryDb.set(projectAPath, { id: "proj_a", ownerId: USER_A.uid, title: "Project A" });
+    inMemoryDb.set(projectBPath, { id: "proj_b", ownerId: USER_A.uid, title: "Project B" });
+
+    const createRes = await request(app)
+      .post("/api/v1/research-tasks")
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
+      .send({
+        source: "user",
+        title: "Movable Task",
+        description: "Testing project reassignment",
+        projectId: "proj_a",
+      });
+    expect(createRes.status).toBe(201);
+    const taskId = createRes.body.data.id;
+    expect(createRes.body.data.projectId).toBe("proj_a");
+
+    // 2. Move to project B
+    const moveRes = await request(app)
+      .patch(`/api/v1/research-tasks/${taskId}`)
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
+      .send({ projectId: "proj_b" });
+
+    expect(moveRes.status).toBe(200);
+    expect(moveRes.body.data.projectId).toBe("proj_b");
+
+    // 3. Unfile (null projectId)
+    const unfileRes = await request(app)
+      .patch(`/api/v1/research-tasks/${taskId}`)
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
+      .send({ projectId: null });
+
+    expect(unfileRes.status).toBe(200);
+    expect(unfileRes.body.data.projectId).toBeNull();
+
+    // 4. Foreign project id rejected
+    const projectBUserBPath = `users/${USER_B.uid}/projects/proj_bob`;
+    inMemoryDb.set(projectBUserBPath, { id: "proj_bob", ownerId: USER_B.uid, title: "Bob Project" });
+    const foreignRes = await request(app)
+      .patch(`/api/v1/research-tasks/${taskId}`)
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
+      .send({ projectId: "proj_bob" });
+
+    expect(foreignRes.status).toBe(400);
+    expect(foreignRes.body.error.code).toBe("VALIDATION_ERROR");
   });
 });

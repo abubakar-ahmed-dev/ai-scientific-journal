@@ -33,6 +33,9 @@ export const UpdateResearchTaskSchema = z
     title: z.string().trim().min(1).max(200).optional(),
     description: z.string().trim().min(1).max(5000).optional(),
     status: TaskStatusSchema.optional(),
+    // Move task between projects; null files it under "Unfiled".
+    // Ownership of the target project is validated in the repository.
+    projectId: z.string().trim().min(1).nullish(),
     relatedObservationIds: z.array(z.string().trim().min(1)).max(50).optional(),
   })
   .strict();
