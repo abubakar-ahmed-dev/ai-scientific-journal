@@ -202,6 +202,7 @@ export const CommandPalette: React.FC<{ open: boolean; onClose: () => void }> = 
           <input
             ref={inputRef}
             type="text"
+            data-no-focus-ring
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
