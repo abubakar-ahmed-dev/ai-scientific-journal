@@ -57,7 +57,7 @@ export const FeatureSection: React.FC<FeatureSectionProps> = ({
             <span aria-hidden="true" className="h-px w-8 bg-lp-primary/50" />
             {label}
           </p>
-          <h3 className="text-3xl font-bold leading-tight tracking-tight text-lp-heading sm:text-4xl">
+          <h3 className="text-3xl font-bold leading-[1.18] tracking-tight text-lp-heading sm:text-4xl">
             {heading}
           </h3>
           <p className="max-w-xl text-lg leading-relaxed text-lp-muted">{description}</p>

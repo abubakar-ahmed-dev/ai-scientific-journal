@@ -320,7 +320,7 @@ export default function LandingPage() {
             <p className="text-base font-bold uppercase tracking-[0.18em] text-lp-primary">
               Your Personal Research Notebook
             </p>
-            <h1 className="mt-5 text-5xl font-extrabold leading-[1.05] tracking-tight text-lp-heading sm:text-6xl lg:text-[4.25rem]">
+            <h1 className="mt-5 text-5xl font-extrabold leading-[1.15] tracking-tight text-lp-heading sm:text-6xl lg:text-[4.25rem]">
               Turn Observations Into{" "}
               <span className="relative inline-block text-lp-primary">
                 Evidence
@@ -394,7 +394,7 @@ export default function LandingPage() {
                 How It Works
                 <span aria-hidden="true" className="h-px w-8 bg-lp-primary/50" />
               </p>
-              <h2 className="text-4xl font-bold tracking-tight text-lp-heading sm:text-5xl">
+              <h2 className="text-4xl font-bold leading-[1.15] tracking-tight text-lp-heading sm:text-5xl">
                 From Field Note to Next Investigation.
               </h2>
               <p className="text-xl text-lp-muted">
@@ -484,7 +484,7 @@ export default function LandingPage() {
                 Inside the Journal
                 <span aria-hidden="true" className="h-px w-8 bg-lp-primary/50" />
               </p>
-              <h2 className="text-4xl font-bold tracking-tight text-lp-heading sm:text-5xl">
+              <h2 className="text-4xl font-bold leading-[1.15] tracking-tight text-lp-heading sm:text-5xl">
                 Built for Real Research Work.
               </h2>
               <p className="text-xl text-lp-muted">
@@ -556,7 +556,7 @@ export default function LandingPage() {
                 Integrity &amp; Privacy
                 <span aria-hidden="true" className="h-px w-8 bg-lp-primary/50" />
               </p>
-              <h2 className="text-4xl font-bold tracking-tight text-lp-heading sm:text-5xl">
+              <h2 className="text-4xl font-bold leading-[1.15] tracking-tight text-lp-heading sm:text-5xl">
                 Your Records Are the Source of Truth.
               </h2>
             </div>
@@ -644,7 +644,7 @@ export default function LandingPage() {
           <DotGrid className="left-10 top-6 h-48 w-48 opacity-80" />
           <DotGrid tone="violet" className="bottom-6 right-10 h-48 w-48 opacity-80" />
           <div className="relative mx-auto max-w-6xl px-5 py-20 text-center sm:px-8 lg:py-28">
-            <h2 className="text-4xl font-bold tracking-tight text-lp-heading sm:text-5xl">
+            <h2 className="text-4xl font-bold leading-[1.15] tracking-tight text-lp-heading sm:text-5xl">
               Start With One Observation.
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-xl text-lp-muted">
