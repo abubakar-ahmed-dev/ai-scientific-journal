@@ -172,7 +172,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         title={collapsed ? link.label : undefined}
         aria-label={collapsed ? link.label : undefined}
         className={`relative flex items-center rounded-md text-sm transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-          collapsed ? "justify-center mx-1" : ""
+          collapsed ? "justify-center mx-1" : "gap-3.5"
         } ${
           active
             ? "bg-indigo-50 font-semibold text-indigo-700"
