@@ -96,20 +96,6 @@ const Glow: React.FC<{ className: string }> = ({ className }) => (
   />
 );
 
-/** Broken "field notes" line motif. */
-const BrokenLine: React.FC<{ className: string }> = ({ className }) => (
-  <svg
-    aria-hidden="true"
-    viewBox="0 0 220 8"
-    fill="none"
-    className={`pointer-events-none absolute ${className}`}
-  >
-    <path d="M0 4 H120" stroke="#0F766E" strokeOpacity="0.25" strokeWidth="2" strokeLinecap="round" />
-    <path d="M132 4 H172" stroke="#0F766E" strokeOpacity="0.18" strokeWidth="2" strokeLinecap="round" />
-    <path d="M184 4 H220" stroke="#6D5BD0" strokeOpacity="0.22" strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
-
 /** Diagonal crosshatch band, very faint. */
 const Crosshatch: React.FC<{ className: string }> = ({ className }) => (
   <div
@@ -314,9 +300,6 @@ export default function LandingPage() {
           <Glow className="-right-48 top-24 h-[560px] w-[560px] bg-[radial-gradient(circle,rgba(109,91,208,0.12),transparent_65%)]" />
           <DotGrid className="left-8 top-16 h-64 w-64 sm:h-80 sm:w-80" />
           <DotGrid tone="violet" className="bottom-10 right-8 h-64 w-64 sm:h-80 sm:w-80" />
-          <BrokenLine className="left-[6%] top-40 w-40 rotate-[-8deg] sm:w-52" />
-          <BrokenLine className="bottom-32 left-[10%] hidden w-44 rotate-[5deg] lg:block" />
-          <BrokenLine className="right-[5%] top-28 hidden w-48 rotate-[6deg] lg:block" />
           <FileText
             aria-hidden="true"
             className="pointer-events-none absolute left-[7%] top-[42%] hidden h-10 w-10 -rotate-12 text-lp-primary/15 lg:block"
@@ -660,8 +643,6 @@ export default function LandingPage() {
         <section className="relative overflow-hidden bg-lp-primary-soft">
           <DotGrid className="left-10 top-6 h-48 w-48 opacity-80" />
           <DotGrid tone="violet" className="bottom-6 right-10 h-48 w-48 opacity-80" />
-          <BrokenLine className="left-[12%] top-1/2 hidden w-48 -translate-y-1/2 -rotate-6 lg:block" />
-          <BrokenLine className="right-[12%] top-1/2 hidden w-48 -translate-y-1/2 rotate-6 lg:block" />
           <div className="relative mx-auto max-w-6xl px-5 py-20 text-center sm:px-8 lg:py-28">
             <h2 className="text-4xl font-bold tracking-tight text-lp-heading sm:text-5xl">
               Start With One Observation.
