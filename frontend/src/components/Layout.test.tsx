@@ -69,4 +69,29 @@ describe("Layout Component", () => {
     fireEvent.click(signOutBtn);
     expect(mockSignOut).toHaveBeenCalled();
   });
+
+  it("collapses the sidebar and persists the preference", () => {
+    localStorage.removeItem("asj.sidebar.collapsed");
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <Layout>
+          <div>Content</div>
+        </Layout>
+      </MemoryRouter>
+    );
+
+    // Expanded by default: labels visible, toggle says "Collapse"
+    expect(screen.getByRole("button", { name: /collapse sidebar/i })).toBeInTheDocument();
+    expect(screen.getAllByText("Observations").length).toBeGreaterThanOrEqual(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /collapse sidebar/i }));
+
+    // Collapsed: preference persisted, toggle flips, nav labels hidden
+    expect(localStorage.getItem("asj.sidebar.collapsed")).toBe("true");
+    expect(screen.getByRole("button", { name: /expand sidebar/i })).toBeInTheDocument();
+    expect(screen.queryByText("Ask Journal")).not.toBeInTheDocument();
+    // Icon-only items keep accessible names
+    expect(screen.getAllByRole("link", { name: "Ask Journal" }).length).toBeGreaterThanOrEqual(1);
+  });
 });

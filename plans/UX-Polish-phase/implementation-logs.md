@@ -209,6 +209,28 @@ ui suites 13/13.
 
 ---
 
+## Post-block fix — sidebar geometry + collapse
+
+**User report:** sidebar did not span the full vertical area (a strip was left beneath it) and
+it could not be collapsed.
+
+**Fixes (`frontend/src/components/Layout.tsx`):**
+1. Geometry: `md:inset-y-16` set both top and bottom insets, leaving a 4rem dead strip under
+   the sidebar. Changed to `md:top-16 md:bottom-0` — sidebar now spans the full viewport
+   height below the header.
+2. Collapse (guidelines §5.3): toggle button pinned at the sidebar bottom (PanelLeft icons).
+   - Collapsed: 16-unit rail, icon-only items centered, tooltips via `title` +
+     `aria-label`, section headings hidden, active item keeps a filled dot under its icon
+     (non-color active state preserved).
+   - Preference persisted in `localStorage` (`asj.sidebar.collapsed`) and restored on load.
+   - Main content padding follows the sidebar width with a smooth transition.
+   - Mobile drawer unaffected.
+
+**Validation:** tsc clean, lint 0 errors, build clean, Layout suite 4/4 (new test covers
+collapse toggle, persistence, icon-only accessible names), Dashboard + e2eJourney green.
+
+---
+
 ## Phase status
 
 All 6 blocks complete. Remaining deferred items (explicit non-goals, see plan §1/§5):

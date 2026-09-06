@@ -12,6 +12,8 @@ import {
   FolderKanban,
   MessageSquare,
   Settings,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { useAuth } from "../lib/firebase/authContext";
 import { CommandPalette } from "./CommandPalette";
@@ -53,11 +55,23 @@ const NAV_SECTIONS: NavSection[] = [
 
 const SETTINGS_LINK: NavLinkItem = { to: "/settings", label: "Settings", icon: Settings };
 
+/** Sidebar collapse preference (guidelines §5.3). Persisted locally. */
+const SIDEBAR_COLLAPSED_KEY = "asj.sidebar.collapsed";
+
+function readSidebarCollapsed(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, signOut } = useAuth();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed);
   const [prevPath, setPrevPath] = useState(location.pathname);
   const drawerRef = React.useRef<HTMLDivElement>(null);
   const hamburgerBtnRef = React.useRef<HTMLButtonElement>(null);
@@ -131,32 +145,58 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const isActive = (to: string) =>
     location.pathname === to || (to !== "/dashboard" && location.pathname.startsWith(to));
 
+  const toggleSidebar = () => {
+    setSidebarCollapsed((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
+      } catch {
+        // Storage unavailable (private mode) — preference just won't persist.
+      }
+      return next;
+    });
+  };
+
   const userInitial = (currentUser?.displayName?.[0] || currentUser?.email?.[0] || "U").toUpperCase();
 
   const renderNavItem = (link: NavLinkItem, onNavigate?: () => void) => {
     const Icon = link.icon;
     const active = isActive(link.to);
+    const collapsed = sidebarCollapsed;
     return (
       <Link
         key={link.to}
         to={link.to}
         onClick={onNavigate}
         aria-current={active ? "page" : undefined}
-        className={`relative flex items-center gap-2.5 rounded-md text-sm transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+        title={collapsed ? link.label : undefined}
+        aria-label={collapsed ? link.label : undefined}
+        className={`relative flex items-center rounded-md text-sm transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+          collapsed ? "justify-center mx-1" : ""
+        } ${
           active
             ? "bg-indigo-50 font-semibold text-indigo-700"
             : "font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
         }`}
       >
         {/* Non-color active indicator (guidelines §5.2): left accent bar + weight + background */}
-        {active && (
+        {active && !collapsed && (
           <span
             aria-hidden="true"
             className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-indigo-600"
           />
         )}
-        <Icon className={`ml-2.5 h-4 w-4 shrink-0 ${active ? "text-indigo-600" : "text-slate-400"}`} />
-        <span className="py-2 pr-2">{link.label}</span>
+        {/* Collapsed active state: filled dot below the icon (not color-only, §5.2) */}
+        {active && collapsed && (
+          <span
+            aria-hidden="true"
+            className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-indigo-600"
+          />
+        )}
+        <Icon className={`h-4 w-4 shrink-0 ${collapsed ? "my-2.5" : "ml-2.5"} ${
+          active ? "text-indigo-600" : "text-slate-400"
+        }`} />
+        {!collapsed && <span className="py-2 pr-2">{link.label}</span>}
       </Link>
     );
   };
@@ -165,7 +205,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     <nav aria-label="Main Navigation" className="flex h-full flex-col gap-5 overflow-y-auto px-3 py-5">
       {NAV_SECTIONS.map((section) => (
         <div key={section.heading} className="space-y-1">
-          {section.heading && (
+          {!sidebarCollapsed && section.heading && (
             <p className="px-2.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
               {section.heading}
             </p>
@@ -313,18 +353,43 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       </header>
 
       <div className="flex">
-        {/* Desktop persistent sidebar (guidelines §4–§5) */}
+        {/* Desktop persistent sidebar (guidelines §4–§5), full height under header */}
         <aside
           aria-label="Sidebar navigation"
-          className="hidden md:flex md:flex-col md:fixed md:inset-y-16 md:left-0 md:w-60 border-r border-slate-200 bg-white"
+          className={`hidden md:flex md:flex-col md:fixed md:top-16 md:bottom-0 md:left-0 border-r border-slate-200 bg-white transition-[width] duration-200 ${
+            sidebarCollapsed ? "md:w-16" : "md:w-60"
+          }`}
         >
           {sidebarContent}
+
+          {/* Collapse toggle pinned at the sidebar bottom */}
+          <div className="border-t border-slate-200 p-2">
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              aria-pressed={sidebarCollapsed}
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              className="w-full flex items-center justify-center rounded-md p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
+            >
+              {sidebarCollapsed ? (
+                <PanelLeftOpen className="h-4 w-4" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
+              {!sidebarCollapsed && (
+                <span className="ml-2.5 text-xs font-medium">Collapse</span>
+              )}
+            </button>
+          </div>
         </aside>
 
         <main
           id="main-content"
           role="main"
-          className="flex-1 md:pl-60 w-full"
+          className={`flex-1 w-full transition-[padding] duration-200 ${
+            sidebarCollapsed ? "md:pl-16" : "md:pl-60"
+          }`}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</div>
         </main>
