@@ -215,8 +215,10 @@ export default function ProjectsPage() {
           </form>
         )}
 
-        {/* Projects Grid */}
-        {loading ? (
+        {/* Projects Grid — hidden while the create form is open so the empty
+            state never competes with the form (guidelines §53: no redundant
+            prompts alongside an active task). */}
+        {!showCreate && (loading ? (
           <div className="p-12 text-center text-slate-500 text-sm">Loading projects...</div>
         ) : filteredProjects.length === 0 ? (
           <div className="bg-white p-12 text-center rounded-lg border border-app-border">
@@ -275,7 +277,7 @@ export default function ProjectsPage() {
               </div>
             ))}
           </div>
-        )}
+        ))}
       </div>
     </Layout>
   );
