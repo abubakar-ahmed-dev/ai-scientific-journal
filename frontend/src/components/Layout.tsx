@@ -296,11 +296,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               onClick={() => setPaletteOpen(true)}
               aria-label="Open command palette"
               aria-haspopup="dialog"
-              className="hidden sm:flex items-center gap-2 pl-3 pr-1.5 py-1.5 text-xs text-slate-400 bg-slate-100/70 hover:bg-slate-100 border border-transparent focus:border-app-border rounded-full transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
+              className="hidden sm:flex items-center gap-2 pl-3 pr-1.5 py-1.5 text-xs text-slate-600 hover:bg-brand-100/70 bg-white border border-app-border focus:border-app-border rounded-full transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
             >
               <Search className="w-3.5 h-3.5" />
               <span className="font-medium">Search…</span>
-              <kbd className="text-[10px] font-semibold text-slate-400 bg-white border border-app-border rounded-full px-1.5 py-0.5">
+              <kbd className="text-[10px] font-semibold text-slate-600 bg-white border border-app-border rounded-full px-1.5 py-0.5">
                 Ctrl K
               </kbd>
             </button>
@@ -312,7 +312,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 to="/settings"
                 aria-label={`Profile settings for ${headerName}`}
                 title="Profile settings"
-                className="flex items-center gap-2 text-xs text-slate-600 bg-slate-100/70 hover:bg-white py-1 pl-1 pr-3 rounded-full border border-transparent hover:border-brand-300 transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
+                className="flex items-center gap-2 text-xs text-slate-600 hover:bg-brand-100/70 bg-white py-1 pl-2 pr-3 rounded-full border border-app-border transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
               >
                 {avatarUrl ? (
                   <img
@@ -330,7 +330,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             )}
             <button
               onClick={() => setConfirmingSignOut(true)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-app-border hover:text-red-600 hover:border-red-200 hover:bg-red-50 rounded-full transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-600 bg-white border border-app-border hover:text-red-600 hover:border-red-200 hover:bg-red-50 rounded-full transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
               title="Sign out of your account"
             >
               <LogOut className="w-3.5 h-3.5" />

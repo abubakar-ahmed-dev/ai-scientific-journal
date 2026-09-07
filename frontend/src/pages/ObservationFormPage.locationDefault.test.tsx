@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import ObservationFormPage from "./ObservationFormPage";
 import * as api from "../lib/api";
-import { useProfile } from "../lib/useProfile";
 
 vi.mock("../components/Layout", () => ({
   Layout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -19,40 +19,33 @@ vi.mock("../lib/api", async () => {
   };
 });
 
-vi.mock("../lib/useProfile", async () => {
-  const actual = await vi.importActual<typeof import("../lib/useProfile")>("../lib/useProfile");
-  return {
-    ...actual,
-    useProfile: vi.fn(),
-  };
-});
-
-function mockProfile(locationEnabled: boolean | null) {
-  vi.mocked(useProfile).mockReturnValue({
-    profile: { preferences: { locationEnabled } } as ReturnType<typeof useProfile>["profile"],
-    displayName: null,
-    email: null,
-    avatarUrl: null,
-    memberSince: null,
-    preferences: locationEnabled === null ? null : { locationEnabled },
-    isLoading: false,
-    refetch: vi.fn(),
-  } as ReturnType<typeof useProfile>);
-}
-
 function renderNewObservation() {
   const router = createMemoryRouter(
     [{ path: "/observations/new", element: <ObservationFormPage /> }],
     { initialEntries: ["/observations/new"] }
   );
-  return render(<RouterProvider router={router} />);
+  const view = render(<RouterProvider router={router} />);
+  // Both "± Advanced Fields" spans live in the summary; click the element.
+  const expandAdvanced = () => userEvent.click(view.container.querySelector("summary")!);
+  return { view, expandAdvanced };
 }
 
-describe("ObservationFormPage — location-capture default (settings refactor 2026-09-07)", () => {
+async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(screen.getByLabelText(/^title/i), "Frost patterns on south-facing window");
+  await user.type(
+    screen.getByLabelText(/description \/ field notes/i),
+    "Feather-like crystals formed overnight near the frame seal."
+  );
+}
+
+describe("ObservationFormPage — location defaults and validation (2026-09-08)", () => {
   const originalGeolocation = navigator.geolocation;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(api.createObservation).mockResolvedValue({
+      data: { id: "obs_new" },
+    } as never);
   });
 
   afterEach(() => {
@@ -71,60 +64,59 @@ describe("ObservationFormPage — location-capture default (settings refactor 20
     return getCurrentPosition;
   }
 
-  it("opens the location panel and attempts GPS once when the preference is on", async () => {
+  it("keeps the advanced panel closed on a new observation — no auto GPS prompt", async () => {
     const getCurrentPosition = stubGeolocation();
-    mockProfile(true);
 
     renderNewObservation();
 
-    // Advanced panel (holding the location section) is open — the location
-    // toggle is visible and GPS was attempted exactly once.
+    // Panel content is reachable but collapsed; the location toggle is inside
+    // it and no GPS capture is attempted on mount.
+    expect(screen.getByRole("switch", { name: /attach geographic location/i })).not.toBeVisible();
+    expect(getCurrentPosition).not.toHaveBeenCalled();
+  });
+
+  it("blocks submit with empty coordinates when the location toggle is on", async () => {
+    const user = userEvent.setup();
+    stubGeolocation();
+
+    const { expandAdvanced } = renderNewObservation();
+    await fillRequiredFields(user);
+
+    // Expand advanced panel and switch location on — fields start empty (null)
+    await expandAdvanced();
+    await user.click(screen.getByRole("switch", { name: /attach geographic location/i }));
+
+    const lat = screen.getByLabelText(/^latitude$/i);
+    const lng = screen.getByLabelText(/^longitude$/i);
+    expect(lat).toHaveValue(null);
+    expect(lng).toHaveValue(null);
+
+    await user.click(screen.getByRole("button", { name: /save observation/i }));
+
+    expect(await screen.findByText(/enter both latitude and longitude/i)).toBeInTheDocument();
+    expect(api.createObservation).not.toHaveBeenCalled();
+  });
+
+  it("accepts entered coordinates and submits them with the observation", async () => {
+    const user = userEvent.setup();
+    stubGeolocation();
+
+    const { expandAdvanced } = renderNewObservation();
+    await fillRequiredFields(user);
+
+    await expandAdvanced();
+    await user.click(screen.getByRole("switch", { name: /attach geographic location/i }));
+
+    await user.type(screen.getByLabelText(/^latitude$/i), "46.54");
+    await user.type(screen.getByLabelText(/^longitude$/i), "8.01");
+    await user.click(screen.getByRole("button", { name: /save observation/i }));
+
     await waitFor(() => {
-      expect(screen.getByLabelText(/attach geographic location/i)).toBeVisible();
+      expect(api.createObservation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          location: expect.objectContaining({ latitude: 46.54, longitude: 8.01 }),
+        })
+      );
     });
-    expect(getCurrentPosition).toHaveBeenCalledTimes(1);
-  });
-
-  it("leaves the panel closed and never prompts GPS when the preference is off", () => {
-    const getCurrentPosition = stubGeolocation();
-    mockProfile(false);
-
-    renderNewObservation();
-
-    // Native <details> keeps children in the DOM when closed, so the
-    // discriminator is visibility (panel closed) plus no GPS prompt.
-    expect(getCurrentPosition).not.toHaveBeenCalled();
-    expect(screen.getByLabelText(/attach geographic location/i)).not.toBeVisible();
-  });
-
-  it("does not auto-capture in edit mode even when the preference is on", () => {
-    const getCurrentPosition = stubGeolocation();
-    mockProfile(true);
-    vi.mocked(api.fetchObservation).mockResolvedValue({
-      data: {
-        id: "obs_1",
-        title: "t",
-        description: "d",
-        notes: null,
-        hypothesis: null,
-        observedAt: "2026-09-01T10:00:00Z",
-        tags: [],
-        measurements: [],
-        status: "observed",
-        projectId: null,
-        mediaCount: 0,
-        version: 1,
-        createdAt: "2026-09-01T10:00:00Z",
-        updatedAt: "2026-09-01T10:00:00Z",
-      },
-    } as never);
-
-    const router = createMemoryRouter(
-      [{ path: "/observations/:id/edit", element: <ObservationFormPage /> }],
-      { initialEntries: ["/observations/obs_1/edit"] }
-    );
-    render(<RouterProvider router={router} />);
-
-    expect(getCurrentPosition).not.toHaveBeenCalled();
   });
 });
