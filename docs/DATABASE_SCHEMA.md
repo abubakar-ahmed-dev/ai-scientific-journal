@@ -111,6 +111,7 @@ Stores minimal application-specific information about an authenticated user. Fir
   "displayName": "Abubakar",
   "email": "user@example.com",
   "photoURL": "https://...",
+  "avatarPath": null,
   "role": "user",
   "accountStatus": "active",
   "preferences": {
@@ -131,14 +132,15 @@ Stores minimal application-specific information about an authenticated user. Fir
 | ----- | ---- | -------: | ----------- |
 | `displayName` | string | Yes | Display name |
 | `email` | string | Yes | Account email (from Firebase Auth) |
-| `photoURL` | string | No | Profile image URL |
+| `photoURL` | string | No | Profile image URL (legacy Auth mirror; the UI uses the uploaded avatar instead) |
+| `avatarPath` | string \| null | No | Internal storage path of the uploaded avatar (`users/{uid}/avatar/avatar`). Never returned by the API — clients receive a signed `avatarUrl`. Absent in documents created before the field existed = no avatar |
 | `role` | string | Yes | `user` \| `admin` — server-managed |
 | `accountStatus` | string | Yes | `active` \| `suspended` \| `deleted` — server-managed |
 | `preferences` | map | Yes | Inline user preferences (see below) |
-| `preferences.theme` | string | Yes | `light` \| `dark` \| `system` |
-| `preferences.timezone` | string | Yes | IANA timezone identifier |
-| `preferences.locationEnabled` | boolean | Yes | Whether location features are used |
-| `preferences.aiSuggestionsEnabled` | boolean | Yes | Whether AI suggestions are shown |
+| `preferences.theme` | string | Yes | `light` \| `dark` \| `system` — stored for API compatibility; the UI has no theme switcher (2026-09-07) |
+| `preferences.timezone` | string | Yes | IANA timezone identifier — stored for API compatibility; timestamps render in the browser's locale (2026-09-07) |
+| `preferences.locationEnabled` | boolean | Yes | New observations open the location panel and attempt GPS capture by default |
+| `preferences.aiSuggestionsEnabled` | boolean | Yes | Stored for API compatibility; not consumed by the UI (2026-09-07 — the only proactive AI surface did not justify a setting) |
 | `createdAt` | timestamp | Yes | Account creation (server timestamp) |
 | `updatedAt` | timestamp | Yes | Last profile update (server timestamp) |
 | `lastLoginAt` | timestamp | No | Last recorded login (server timestamp) |
