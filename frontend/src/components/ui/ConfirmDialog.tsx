@@ -40,6 +40,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <button
             type="button"
             onClick={onCancel}
+            autoFocus={destructive}
             className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
           >
             {cancelLabel}
@@ -47,7 +48,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <button
             type="button"
             onClick={onConfirm}
-            autoFocus
+            autoFocus={!destructive}
             className={`px-4 py-2 text-xs font-semibold text-white rounded-lg transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 ${
               destructive
                 ? "bg-red-600 hover:bg-red-700 focus-visible:ring-red-500"

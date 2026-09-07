@@ -28,6 +28,12 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ analysis, onTask
   const [sourceSummaries, setSourceSummaries] = useState<NonNullable<Analysis["sourceSummaries"]>>(
     analysis.sourceSummaries || []
   );
+  // True while sources still need hydration and the prop didn't carry them:
+  // referenced observation chips must not look resolved before they are.
+  const sourcesNeedHydration =
+    !(analysis.sourceSummaries && analysis.sourceSummaries.length > 0) &&
+    Boolean(analysis.id && analysis.observationIds && analysis.observationIds.length > 0);
+  const sourcesResolving = sourcesNeedHydration && sourceSummaries.length === 0;
 
   // Project existence state (dangling project resilience per API.md §7.2 / Plan §3.3)
   const [projectState, setProjectState] = useState<{
@@ -217,6 +223,18 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ analysis, onTask
                     <span>Supporting observations:</span>
                     {h.supportingObservationIds.map((obsId) => {
                       const summary = sourceSummaries.find((s) => s.observationId === obsId);
+                      if (sourcesResolving) {
+                        // Unresolved: render inert (no link) until existence is known.
+                        return (
+                          <span
+                            key={obsId}
+                            aria-busy="true"
+                            className="font-mono text-slate-400 bg-slate-50 animate-pulse px-1.5 py-0.5 rounded border border-app-border"
+                          >
+                            {obsId}
+                          </span>
+                        );
+                      }
                       if (summary && !summary.found) {
                         return (
                           <span
@@ -354,6 +372,18 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ analysis, onTask
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className="text-slate-500">Observations:</span>
             {allReferencedObs.map((src) => {
+              if (sourcesResolving) {
+                // Unresolved: inert pulse pill until existence is known.
+                return (
+                  <span
+                    key={src.observationId}
+                    aria-busy="true"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 text-slate-400 rounded border border-app-border text-xs animate-pulse"
+                  >
+                    <span>{src.observationId}</span>
+                  </span>
+                );
+              }
               if (!src.found) {
                 return (
                   <span

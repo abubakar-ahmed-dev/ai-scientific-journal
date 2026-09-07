@@ -69,6 +69,10 @@ export default function ObservationFormPage() {
 
   // Measurements State
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  // Measurements are a first-class scientific input, so the section must be
+  // reachable in one click from the form body — the top-level "Add Measurement"
+  // action opens the advanced panel (state-controlled <details>) and adds a row.
+  const [advancedOpen, setAdvancedOpen] = useState(isEdit);
 
   // Tags State
   const [tagInput, setTagInput] = useState("");
@@ -292,10 +296,29 @@ export default function ObservationFormPage() {
               </div>
             </div>
 
+            {/* Measurements are central to the scientific workflow — keep a
+                visible action in the form body (guidelines §30 fix). */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setAdvancedOpen(true);
+                  addMeasurement();
+                }}
+                className="text-xs font-medium text-brand-600 hover:text-brand-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1 py-0.5"
+              >
+                ＋ Add Measurement
+              </button>
+            </div>
+
             {/* Advanced fields (guidelines §52): collapsed by default so the
                 common path — title, notes, project, save — stays fast. Native
                 <details> keeps it keyboard-accessible without extra JS. */}
-            <details className="group advanced-fields" open={isEdit || undefined}>
+            <details
+              className="group advanced-fields"
+              open={advancedOpen}
+              onToggle={(e) => setAdvancedOpen((e.currentTarget as HTMLDetailsElement).open)}
+            >
               <summary className="flex items-center gap-2 cursor-pointer select-none text-sm font-semibold text-brand-700 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500 rounded-md px-1 py-1.5 w-fit">
                 <span className="group-open:hidden">＋ Advanced Fields</span>
                 <span className="hidden group-open:inline">－ Advanced Fields</span>

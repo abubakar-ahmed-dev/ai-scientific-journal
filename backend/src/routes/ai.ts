@@ -18,7 +18,7 @@ import { buildConversationSummaryPrompt } from "../ai/prompts/conversationSummar
 import { buildResearchSuggestionsPrompt } from "../ai/prompts/researchSuggestionsPrompt";
 import { buildAskGroundedPrompt, ASK_PROMPT_VERSION } from "../ai/prompts/askGroundedAnswerPrompt";
 import { retrievalService } from "../ai/retrieval/retrievalService";
-import { aiRateLimiter } from "../middleware/rateLimiter";
+import { aiRateLimiter, searchRateLimiter } from "../middleware/rateLimiter";
 import { env } from "../config/env";
 import { logger } from "../lib/logger";
 import { logAiSignal } from "../lib/aiSignals";
@@ -26,8 +26,18 @@ import { AppError } from "../types/errors";
 
 export const aiRouter = Router();
 
-// Apply AI rate limiter (10 requests / 5 min / user) across all AI routes
-aiRouter.use(aiRateLimiter);
+// /ai/search runs on its own lighter retrieval tier (API.md §4.1): it is a
+// non-generative read triggered by ordinary page views, so it must not
+// consume the AI-generation bucket below.
+aiRouter.use("/search", searchRateLimiter);
+// Apply AI rate limiter (10 requests / 5 min / user) to all generation routes
+aiRouter.use((req: Request, res: Response, next: NextFunction): void => {
+  if (req.path === "/search") {
+    next();
+    return;
+  }
+  aiRateLimiter(req, res, next);
+});
 
 // POST /api/v1/ai/summarize
 aiRouter.post("/summarize", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -342,6 +352,7 @@ aiRouter.post("/ask", async (req: Request, res: Response, next: NextFunction): P
               answer: lastMessage.content,
               evidence: metadata.evidence || [],
               uncertainties: metadata.uncertainties || [],
+              insufficientEvidence: (metadata.insufficientEvidence as boolean | undefined) ?? false,
               model: (metadata.model as string) || "none",
               promptVersion: (metadata.promptVersion as string) || ASK_PROMPT_VERSION,
             },
@@ -372,13 +383,21 @@ aiRouter.post("/ask", async (req: Request, res: Response, next: NextFunction): P
       throw new AppError("AI_UNAVAILABLE", "Failed to retrieve observation context. Please retry.");
     }
 
-    const { candidates } = retrievalResult;
+    const { candidates, truncated } = retrievalResult;
+    // Candidates arrive score-sorted descending; the top score decides whether
+    // the evidence base is strong enough to justify generation at all (#18).
+    const topScore = candidates.length > 0 ? candidates[0]!.score : 0;
 
-    // Step 2: Deterministic Insufficient-Evidence Gate (Rule 8)
-    if (candidates.length === 0) {
+    // Step 2: Deterministic Insufficient/Weak-Evidence Gate (Rule 8, fixing-plan #18)
+    if (candidates.length === 0 || topScore < env.AI_RAG_WEAK_EVIDENCE_SCORE) {
       const insufficientAnswer =
-        "I could not find any relevant observations in your journal to answer this question. Please ensure your observations contain the relevant details or try asking a different question.";
-      const uncertainties = ["No matching observations found in journal."];
+        candidates.length === 0
+          ? "I could not find any relevant observations in your journal to answer this question. Please ensure your observations contain the relevant details or try asking a different question."
+          : "The observations in your journal only weakly relate to this question, so I cannot answer it from your recorded evidence. Add observations with more relevant detail, or rephrase the question toward what you have actually recorded.";
+      const uncertainties =
+        candidates.length === 0
+          ? ["No matching observations found in journal."]
+          : [`Best candidate relevance score (${topScore.toFixed(2)}) is below the evidence threshold.`];
 
       if (conversationId) {
         const assistantSequence = await messageRepository.getNextSequence(uid, conversationId);
@@ -392,6 +411,7 @@ aiRouter.post("/ask", async (req: Request, res: Response, next: NextFunction): P
             promptVersion: ASK_PROMPT_VERSION,
             evidence: [],
             uncertainties,
+            insufficientEvidence: true,
           },
         });
         await conversationRepository.incrementMessageCount(uid, conversationId, 1);
@@ -402,9 +422,11 @@ aiRouter.post("/ask", async (req: Request, res: Response, next: NextFunction): P
           answer: insufficientAnswer,
           evidence: [],
           uncertainties,
+          insufficientEvidence: true,
           model: "none",
           promptVersion: ASK_PROMPT_VERSION,
         },
+        meta: { truncated },
       });
       return;
     }
@@ -482,6 +504,7 @@ aiRouter.post("/ask", async (req: Request, res: Response, next: NextFunction): P
           promptVersion: result.promptVersion,
           evidence: enrichedEvidence,
           uncertainties: result.output.uncertainties,
+          insufficientEvidence: result.output.insufficientEvidence === true,
         },
       });
       await conversationRepository.incrementMessageCount(uid, conversationId, 1);
@@ -492,9 +515,14 @@ aiRouter.post("/ask", async (req: Request, res: Response, next: NextFunction): P
         answer: result.output.answer,
         evidence: enrichedEvidence,
         uncertainties: result.output.uncertainties,
+        // Cross-check (fixing-plan #18): the model's self-report is surfaced
+        // verbatim after schema validation; weak/absent candidate evidence
+        // never reaches this point (Step 2 gates it deterministically).
+        insufficientEvidence: result.output.insufficientEvidence === true,
         model: result.model,
         promptVersion: result.promptVersion,
       },
+      meta: { truncated },
     });
   } catch (err) {
     next(err);
@@ -533,6 +561,9 @@ aiRouter.post("/search", async (req: Request, res: Response, next: NextFunction)
       data: results,
       meta: {
         resultCount: results.length,
+        // True when the index scan hit the candidate cap: older observations
+        // were never candidates, so coverage is partial (fixing-plan #16).
+        truncated: retrievalResult.truncated,
       },
     });
   } catch (err) {

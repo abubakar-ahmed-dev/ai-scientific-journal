@@ -101,7 +101,16 @@ export default function DashboardPage() {
     const results = await Promise.allSettled([
       fetchObservations({ limit: 6 }),
       fetchProjects({ limit: 50 }),
-      fetchResearchTasks({ limit: 50 }),
+      // Open tasks are fetched per status so the dashboard's "caught up"
+      // claim is based on complete data, not the first unfiltered page
+      // (a wall of completed tasks would otherwise hide open ones).
+      Promise.all([
+        fetchResearchTasks({ status: "suggested", limit: 50 }),
+        fetchResearchTasks({ status: "planned", limit: 50 }),
+        fetchResearchTasks({ status: "in_progress", limit: 50 }),
+        // Completed tasks feed the recent-activity list only — bounded.
+        fetchResearchTasks({ status: "completed", limit: 6 }),
+      ]),
       fetchConversations({ limit: 5 }),
       fetchAnalyses({ limit: 5 }),
     ]);
@@ -123,8 +132,18 @@ export default function DashboardPage() {
     }
 
     if (results[2].status === "fulfilled") {
-      setTasks(results[2].value.data || []);
-      setTasksHasMore(Boolean(results[2].value.meta?.hasMore));
+      const [suggested, planned, inProgress, completed] = results[2].value;
+      const merged = [
+        ...(suggested.data || []),
+        ...(planned.data || []),
+        ...(inProgress.data || []),
+        // Completed entries ride along for the recent-activity feed;
+        // pending-tasks filters them back out.
+        ...(completed.data || []),
+      ].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      setTasks(merged);
+      // "+" on the metrics tile stays honest: any open-status page hit its cap.
+      setTasksHasMore([suggested, planned, inProgress].some((p) => Boolean(p.meta?.hasMore)));
     } else {
       errors.tasks = true;
     }
@@ -211,7 +230,15 @@ export default function DashboardPage() {
     .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
     .slice(0, 6);
 
-  const isEmptyWorkspace = !loading && observations.length === 0 && projects.length === 0;
+  // New-user onboarding only when the empty workspace is *confirmed* — if the
+  // observations or projects fetches failed, an empty list means "unknown",
+  // and rendering onboarding would disguise an outage as a fresh account.
+  const isEmptyWorkspace =
+    !loading &&
+    !failedSections.observations &&
+    !failedSections.projects &&
+    observations.length === 0 &&
+    projects.length === 0;
 
   // Journal Intelligence (guidelines §16): real latest analysis only.
   const latestAnalysis = analyses[0];

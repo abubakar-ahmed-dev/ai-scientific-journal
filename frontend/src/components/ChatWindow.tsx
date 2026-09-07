@@ -5,6 +5,7 @@ import {
   sendMessage,
   fetchObservation,
   fetchProject,
+  fetchAnalysis,
   ApiRequestError,
 } from "../lib/api";
 import type { Conversation, Message } from "../lib/api";
@@ -44,22 +45,27 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     }
 
     let isMounted = true;
+    const resolve = (fetcher: () => Promise<{ data: { title: string } }>) => {
+      fetcher()
+        .then((res) => {
+          if (isMounted) setContextTitle(res.data.title);
+        })
+        .catch(() => {
+          if (isMounted) setContextTitle(null);
+        });
+    };
     if (conversation.contextType === "observation") {
-      fetchObservation(conversation.contextId)
-        .then((res) => {
-          if (isMounted) setContextTitle(res.data.title);
-        })
-        .catch(() => {
-          if (isMounted) setContextTitle(null);
-        });
+      resolve(() => fetchObservation(conversation.contextId!));
     } else if (conversation.contextType === "project") {
-      fetchProject(conversation.contextId)
-        .then((res) => {
-          if (isMounted) setContextTitle(res.data.title);
-        })
-        .catch(() => {
-          if (isMounted) setContextTitle(null);
-        });
+      resolve(() => fetchProject(conversation.contextId!));
+    } else if (conversation.contextType === "research") {
+      // Analysis-linked chat (fixing-plan #21): analyses have no title field —
+      // surface the summary head as the context label.
+      resolve(async () => {
+        const res = await fetchAnalysis(conversation.contextId!);
+        const summary = res.data.summary || "Untitled analysis";
+        return { data: { title: summary.length > 60 ? `${summary.slice(0, 60)}…` : summary } };
+      });
     }
 
     return () => {
@@ -158,7 +164,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <span className="inline-flex items-center gap-1 font-medium text-brand-700 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded">
                 <Sparkles className="w-3 h-3 text-brand-600" />
                 <span>
-                  Discussing {conversation.contextType === "observation" ? "Observation" : "Project"}:{" "}
+                  Discussing{" "}
+                  {conversation.contextType === "observation"
+                    ? "Observation"
+                    : conversation.contextType === "research"
+                      ? "Analysis"
+                      : "Project"}
+                  :{" "}
                   <strong>{contextTitle || (conversation.contextId ? `${conversation.contextId.slice(0, 12)}...` : "Unfiled")}</strong>
                 </span>
               </span>

@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { encodeCursor, decodeCursor } from "../../src/schemas/paginationSchema";
+import {
+  encodeCursor,
+  decodeCursor,
+  assertCursorSort,
+  CursorPayload,
+} from "../../src/schemas/paginationSchema";
+import { AppError } from "../../src/types/errors";
 import { serializeTimestamps } from "../../src/lib/serialize";
 import { Timestamp } from "firebase-admin/firestore";
 
@@ -13,6 +19,38 @@ describe("pagination cursor contract (API.md §5.3)", () => {
     expect(decodeCursor("not-a-cursor")).toBeNull();
     expect(decodeCursor(Buffer.from('{"sortField":"updatedAt"}').toString("base64url"))).toBeNull();
     expect(decodeCursor(undefined)).toBeNull();
+  });
+});
+
+describe("assertCursorSort (API.md §5.3 — cursors bound to their sort)", () => {
+  const cursorFor = (sortField: string): CursorPayload =>
+    decodeCursor(encodeCursor({ id: "doc_1", sortField, sortValue: "1" }))!;
+
+  it("accepts a cursor whose sortField matches the requested sort", () => {
+    expect(() => assertCursorSort(cursorFor("updatedAt"), "updatedAt")).not.toThrow();
+  });
+
+  it("accepts a null cursor (first page)", () => {
+    expect(() => assertCursorSort(null, "updatedAt")).not.toThrow();
+  });
+
+  it("rejects a cursor minted for a different sort with VALIDATION_ERROR", () => {
+    expect(() => assertCursorSort(cursorFor("observedAt"), "updatedAt")).toThrowError(AppError);
+    try {
+      assertCursorSort(cursorFor("sequence"), "updatedAt");
+    } catch (err) {
+      expect((err as AppError).status).toBe(400);
+      expect((err as AppError).code).toBe("VALIDATION_ERROR");
+    }
+  });
+
+  it("guards every endpoint's fixed sort field", () => {
+    // conversations/researchTasks: updatedAt; analyses: createdAt;
+    // messages: sequence; observation versions: editedAt
+    expect(() => assertCursorSort(cursorFor("createdAt"), "updatedAt")).toThrowError(AppError);
+    expect(() => assertCursorSort(cursorFor("updatedAt"), "createdAt")).toThrowError(AppError);
+    expect(() => assertCursorSort(cursorFor("updatedAt"), "sequence")).toThrowError(AppError);
+    expect(() => assertCursorSort(cursorFor("updatedAt"), "editedAt")).toThrowError(AppError);
   });
 });
 

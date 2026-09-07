@@ -55,8 +55,9 @@ describe("AskMyJournalPage", () => {
         },
       ],
       uncertainties: ["Wind conditions may have affected flight altitude."],
+      insufficientEvidence: false,
       model: "test-model",
-      promptVersion: "ask-grounded-v1",
+      promptVersion: "ask-grounded-v2",
     });
 
     renderComponent();
@@ -76,7 +77,7 @@ describe("AskMyJournalPage", () => {
     expect(screen.getByText(/supporting journal evidence \(1\)/i)).toBeInTheDocument();
     expect(screen.getByText("Wind conditions may have affected flight altitude.")).toBeInTheDocument();
     expect(screen.getByText("test-model")).toBeInTheDocument();
-    expect(screen.getByText("ask-grounded-v1")).toBeInTheDocument();
+    expect(screen.getByText("ask-grounded-v2")).toBeInTheDocument();
   });
 
   it("renders insufficient evidence notice when evidence is empty", async () => {
@@ -84,8 +85,9 @@ describe("AskMyJournalPage", () => {
       answer: "I could not find any relevant observations in your journal to answer this question.",
       evidence: [],
       uncertainties: ["No matching observations found in journal."],
+      insufficientEvidence: true,
       model: "none",
-      promptVersion: "ask-grounded-v1",
+      promptVersion: "ask-grounded-v2",
     });
 
     renderComponent();
