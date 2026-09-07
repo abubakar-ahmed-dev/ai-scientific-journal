@@ -1,7 +1,7 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirebaseFirestore } from "../lib/firebaseAdmin";
 import { CreateProjectDTO, UpdateProjectDTO, ListProjectsQueryDTO } from "../schemas/projectSchema";
-import { decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
+import { assertCursorSort, decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
 import { serializeTimestamps } from "../lib/serialize";
 import { AppError } from "../types/errors";
 
@@ -56,14 +56,9 @@ export class ProjectRepository {
     }
 
     const cursor = decodeCursor(query.cursor);
+    // API.md §5.3: cursors are bound to the sort they were minted with.
+    assertCursorSort(cursor, "updatedAt");
     if (cursor) {
-      // API.md §5.3: cursors are bound to the sort they were minted with.
-      if (cursor.sortField !== "updatedAt") {
-        throw new AppError(
-          "VALIDATION_ERROR",
-          "Cursor does not match the requested sort. Restart the list from the first page."
-        );
-      }
       const cursorDoc = await this.getCollection(uid).doc(cursor.id).get();
       if (cursorDoc.exists) {
         dbQuery = dbQuery.startAfter(cursorDoc);

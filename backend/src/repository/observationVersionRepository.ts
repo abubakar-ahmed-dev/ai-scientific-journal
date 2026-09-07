@@ -1,7 +1,7 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirebaseFirestore } from "../lib/firebaseAdmin";
 import { MeasurementDTO } from "../schemas/observationSchema";
-import { decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
+import { assertCursorSort, decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
 import { serializeTimestamps } from "../lib/serialize";
 
 export interface ObservationVersionDocument {
@@ -62,6 +62,7 @@ export class ObservationVersionRepository {
     let dbQuery = this.getCollection(uid, observationId).orderBy("editedAt", "desc");
 
     const cursor = decodeCursor(cursorStr);
+    assertCursorSort(cursor, "editedAt");
     if (cursor) {
       const cursorDoc = await this.getCollection(uid, observationId).doc(cursor.id).get();
       if (cursorDoc.exists) {

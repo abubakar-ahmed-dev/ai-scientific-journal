@@ -7,7 +7,7 @@ import {
   MeasurementDTO,
   LocationDTO,
 } from "../schemas/observationSchema";
-import { decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
+import { assertCursorSort, decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
 import { observationSearchRepository } from "./observationSearchRepository";
 import { observationVersionRepository } from "./observationVersionRepository";
 import { projectRepository } from "./projectRepository";
@@ -130,16 +130,11 @@ export class ObservationRepository {
     }
 
     const cursor = decodeCursor(query.cursor);
+    // API.md §5.3: cursors are bound to the sort they were minted with —
+    // mixing sorts between pages is a VALIDATION_ERROR, never a silent
+    // mis-ordered page.
+    assertCursorSort(cursor, sortField);
     if (cursor) {
-      // API.md §5.3: cursors are bound to the sort they were minted with —
-      // mixing sorts between pages is a VALIDATION_ERROR, never a silent
-      // mis-ordered page.
-      if (cursor.sortField !== sortField) {
-        throw new AppError(
-          "VALIDATION_ERROR",
-          "Cursor does not match the requested sort. Restart the list from the first page."
-        );
-      }
       const cursorDoc = await this.getCollection(uid).doc(cursor.id).get();
       if (cursorDoc.exists) {
         dbQuery = dbQuery.startAfter(cursorDoc);

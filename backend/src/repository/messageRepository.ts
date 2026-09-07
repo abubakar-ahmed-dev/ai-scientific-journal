@@ -1,6 +1,6 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirebaseFirestore } from "../lib/firebaseAdmin";
-import { decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
+import { assertCursorSort, decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
 import { serializeTimestamps } from "../lib/serialize";
 import { AppError } from "../types/errors";
 
@@ -99,6 +99,7 @@ export class MessageRepository {
     let dbQuery = this.getCollection(uid, conversationId).orderBy("sequence", "asc");
 
     const cursor = decodeCursor(cursorStr);
+    assertCursorSort(cursor, "sequence");
     if (cursor) {
       const cursorDoc = await this.getCollection(uid, conversationId).doc(cursor.id).get();
       if (cursorDoc.exists) {

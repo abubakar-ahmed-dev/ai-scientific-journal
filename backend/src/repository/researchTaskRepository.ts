@@ -5,7 +5,7 @@ import {
   UpdateResearchTaskDTO,
   ListResearchTasksQueryDTO,
 } from "../schemas/researchTaskSchema";
-import { decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
+import { assertCursorSort, decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
 import { analysisRepository } from "./analysisRepository";
 import { projectRepository } from "./projectRepository";
 import { observationRepository } from "./observationRepository";
@@ -152,6 +152,7 @@ export class ResearchTaskRepository {
     }
 
     const cursor = decodeCursor(query.cursor);
+    assertCursorSort(cursor, "updatedAt");
     if (cursor) {
       const cursorDoc = await this.getCollection(uid).doc(cursor.id).get();
       if (cursorDoc.exists) {

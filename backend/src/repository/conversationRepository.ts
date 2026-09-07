@@ -1,7 +1,7 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirebaseFirestore } from "../lib/firebaseAdmin";
 import { CreateConversationDTO, UpdateConversationDTO, ListConversationsQueryDTO } from "../schemas/conversationSchema";
-import { decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
+import { assertCursorSort, decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
 import { projectRepository } from "./projectRepository";
 import { observationRepository } from "./observationRepository";
 import { analysisRepository } from "./analysisRepository";
@@ -98,6 +98,7 @@ export class ConversationRepository {
     }
 
     const cursor = decodeCursor(query.cursor);
+    assertCursorSort(cursor, "updatedAt");
     if (cursor) {
       const cursorDoc = await this.getCollection(uid).doc(cursor.id).get();
       if (cursorDoc.exists) {
