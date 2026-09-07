@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useBlocker } from "react-router-dom";
-import { Camera, Trash2, AlertTriangle } from "lucide-react";
+import { Camera, Trash2, AlertTriangle, Pencil, Check } from "lucide-react";
 import { Layout } from "../components/Layout";
 import { updateMe, uploadAvatar, removeAvatar, ApiRequestError } from "../lib/api";
 import { useProfile, useInvalidateProfile } from "../lib/useProfile";
@@ -13,6 +13,7 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState("");
+  const [nameEditing, setNameEditing] = useState(false);
   const [locationEnabled, setLocationEnabled] = useState(true);
   const [pendingAvatar, setPendingAvatar] = useState<File | null>(null);
   const [pendingAvatarUrl, setPendingAvatarUrl] = useState<string | null>(null);
@@ -109,6 +110,7 @@ export default function SettingsPage() {
       setPendingAvatar(null);
       setPendingAvatarUrl(null);
       setAvatarRemove(false);
+      setNameEditing(false);
       await invalidateProfile();
     } catch (err: unknown) {
       const msg =
@@ -125,6 +127,7 @@ export default function SettingsPage() {
 
   function handleDiscard() {
     setDisplayName(profile?.displayName || "");
+    setNameEditing(false);
     setLocationEnabled(profile?.preferences?.locationEnabled ?? true);
     setPendingAvatar(null);
     if (pendingAvatarUrl) URL.revokeObjectURL(pendingAvatarUrl);
@@ -175,7 +178,7 @@ export default function SettingsPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-app-heading">Settings</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 mt-2">
             Your researcher profile and journal defaults.
           </p>
         </div>
@@ -190,9 +193,9 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {/* Profile */}
-            <section className="bg-white p-6 sm:p-8 rounded-xl border border-app-border shadow-sm space-y-5">
-              <h2 className="text-sm font-semibold text-slate-800">Profile</h2>
+            {/* Profile picture */}
+            <section className="bg-white p-6 sm:p-8 rounded-xl border border-app-border shadow-sm space-y-4">
+              <h2 className="text-sm font-semibold text-slate-800">Profile picture</h2>
 
               <div className="flex items-center gap-5">
                 <div className="relative shrink-0">
@@ -240,45 +243,92 @@ export default function SettingsPage() {
                   />
                 </div>
               </div>
+            </section>
 
-              <div>
-                <label htmlFor="settings-display-name" className="block text-sm font-medium text-slate-700 mb-1">
+            {/* Researcher details */}
+            <section className="bg-white p-6 sm:p-8 rounded-xl border border-app-border shadow-sm space-y-5">
+              <h2 className="text-sm font-semibold text-slate-800">Researcher details</h2>
+
+              <div className="flex items-center justify-between gap-4">
+                <span id="settings-display-name-label" className="text-sm text-slate-500 shrink-0">
                   Display name
-                </label>
-                <input
-                  id="settings-display-name"
-                  type="text"
-                  required
-                  maxLength={100}
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 ${
-                    displayNameError ? "border-red-300" : "border-slate-300"
-                  }`}
-                />
-                {displayNameError && (
-                  <p className="mt-1 text-xs text-red-600">{displayNameError}</p>
-                )}
+                </span>
+                <div className="flex flex-col items-end min-w-0">
+                  {nameEditing ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="settings-display-name"
+                        aria-labelledby="settings-display-name-label"
+                        type="text"
+                        required
+                        maxLength={100}
+                        autoFocus
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") {
+                            setDisplayName(profile?.displayName || "");
+                            setNameEditing(false);
+                          }
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            if (!displayNameError) setNameEditing(false);
+                          }
+                        }}
+                        className={`w-52 max-w-full px-3 py-1.5 rounded-sm text-sm text-left focus:ring-brand-500 ${
+                          displayNameError ? "border-red-300" : "border-slate-300"
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        aria-label="Done editing display name"
+                        title={displayNameError ? "Fix the name first" : "Done"}
+                        disabled={!!displayNameError}
+                        onClick={() => setNameEditing(false)}
+                        className="p-2 text-brand-700 hover:bg-brand-50 rounded-lg transition disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm text-slate-800 font-medium truncate max-w-[16rem]">
+                        {displayName || "—"}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label="Edit display name"
+                        title="Edit display name"
+                        onClick={() => setNameEditing(true)}
+                        className="p-1.5 text-slate-400 hover:text-brand-700 hover:bg-brand-50 rounded-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {displayNameError && (
+                <p className="-mt-3 text-xs text-red-600 text-right">{displayNameError}</p>
+              )}
+
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm text-slate-500 shrink-0">Email</span>
+                <span className="text-sm text-slate-800 font-medium truncate max-w-[60%] text-right">
+                  {profile?.email}
+                </span>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 text-sm space-y-1">
-                <div className="flex justify-between gap-4">
-                  <span className="text-slate-500">Email</span>
-                  <span className="text-slate-800 font-medium truncate max-w-[60%] text-right">
-                    {profile?.email}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-slate-500">Member since</span>
-                  <span className="text-slate-800 font-medium">
-                    {profile?.createdAt
-                      ? new Date(profile.createdAt).toLocaleDateString(undefined, {
-                          year: "numeric",
-                          month: "long",
-                        })
-                      : "—"}
-                  </span>
-                </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm text-slate-500 shrink-0">Member since</span>
+                <span className="text-sm text-slate-800 font-medium text-right">
+                  {profile?.createdAt
+                    ? new Date(profile.createdAt).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "long",
+                      })
+                    : "—"}
+                </span>
               </div>
             </section>
 

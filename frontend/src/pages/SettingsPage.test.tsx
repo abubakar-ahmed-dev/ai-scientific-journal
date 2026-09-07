@@ -79,7 +79,9 @@ describe("SettingsPage (settings refactor 2026-09-07)", () => {
 
     expect(screen.getByText("olive@example.com")).toBeInTheDocument();
     expect(screen.getByText(/member since/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/display name/i)).toHaveValue("olive.algae.261");
+    // Name renders read-only until the pencil is clicked
+    expect(screen.getByText("olive.algae.261")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: /display name/i })).not.toBeInTheDocument();
     expect(screen.getByRole("switch", { name: /capture location by default/i })).toBeChecked();
 
     // Removed noise must stay gone
@@ -96,7 +98,8 @@ describe("SettingsPage (settings refactor 2026-09-07)", () => {
     const save = screen.getByRole("button", { name: /save changes/i });
     expect(save).toBeDisabled();
 
-    fireEvent.change(screen.getByLabelText(/display name/i), {
+    fireEvent.click(screen.getByRole("button", { name: /edit display name/i }));
+    fireEvent.change(screen.getByRole("textbox", { name: /display name/i }), {
       target: { value: "Dr. Olive" },
     });
     expect(save).toBeEnabled();
