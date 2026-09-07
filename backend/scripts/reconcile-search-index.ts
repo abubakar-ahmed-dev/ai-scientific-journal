@@ -62,7 +62,8 @@ async function reconcileUser(
   const search = db.collection("users").doc(uid).collection("observationSearch");
 
   // 1. Index every observation that is missing or stale (indexedAt older
-  //    than the canonical updatedAt, or unreadable — treat as stale).
+  //    than the canonical updatedAt, missing the observedAt mirror used for
+  //    cap-ordered retrieval, or unreadable — treat as stale).
   let rebuilt = 0;
   let stale = 0;
   let lastObs = null as FirebaseFirestore.QueryDocumentSnapshot | null;
@@ -80,7 +81,12 @@ async function reconcileUser(
       const indexedAt = toMillis(idxData?.indexedAt);
 
       const isMissing = !idx.exists;
-      const isStale = idx.exists && (obsUpdated === null || indexedAt === null || indexedAt < obsUpdated);
+      const isStale =
+        idx.exists &&
+        (obsUpdated === null ||
+          indexedAt === null ||
+          indexedAt < obsUpdated ||
+          idxData?.observedAt === undefined);
       if (!isMissing && !isStale) continue;
 
       if (isStale) stale++;
@@ -93,6 +99,7 @@ async function reconcileUser(
         hypothesis: (data.hypothesis as string | null) ?? null,
         tags: (data.tags as string[]) ?? [],
         measurements: (data.measurements as Array<{ name: string; unit: string }>) ?? [],
+        observedAt: data.observedAt as Timestamp,
       });
     }
 

@@ -92,6 +92,7 @@ export class ObservationRepository {
         hypothesis: data.hypothesis,
         tags: data.tags,
         measurements: measurementsWithIds,
+        observedAt: observedAtTimestamp,
       });
     } catch (err) {
       logger.warn({ err, uid, observationId: docRef.id }, "Failed to update observation search index on create");
@@ -322,6 +323,7 @@ export class ObservationRepository {
         hypothesis: updatedData.hypothesis,
         tags: updatedData.tags,
         measurements: updatedData.measurements,
+        observedAt: updatedData.observedAt,
       });
     } catch (err) {
       logger.warn({ err, uid, observationId }, "Failed to update observation search index on update");

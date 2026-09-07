@@ -27,7 +27,11 @@ const envSchema = z.object({
   AI_MAX_CONTEXT_MESSAGES: z.coerce.number().int().positive().default(20),
   AI_SEARCH_MAX_CANDIDATES: z.coerce.number().int().positive().default(500),
   AI_SEARCH_DEFAULT_LIMIT: z.coerce.number().int().positive().default(10),
-  AI_RAG_MIN_SCORE: z.coerce.number().default(0.05),
+  // Minimum lexical score for a candidate to be considered at all (fixing-plan #18).
+  AI_RAG_MIN_SCORE: z.coerce.number().default(0.1),
+  // Candidates whose best score falls below this are treated as weak evidence:
+  // /ai/ask answers deterministically without invoking the model (fixing-plan #18).
+  AI_RAG_WEAK_EVIDENCE_SCORE: z.coerce.number().default(0.15),
   AI_RAG_MAX_CONTEXT_OBSERVATIONS: z.coerce.number().int().positive().default(5),
   AI_RAG_CONTEXT_CHAR_BUDGET: z.coerce.number().int().positive().default(12000),
   STORAGE_BUCKET: z.string().default("ai-scientific-journal-media"),

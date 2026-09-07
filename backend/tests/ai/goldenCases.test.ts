@@ -59,9 +59,9 @@ describe("Golden-case AI evaluation (AI_EVALUATION §13 #1, §11)", () => {
   it("registers the canonical prompt versions (regression tripwire)", () => {
     // A prompt-version bump without updating this suite means output-shape
     // regressions can slip through unreviewed — fail loudly instead.
-    expect(ASK_PROMPT_VERSION).toBe("ask-grounded-v1");
+    expect(ASK_PROMPT_VERSION).toBe("ask-grounded-v2");
     expect(OBSERVATION_ANALYSIS_PROMPT_VERSION).toBe("observation-analysis-v1");
-    expect(RESEARCH_SUGGESTIONS_PROMPT_VERSION).toBe("research-suggestions-v1");
+    expect(RESEARCH_SUGGESTIONS_PROMPT_VERSION).toBe("research-suggestions-v2");
     expect(CONVERSATION_SUMMARY_PROMPT_VERSION).toBe("conversation-summary-v1");
   });
 

@@ -1,4 +1,4 @@
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirebaseFirestore } from "../lib/firebaseAdmin";
 import { logger } from "../lib/logger";
 
@@ -12,6 +12,9 @@ export interface ObservationSearchDocument {
   ownerId: string;
   observationId: string;
   searchableText: string;
+  // Mirrored from the canonical observation so retrieval can scan
+  // newest-observed-first under the candidate cap (fixing-plan #16).
+  observedAt: Timestamp | string;
   updatedAt: FieldValue | string;
   indexedAt: FieldValue | string;
 }
@@ -70,6 +73,7 @@ export class ObservationSearchRepository {
       hypothesis?: string | null;
       tags?: string[];
       measurements?: Array<{ name: string; unit: string }>;
+      observedAt: Timestamp | string;
     }
   ): Promise<void> {
     const docRef = this.getDocRef(uid, observationId);
@@ -83,6 +87,7 @@ export class ObservationSearchRepository {
             ownerId: uid,
             observationId,
             searchableText,
+            observedAt: data.observedAt,
             updatedAt: now,
             indexedAt: now,
           },

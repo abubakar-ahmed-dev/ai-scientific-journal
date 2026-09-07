@@ -31,6 +31,10 @@ export const GroundedAnswerOutputSchema = z
       )
       .default([]),
     uncertainties: z.array(z.string().trim().min(1)).default([]),
+    // Model self-report that it could not find sufficient evidence (ask-grounded-v2).
+    // Optional so older/adversarial outputs still validate; the route treats a
+    // missing field as `false` (fixing-plan #18).
+    insufficientEvidence: z.boolean().optional(),
   })
   .strict();
 

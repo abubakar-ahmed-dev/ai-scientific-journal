@@ -70,6 +70,7 @@ export interface GroundedAnswerOutput {
   answer: string;
   evidence: Array<{ observationId: string; note?: string }>;
   uncertainties: string[];
+  insufficientEvidence?: boolean;
 }
 
 export interface GroundedAnswerResult {

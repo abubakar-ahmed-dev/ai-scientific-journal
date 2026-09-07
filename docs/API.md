@@ -478,8 +478,9 @@ All AI endpoints: authenticated, rate-limited (AI tier), `Idempotency-Key`-aware
 | Aspect | Specification |
 | ------ | ------------- |
 | Body | `{ "question": string, "conversationId"?: string }` — `question` 1–2000 chars; `conversationId` (owned, `active`) optionally persists the exchange through the standard message pipeline |
-| Retrieval | The question is answered **only** from the caller's own observations: UID-scoped retrieval → reranking → grounded generation. Retrieved content is untrusted prompt input (ADR-010). No other user's data is ever retrievable |
-| Response | `200` — `{ "data": { "answer": string, "evidence": [{ "observationId", "title", "observedAt" }], "uncertainties": string[], "model", "promptVersion" } }` — grounded per TA §27 (answer / evidence / uncertainty). If evidence is insufficient, `answer` must say so and `evidence` may be empty — the model is never allowed to fabricate observations |
+| Retrieval | The question is answered **only** from the caller's own observations: UID-scoped retrieval (candidate scan ordered by `observedAt` desc) → reranking → grounded generation. Retrieved content is untrusted prompt input (ADR-010). No other user's data is ever retrievable |
+| Evidence gate | If no candidate matches, or the best candidate score is below the weak-evidence threshold, a deterministic insufficient-evidence answer is returned and the model is **never invoked** (`model: "none"`, `insufficientEvidence: true`) |
+| Response | `200` — `{ "data": { "answer": string, "evidence": [{ "observationId", "title", "observedAt" }], "uncertainties": string[], "insufficientEvidence": boolean, "model", "promptVersion" }, "meta": { "truncated": boolean } }` — grounded per TA §27 (answer / evidence / uncertainty). If evidence is insufficient, `answer` says so and `evidence` is empty — the model is never allowed to fabricate observations. `meta.truncated` is `true` when retrieval hit the candidate cap (only the most recent observations were searched) |
 | Persistence | Stateless by default. With `conversationId`, the question and grounded answer are persisted as user/assistant messages (no separate analysis document is created) |
 
 ### `POST /api/v1/ai/search` — retrieval only (PRD FR-17)
@@ -487,9 +488,9 @@ All AI endpoints: authenticated, rate-limited (AI tier), `Idempotency-Key`-aware
 | Aspect | Specification |
 | ------ | ------------- |
 | Body | `{ "query": string, "limit"?: number (1–25, default 10), "projectId"?: string }` |
-| Behavior | Retrieval + reranking over the caller's own derived index (`users/{uid}/observationSearch/…` — internal; **not** exposed as a CRUD resource, **not** a source of truth, **not** an authorization source, ADR-017). Results are re-checked against canonical observations before returning; deleted observations never appear |
-| Response | `200` — `{ "data": [{ "observationId", "title", "observedAt", "score", "snippet" }], "meta": { "resultCount" } }` |
-| Notes | No generation, no persistence. Powers "related observations" and pre-chat retrieval |
+| Behavior | Retrieval + reranking over the caller's own derived index (`users/{uid}/observationSearch/…` — internal; **not** exposed as a CRUD resource, **not** a source of truth, **not** an authorization source, ADR-017). The candidate scan is ordered by `observedAt` desc; when it hits the candidate cap, only the most recent observations are scored. Results are re-checked against canonical observations before returning; deleted observations never appear |
+| Response | `200` — `{ "data": [{ "observationId", "title", "observedAt", "score", "snippet" }], "meta": { "resultCount", "truncated" } }` |
+| Notes | No generation, no persistence. Powers "related observations" and pre-chat retrieval. `score` is a lexical relevance value in 0–1 — not a probabilistic confidence. `meta.truncated: true` means coverage is partial (older records were not candidates); clients surface this |
 
 ---
 

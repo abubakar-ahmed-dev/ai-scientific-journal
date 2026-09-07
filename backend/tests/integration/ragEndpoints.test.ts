@@ -200,6 +200,8 @@ describe("Phase 6 RAG Endpoints (POST /api/v1/ai/ask & POST /api/v1/ai/search)",
     expect(searchRes.body.data).toBeInstanceOf(Array);
     expect(searchRes.body.data.length).toBe(1);
     expect(searchRes.body.meta.resultCount).toBe(1);
+    // Candidate cap not hit in this small journal (fixing-plan #16)
+    expect(searchRes.body.meta.truncated).toBe(false);
 
     const match = searchRes.body.data[0];
     expect(match.observationId).toBe(obsId);
@@ -243,8 +245,9 @@ describe("Phase 6 RAG Endpoints (POST /api/v1/ai/ask & POST /api/v1/ai/search)",
     expect(askRes.body.data).toHaveProperty("answer");
     expect(askRes.body.data).toHaveProperty("evidence");
     expect(askRes.body.data).toHaveProperty("uncertainties");
+    expect(askRes.body.data.insufficientEvidence).toBe(false);
     expect(askRes.body.data.model).toBe("fake-gemini-model");
-    expect(askRes.body.data.promptVersion).toBe("ask-grounded-v1");
+    expect(askRes.body.data.promptVersion).toBe("ask-grounded-v2");
 
     expect(askRes.body.data.evidence.length).toBeGreaterThan(0);
     expect(askRes.body.data.evidence[0].observationId).toBe(obsId);
@@ -262,10 +265,41 @@ describe("Phase 6 RAG Endpoints (POST /api/v1/ai/ask & POST /api/v1/ai/search)",
     expect(askRes.body.data.answer).toContain("could not find any relevant observations");
     expect(askRes.body.data.evidence).toEqual([]);
     expect(askRes.body.data.uncertainties.length).toBeGreaterThan(0);
+    expect(askRes.body.data.insufficientEvidence).toBe(true);
     expect(askRes.body.data.model).toBe("none");
-    expect(askRes.body.data.promptVersion).toBe("ask-grounded-v1");
+    expect(askRes.body.data.promptVersion).toBe("ask-grounded-v2");
 
     // Model must not have been invoked
+    expect(fakeAiService.groundedHistory.length).toBe(0);
+  });
+
+  it("POST /api/v1/ai/ask triggers the weak-evidence gate when the best candidate score is below threshold", async () => {
+    // One matching token ("temperature") out of seven unique query tokens,
+    // with the title boost: 1.5 / (7 * 1.8) = 0.119 — above AI_RAG_MIN_SCORE
+    // (0.1) so it survives retrieval, but below AI_RAG_WEAK_EVIDENCE_SCORE
+    // (0.15), so generation must be gated deterministically (fixing-plan #18).
+    const createObs = await request(app)
+      .post("/api/v1/observations")
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
+      .send({
+        title: "Weather Diary",
+        description: "Recorded temperature hourly.",
+      });
+    expect(createObs.status).toBe(201);
+
+    const askRes = await request(app)
+      .post("/api/v1/ai/ask")
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
+      .send({
+        question: "temperature geology archaeology astronomy hydrology entomology mythology",
+      });
+
+    expect(askRes.status).toBe(200);
+    expect(askRes.body.data.answer).toContain("only weakly relate");
+    expect(askRes.body.data.evidence).toEqual([]);
+    expect(askRes.body.data.insufficientEvidence).toBe(true);
+    expect(askRes.body.data.model).toBe("none");
+    // Model must not have been invoked on weak evidence
     expect(fakeAiService.groundedHistory.length).toBe(0);
   });
 

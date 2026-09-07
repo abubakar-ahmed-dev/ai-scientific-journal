@@ -10,11 +10,13 @@ vi.mock("../../src/lib/firebaseAdmin", () => ({
     collection: () => ({
       doc: () => ({
         collection: () => ({
-          limit: () => ({
-            get: async () => ({
-              empty: mockSearchDocs.length === 0,
-              size: mockSearchDocs.length,
-              docs: mockSearchDocs,
+          orderBy: () => ({
+            limit: () => ({
+              get: async () => ({
+                empty: mockSearchDocs.length === 0,
+                size: mockSearchDocs.length,
+                docs: mockSearchDocs,
+              }),
             }),
           }),
         }),

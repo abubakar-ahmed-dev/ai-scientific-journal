@@ -10,6 +10,7 @@ import {
 } from "../types";
 import { StructuredAnalysisOutputSchema } from "../parsers/analysisOutputSchema";
 import { GroundedAnswerOutputSchema } from "../../schemas/askSchema";
+import { escapeContextText } from "../prompts/contextSanitizer";
 import { AppError } from "../../types/errors";
 
 export class GeminiAdapter implements IAIService {
@@ -37,17 +38,19 @@ export class GeminiAdapter implements IAIService {
       const contextLines: string[] = [
         `<context_data type="${data.type}" id="${data.id || ""}">`,
       ];
-      if (data.title) contextLines.push(`Title: ${data.title}`);
-      if (data.field) contextLines.push(`Discipline/Field: ${data.field}`);
-      if (data.description) contextLines.push(`Description: ${data.description}`);
-      if (data.hypothesis) contextLines.push(`Hypothesis: ${data.hypothesis}`);
-      if (data.notes) contextLines.push(`Notes: ${data.notes}`);
-      if (data.tags && data.tags.length > 0) contextLines.push(`Tags: ${data.tags.join(", ")}`);
+      if (data.title) contextLines.push(`Title: ${escapeContextText(data.title)}`);
+      if (data.field) contextLines.push(`Discipline/Field: ${escapeContextText(data.field)}`);
+      if (data.description) contextLines.push(`Description: ${escapeContextText(data.description)}`);
+      if (data.hypothesis) contextLines.push(`Hypothesis: ${escapeContextText(data.hypothesis)}`);
+      if (data.notes) contextLines.push(`Notes: ${escapeContextText(data.notes)}`);
+      if (data.tags && data.tags.length > 0) contextLines.push(`Tags: ${escapeContextText(data.tags.join(", "))}`);
       if (data.measurements && data.measurements.length > 0) {
         contextLines.push(
-          `Measurements: ${data.measurements
-            .map((m) => `${m.name}=${m.value} ${m.unit}${m.notes ? ` (${m.notes})` : ""}`)
-            .join("; ")}`
+          `Measurements: ${escapeContextText(
+            data.measurements
+              .map((m) => `${m.name}=${m.value} ${m.unit}${m.notes ? ` (${m.notes})` : ""}`)
+              .join("; ")
+          )}`
         );
       }
       contextLines.push("</context_data>");

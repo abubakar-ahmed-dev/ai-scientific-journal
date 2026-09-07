@@ -1,3 +1,5 @@
+import { escapeContextText } from "./contextSanitizer";
+
 export const OBSERVATION_ANALYSIS_PROMPT_VERSION = "observation-analysis-v1";
 
 export interface ObservationPromptData {
@@ -21,18 +23,18 @@ export function buildObservationAnalysisPrompt(observations: ObservationPromptDa
 
   for (const obs of observations) {
     contextLines.push(`  <observation id="${obs.id}">`);
-    contextLines.push(`    <title>${obs.title}</title>`);
+    contextLines.push(`    <title>${escapeContextText(obs.title)}</title>`);
     contextLines.push(`    <observedAt>${obs.observedAt}</observedAt>`);
-    contextLines.push(`    <description>${obs.description}</description>`);
-    if (obs.hypothesis) contextLines.push(`    <hypothesis>${obs.hypothesis}</hypothesis>`);
-    if (obs.notes) contextLines.push(`    <notes>${obs.notes}</notes>`);
-    if (obs.tags && obs.tags.length > 0) contextLines.push(`    <tags>${obs.tags.join(", ")}</tags>`);
+    contextLines.push(`    <description>${escapeContextText(obs.description)}</description>`);
+    if (obs.hypothesis) contextLines.push(`    <hypothesis>${escapeContextText(obs.hypothesis)}</hypothesis>`);
+    if (obs.notes) contextLines.push(`    <notes>${escapeContextText(obs.notes)}</notes>`);
+    if (obs.tags && obs.tags.length > 0) contextLines.push(`    <tags>${escapeContextText(obs.tags.join(", "))}</tags>`);
     if (obs.measurements && obs.measurements.length > 0) {
       contextLines.push("    <measurements>");
       for (const m of obs.measurements) {
         contextLines.push(
-          `      <measurement name="${m.name}" value="${m.value}" unit="${m.unit}"${
-            m.notes ? ` notes="${m.notes}"` : ""
+          `      <measurement name="${escapeContextText(m.name)}" value="${m.value}" unit="${m.unit}"${
+            m.notes ? ` notes="${escapeContextText(m.notes)}"` : ""
           } />`
         );
       }
