@@ -83,6 +83,9 @@ export class GeminiAdapter implements IAIService {
         contents,
         config: {
           systemInstruction: context.systemInstruction,
+          // Cancel the underlying request at the deadline; the race below is
+          // the belt-and-suspenders so the caller never waits past timeoutMs.
+          abortSignal: AbortSignal.timeout(this.timeoutMs),
         },
       });
 
@@ -93,8 +96,12 @@ export class GeminiAdapter implements IAIService {
         }, this.timeoutMs);
       });
 
-      const response = await Promise.race([apiCall, timeoutPromise]);
-      clearTimeout(timer!);
+      let response;
+      try {
+        response = await Promise.race([apiCall, timeoutPromise]);
+      } finally {
+        clearTimeout(timer!);
+      }
 
       const candidate = response.candidates?.[0];
       const text = response.text || candidate?.content?.parts?.[0]?.text;
@@ -147,6 +154,9 @@ export class GeminiAdapter implements IAIService {
         config: {
           systemInstruction: payload.systemInstruction,
           responseMimeType: "application/json",
+          // Cancel the underlying request at the deadline; the race below is
+          // the belt-and-suspenders so the caller never waits past timeoutMs.
+          abortSignal: AbortSignal.timeout(this.timeoutMs),
         },
       });
 
@@ -157,8 +167,12 @@ export class GeminiAdapter implements IAIService {
         }, this.timeoutMs);
       });
 
-      const response = await Promise.race([apiCall, timeoutPromise]);
-      clearTimeout(timer!);
+      let response;
+      try {
+        response = await Promise.race([apiCall, timeoutPromise]);
+      } finally {
+        clearTimeout(timer!);
+      }
 
       const candidate = response.candidates?.[0];
       const text = response.text || candidate?.content?.parts?.[0]?.text;
@@ -226,6 +240,9 @@ export class GeminiAdapter implements IAIService {
         config: {
           systemInstruction: payload.systemInstruction,
           responseMimeType: "application/json",
+          // Cancel the underlying request at the deadline; the race below is
+          // the belt-and-suspenders so the caller never waits past timeoutMs.
+          abortSignal: AbortSignal.timeout(this.timeoutMs),
         },
       });
 
@@ -236,8 +253,12 @@ export class GeminiAdapter implements IAIService {
         }, this.timeoutMs);
       });
 
-      const response = await Promise.race([apiCall, timeoutPromise]);
-      clearTimeout(timer!);
+      let response;
+      try {
+        response = await Promise.race([apiCall, timeoutPromise]);
+      } finally {
+        clearTimeout(timer!);
+      }
 
       const candidate = response.candidates?.[0];
       const text = response.text || candidate?.content?.parts?.[0]?.text;
@@ -288,7 +309,13 @@ export class GeminiAdapter implements IAIService {
 
     const errMsg = err instanceof Error ? err.message : String(err);
 
-    if (errMsg === "AI_TIMEOUT" || errMsg.includes("timeout") || errMsg.includes("deadline")) {
+    if (
+      errMsg === "AI_TIMEOUT" ||
+      errMsg.includes("timeout") ||
+      errMsg.includes("deadline") ||
+      // AbortSignal.timeout aborts with a TimeoutError/AbortError
+      errMsg.includes("abort")
+    ) {
       throw new AppError("AI_UNAVAILABLE", "AI model generation timed out. Please retry.");
     }
 
