@@ -190,15 +190,21 @@ describe("DashboardPage — returning-user state (dashboard refactor 2026-09-07)
     expect(
       screen.getByRole("heading", { name: /good (morning|afternoon|evening)/i })
     ).toBeInTheDocument();
-    expect(screen.getByText(/recent research activity/i)).toBeInTheDocument();
+    expect(screen.getByText(/continue your research where you left off/i)).toBeInTheDocument();
 
-    // Brief: real count "2 observations" (not the 4-row feed filter)
+    // Brief: real per-project count "2" (not the 4-row feed filter). The new
+    // mini-stat layout splits number and label into separate elements.
     await waitFor(() => {
-      expect(screen.getByText(/2 observations/i)).toBeInTheDocument();
+      expect(screen.getByText("Enzyme Kinetics Study")).toBeInTheDocument();
     });
-    expect(screen.getByText("Enzyme Kinetics Study")).toBeInTheDocument();
-    expect(screen.getByText(/1 open task$/i)).toBeInTheDocument();
-    expect(screen.getByText(/last activity:/i)).toBeInTheDocument();
+    const briefObsLabel = screen.getByText(
+      (content, element) => element?.tagName === "P" && element.textContent === "Observations"
+    );
+    await waitFor(() => {
+      expect(briefObsLabel.previousElementSibling).toHaveTextContent("2");
+    });
+    expect(screen.getByText("Open task", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("Last activity")).toBeInTheDocument();
 
     // Deterministic next step: analysis is stale (older than the observation),
     // latest observation is unanalyzed → analyze rule
@@ -211,9 +217,9 @@ describe("DashboardPage — returning-user state (dashboard refactor 2026-09-07)
     expect(screen.getByText("Review analyses")).toBeInTheDocument();
     expect(screen.getByText("+")).toBeInTheDocument();
 
-    // AI row deep links (headings — sidebar nav shares the link names)
-    expect(screen.getByRole("heading", { name: "Analyze Latest" })).toBeInTheDocument();
+    // AI band: conversations row + analysis review (headings — sidebar shares names)
     expect(screen.getByRole("heading", { name: "Ask Journal" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "AI Chat" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Review Analyses" })).toBeInTheDocument();
 
     // Feeds

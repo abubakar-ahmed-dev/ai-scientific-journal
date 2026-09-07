@@ -19,6 +19,7 @@ import {
 import { useAuth } from "../lib/firebase/authContext";
 import { useProfile } from "../lib/useProfile";
 import { CommandPalette } from "./CommandPalette";
+import { ConfirmDialog } from "./ui/ConfirmDialog";
 
 interface NavLinkItem {
   to: string;
@@ -70,6 +71,9 @@ function readSidebarCollapsed(): boolean {
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, signOut } = useAuth();
+  // Sign-out asks for confirmation — it ends the session immediately and any
+  // unsaved in-page work is lost (guidelines §53).
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const { displayName: profileName, avatarUrl } = useProfile();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -251,7 +255,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         Skip to main content
       </a>
 
-      <header role="banner" className="bg-app-bg/90 backdrop-blur-sm border-b border-app-border sticky top-0 z-20">
+      <header role="banner" className="bg-app-bg/90 backdrop-blur-sm border-b border-app-border shadow-2xs sticky top-0 z-20">
         <div className="h-16 px-4 sm:px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Mobile Hamburger Toggle */}
@@ -285,41 +289,48 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </Link>
           </div>
 
-          {/* User Profile, Command Palette trigger & Sign Out */}
-          <div className="hidden md:flex items-center space-x-3">
+          {/* User Profile, Command Palette trigger & Sign Out — one pill row */}
+          <div className="hidden md:flex items-center gap-2.5">
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
               aria-label="Open command palette"
               aria-haspopup="dialog"
-              className="hidden sm:flex items-center gap-2 pl-2.5 pr-1.5 py-1.5 text-xs text-slate-400 bg-slate-50 hover:bg-slate-100 border border-app-border rounded-md transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
+              className="hidden sm:flex items-center gap-2 pl-3 pr-1.5 py-1.5 text-xs text-slate-400 bg-slate-100/70 hover:bg-slate-100 border border-transparent focus:border-app-border rounded-full transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
             >
               <Search className="w-3.5 h-3.5" />
               <span className="font-medium">Search…</span>
-              <kbd className="text-[10px] font-semibold text-slate-400 bg-white border border-app-border rounded px-1 py-0.5">
+              <kbd className="text-[10px] font-semibold text-slate-400 bg-white border border-app-border rounded-full px-1.5 py-0.5">
                 Ctrl K
               </kbd>
             </button>
 
+            {/* Display name + avatar link to Settings — that's where the
+                profile (name, avatar, preferences) is managed. */}
             {currentUser && (
-              <div className="flex items-center space-x-2 text-xs text-slate-600 bg-slate-50 py-1 px-2.5 rounded-full border border-app-border">
+              <Link
+                to="/settings"
+                aria-label={`Profile settings for ${headerName}`}
+                title="Profile settings"
+                className="flex items-center gap-2 text-xs text-slate-600 bg-slate-100/70 hover:bg-white py-1 pl-1 pr-3 rounded-full border border-transparent hover:border-brand-300 transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
+              >
                 {avatarUrl ? (
                   <img
                     src={avatarUrl}
                     alt=""
-                    className="w-5 h-5 rounded-full object-cover border border-app-border"
+                    className="w-6 h-6 rounded-full object-cover border border-app-border"
                   />
                 ) : (
-                  <div className="w-5 h-5 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-[10px]">
+                  <div className="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-[10px]">
                     {userInitial}
                   </div>
                 )}
                 <span className="max-w-[150px] truncate font-medium">{headerName}</span>
-              </div>
+              </Link>
             )}
             <button
-              onClick={() => signOut()}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
+              onClick={() => setConfirmingSignOut(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-app-border hover:text-red-600 hover:border-red-200 hover:bg-red-50 rounded-full transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
               title="Sign out of your account"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -379,7 +390,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    signOut();
+                    setConfirmingSignOut(true);
                   }}
                   className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition"
                 >
@@ -436,6 +447,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       </div>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <ConfirmDialog
+        open={confirmingSignOut}
+        title="Sign out?"
+        message="You will be returned to the sign-in page. Any unsaved changes on this page will be lost."
+        confirmLabel="Sign Out"
+        destructive
+        onConfirm={() => signOut()}
+        onCancel={() => setConfirmingSignOut(false)}
+      />
     </div>
   );
 };

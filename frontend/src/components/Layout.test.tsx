@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { Layout } from "./Layout";
 
@@ -73,7 +73,7 @@ describe("Layout Component", () => {
     expect(screen.queryByLabelText(/mobile navigation/i)).not.toBeInTheDocument();
   });
 
-  it("triggers signOut when clicking Sign Out button", () => {
+  it("asks for confirmation before signing out", () => {
     render(
       <MemoryRouter initialEntries={["/dashboard"]}>
         <Layout>
@@ -82,9 +82,15 @@ describe("Layout Component", () => {
       </MemoryRouter>
     );
 
-    const signOutBtn = screen.getAllByRole("button", { name: /sign out/i })[0];
-    fireEvent.click(signOutBtn);
-    expect(mockSignOut).toHaveBeenCalled();
+    // Header pill opens the confirm dialog; session ends only after confirm
+    fireEvent.click(screen.getByRole("button", { name: "Sign Out" }));
+    expect(mockSignOut).not.toHaveBeenCalled();
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent(/sign out\?/i);
+
+    fireEvent.click(within(dialog).getByRole("button", { name: /^sign out$/i }));
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
   });
 
   it("collapses the sidebar and persists the preference", () => {

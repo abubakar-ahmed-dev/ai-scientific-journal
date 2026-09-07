@@ -108,8 +108,8 @@ export default function DashboardPage() {
 
   return (
     <Layout>
-      <div className="space-y-8">
-        <DashboardHeader subtext="Recent research activity" />
+      <div className="space-y-10">
+        <DashboardHeader subtext="Continue your research where you left off." />
 
         {/* Error alert with reachable retry (F6): per-section panels below
             keep working sections visible; this retries only failed queries. */}
@@ -163,7 +163,7 @@ export default function DashboardPage() {
 
         {/* Main 2-column feed: observations + tasks; activity moves to its
             own full-width section below (2026-09-07 refinement). */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           <div className="lg:col-span-2">
             <RecentObservationsFeed
               observations={observations}

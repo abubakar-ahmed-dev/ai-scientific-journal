@@ -28,7 +28,7 @@ export function StatsRow({ items }: { items: StatItem[] }) {
           </p>
           <Link
             to={item.to}
-            className="text-xs font-semibold text-brand-600 hover:text-brand-800 inline-flex items-center gap-1 mt-auto"
+            className="text-sm font-semibold text-brand-600 hover:text-brand-800 inline-flex items-center gap-1 mt-auto"
           >
             {item.linkLabel}
             <span aria-hidden="true">&rarr;</span>

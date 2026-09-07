@@ -35,13 +35,16 @@ export function WorkspaceReadiness({ rows }: { rows: ReadinessRow[] }) {
           <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-px" aria-hidden="true" />
           Your records stay private — only your account can see them.
         </p>
-        <Link
-          to="/observations/new"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 hover:text-brand-800 transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
-        >
-          Prefer the full form? Open it
-          <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-        </Link>
+        <div className="flex justify-center w-full mt-5">
+          <Link
+            to="/settings"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 hover:text-brand-800 transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+          >
+            Tune journal defaults in Settings
+            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+
       </div>
     </div>
   );

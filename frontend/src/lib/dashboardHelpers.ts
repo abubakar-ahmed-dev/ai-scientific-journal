@@ -58,7 +58,7 @@ export const buildStatItems = (input: {
     to: "/ask",
     linkLabel: "Review analyses",
     icon: Sparkles,
-    iconClass: "bg-purple-50 text-purple-600",
+    iconClass: "bg-cyan-50 text-cyan-700",
   },
 ];
 

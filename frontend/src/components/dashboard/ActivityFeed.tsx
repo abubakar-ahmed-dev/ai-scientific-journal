@@ -7,7 +7,7 @@ import { relativeTime } from "../../lib/format";
 const KIND_STYLE: Record<ActivityItem["kind"], { icon: LucideIcon; chip: string }> = {
   observation: { icon: FileText, chip: "bg-brand-50 text-brand-600" },
   task: { icon: CheckCircle2, chip: "bg-amber-50 text-amber-600" },
-  analysis: { icon: Sparkles, chip: "bg-purple-50 text-purple-600" },
+  analysis: { icon: Sparkles, chip: "bg-cyan-50 text-cyan-700" },
 };
 
 /**
