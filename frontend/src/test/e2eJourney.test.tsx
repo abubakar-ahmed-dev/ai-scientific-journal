@@ -175,7 +175,9 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
 
     const { unmount: unmountDashboard } = render(
       <MemoryRouter initialEntries={["/dashboard"]}>
-        <DashboardPage />
+        <QueryClientProvider client={queryClient}>
+          <DashboardPage />
+        </QueryClientProvider>
       </MemoryRouter>
     );
 
@@ -187,7 +189,7 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
     });
 
     expect(screen.getByText("Jungfraujoch Ridge")).toBeInTheDocument();
-    expect(screen.getByText("1 files attached")).toBeInTheDocument();
+    expect(screen.getByText("1 file attached")).toBeInTheDocument();
     // Old "Research Projects" quick-action card replaced by "View all projects" hero link
     expect(screen.getByRole("link", { name: /view all projects/i })).toBeInTheDocument();
     unmountDashboard();

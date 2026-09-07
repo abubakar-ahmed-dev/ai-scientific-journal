@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import {
   fetchObservation,
   createObservation,
@@ -81,6 +81,21 @@ export default function ObservationFormPage() {
 
   // Version tracking for optimistic locking
   const [expectedVersion, setExpectedVersion] = useState<number | undefined>(undefined);
+
+  // Quick Capture hand-off (dashboard): the typed title/description arrive via
+  // router state on a NEW observation. Nothing is saved here — the record is
+  // only created when this form is submitted.
+  const location = useLocation();
+  const quickCapturePrefill = (
+    location.state as { quickCapture?: { title?: string; description?: string } } | null
+  )?.quickCapture;
+
+  useEffect(() => {
+    if (isEdit || !quickCapturePrefill) return;
+    if (quickCapturePrefill.title) setTitle(quickCapturePrefill.title);
+    if (quickCapturePrefill.description) setDescription(quickCapturePrefill.description);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetchProjects().then((res) => setProjects(res.data || []));

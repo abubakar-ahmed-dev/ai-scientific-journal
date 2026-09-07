@@ -56,7 +56,6 @@ describe("ObservationFormPage — location-capture default (settings refactor 20
   });
 
   afterEach(() => {
-    // @ts-expect-error restore the (possibly stubbed) geolocation
     Object.defineProperty(navigator, "geolocation", {
       value: originalGeolocation,
       configurable: true,
