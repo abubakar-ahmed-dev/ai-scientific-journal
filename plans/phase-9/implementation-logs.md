@@ -254,6 +254,25 @@ Service URL: `https://ai-scientific-journal-291307045855.asia-south1.run.app`
 CLI smoke (runbook §14, `scripts/smoke-test.mjs`): health 200, SPA 200,
 unauthenticated `/api/v1` → 401, label verified on service.
 
+### Correction (2026-09-07) — runtime SA `tokenCreator` was never actually granted
+
+The §9 row above marked the self `iam.serviceAccountTokenCreator` binding ✅, but a
+`gcloud projects get-iam-policy` audit (2026-09-07, while fixing media-upload 500s)
+showed the only `tokenCreator` member was the deploy-time `firebase-adminsdk` SA —
+the runtime SA binding was missing. Consequence: every signed-URL generation
+(`POST .../media` response, media list/detail) fails on Cloud Run with 500.
+Grant applied 2026-09-07:
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding \
+  ai-scientific-journal-runtime@ai-scientific-journal.iam.gserviceaccount.com \
+  --member="serviceAccount:ai-scientific-journal-runtime@ai-scientific-journal.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountTokenCreator" --project=ai-scientific-journal
+```
+
+Lesson: IAM-grant runbook steps need post-execution verification
+(`gcloud iam service-accounts describe --format ...`), not just a checklist tick.
+
 ### Remaining (phase exit §322)
 
 1. **👤 E3 (blocks browser sign-in):** Firebase console → Authentication → Settings →
