@@ -7,6 +7,14 @@ repository by code inspection on 2026-09-07 (post phase-9 first production deplo
 Status legend: **FIXED** (verified correct in code), **CONFIRMED** (defect present today),
 **PARTIAL** (some handling exists, gap remains).
 
+## Progress log
+
+| Date | Item | Result |
+|------|------|--------|
+| 2026-09-07 | #2 cursor sort validation | ✅ Fixed — shared `assertCursorSort` in `paginationSchema.ts`, applied to conversations, analyses, researchTasks, messages, observationVersions (2 more endpoints than planned); observation + project inline checks refactored to helper. 4 new unit tests. |
+| 2026-09-07 | #11 Gemini timeout cleanup | ✅ Fixed — `try/finally { clearTimeout }` on all three `geminiAdapter` methods + `AbortSignal.timeout` passed to `generateContent` (SDK 2.21.0 supports it) + abort-error mapping in `handleError`. Underlying request now actually cancelled. |
+| 2026-09-07 | Validation | ✅ typecheck + lint clean; full backend suite vs Firestore emulator **196/196** (192 prior + 4 new). |
+
 ---
 
 ## 1. Already fixed — close in tracker
@@ -29,8 +37,8 @@ Status legend: **FIXED** (verified correct in code), **CONFIRMED** (defect prese
 
 | # | Issue | Evidence | Fix plan | Effort |
 |---|-------|----------|----------|--------|
-| 2 | Pagination cursor sort field not validated on conversations, analyses, researchTasks — a cursor minted for one sort replays against another endpoint producing mis-ordered pages | `backend/src/repository/conversationRepository.ts:100-106`, `analysisRepository.ts:108-114`, `researchTaskRepository.ts:154-160` decode and `startAfter` without comparing `cursor.sortField`; observations (`observationRepository.ts:137-142`) and projects (`projectRepository.ts:61-66`) do check | Extract shared `assertCursorSort(cursor, expectedField)` helper from the observation implementation; call at the cursor-decode site in the three repositories; add mismatch → `400 VALIDATION_ERROR` unit tests | Small |
-| 11 | Gemini timeout timer leaks: `clearTimeout` on success path only; on API-error path the timeout later rejects with no handler (unhandled rejection) and the underlying request is never cancelled (no AbortSignal) | `backend/src/ai/geminiAdapter.ts:96-97, 160-161, 239-240` | Wrap the `Promise.race` in `try/finally { clearTimeout(timer) }`; pass `AbortSignal.timeout(this.timeoutMs)` into `generateContent` so the request actually cancels | Small |
+| 2 | ✅ **FIXED 2026-09-07** — was: cursor sort field not validated on conversations, analyses, researchTasks (also messages, observationVersions). Shared `assertCursorSort` helper now guards all seven decode sites | `backend/src/schemas/paginationSchema.ts` + all repositories; tests `backend/tests/unit/pagination.test.ts` | Done | — |
+| 11 | ✅ **FIXED 2026-09-07** — was: timeout timer leaked on error paths; request never cancelled. Now `try/finally` clears timer on all exits + `AbortSignal.timeout` cancels the Gemini request + abort mapped to `AI_UNAVAILABLE` | `backend/src/ai/adapters/geminiAdapter.ts` (all three methods + `handleError`) | Done | — |
 | 6 | Concurrent same-key idempotency: all idempotent paths are check-then-act (query then create as separate operations) — two simultaneous same-key requests both miss and both create | `backend/src/routes/researchTasks.ts:26-37`, `backend/src/repository/mediaRepository.ts:116-146` (`routes/media.ts:114-149`), `backend/src/repository/messageRepository.ts:68-91` (`routes/conversations.ts:185-216`) | Use deterministic document IDs derived from `(uid, endpoint, idempotencyKey)` so the second write collides with the first and returns the original record; detect different-payload-same-key and return `409`. Add a concurrency test (two parallel requests, same key, assert one record) | Medium |
 | 5 | Idempotency contract gaps: `POST /api/v1/observations` has no key handling while `docs/API.md:276` promises it; `/ai/summarize`, `/ai/analyze`, `/ai/suggest-research` claimed "Idempotency-Key-aware" (`API.md:449`) but unimplemented | `backend/src/routes/observations.ts:21-29`; grep of `routes/ai.ts` shows key handling only on `/ask` (`routes/ai.ts:330-360`) | Decision first: implement or amend contract. Recommended: same deterministic-ID pattern as item 6 on observation create; amend API.md for the three AI endpoints (generation failures are retryable via status polling; full idempotency there is low value) | Medium |
 | 12 | Project deletion cascade incomplete: only observations re-filed; conversations and researchTasks referencing the project dangle; partial-failure window after the project doc commits; contradicts `docs/API.md:260` | `backend/src/repository/projectRepository.ts:142-170` | Re-file all three collections (observations, conversations, researchTasks) to `projectId: null` using paginated batches with per-chunk re-query; delete project doc last (or first + compensating note); return affected counts; reconcile API.md text; tests for dangling refs and mid-cascade failure | Medium |
