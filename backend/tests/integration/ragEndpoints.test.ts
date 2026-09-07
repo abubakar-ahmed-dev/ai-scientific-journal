@@ -451,21 +451,40 @@ describe("Phase 6 RAG Endpoints (POST /api/v1/ai/ask & POST /api/v1/ai/search)",
     expect(JSON.stringify(askResB.body)).not.toContain(obsIdA);
   });
 
-  it("Enforces AI-tier rate limiting (10 requests / 5 min / user)", async () => {
-    // Make 10 requests as USER_RATE_LIMIT
-    for (let i = 0; i < 10; i++) {
+  it("Enforces the retrieval tier on /ai/search (60 requests / min / user)", async () => {
+    // /ai/search is a cheap non-generative read (API.md §4.1): browsing
+    // related observations must not consume the 10/5-min generation bucket.
+    let limitedSeen = false;
+    for (let i = 0; i < 61; i++) {
       const res = await request(app)
         .post("/api/v1/ai/search")
         .set("Authorization", `Bearer ${MOCK_ID_TOKEN_RATE_LIMIT}`)
         .send({ query: "test rate limit" });
+      if (res.status === 429) {
+        limitedSeen = true;
+        expect(res.body.error.code).toBe("RATE_LIMIT_EXCEEDED");
+        expect(res.header["retry-after"]).toBeDefined();
+        break;
+      }
+      expect(res.status).toBe(200);
+    }
+    expect(limitedSeen).toBe(true);
+  });
+
+  it("Keeps the generation AI tier (10 requests / 5 min / user) on /ai/ask", async () => {
+    for (let i = 0; i < 10; i++) {
+      const res = await request(app)
+        .post("/api/v1/ai/ask")
+        .set("Authorization", `Bearer ${MOCK_ID_TOKEN_RATE_LIMIT}`)
+        .send({ question: "rate limit probe" });
       expect(res.status).toBe(200);
     }
 
-    // 11th request for USER_RATE_LIMIT must return 429
+    // 11th generation request for USER_RATE_LIMIT must return 429
     const limitedRes = await request(app)
-      .post("/api/v1/ai/search")
+      .post("/api/v1/ai/ask")
       .set("Authorization", `Bearer ${MOCK_ID_TOKEN_RATE_LIMIT}`)
-      .send({ query: "test rate limit" });
+      .send({ question: "rate limit probe" });
 
     expect(limitedRes.status).toBe(429);
     expect(limitedRes.body.error.code).toBe("RATE_LIMIT_EXCEEDED");
@@ -473,9 +492,9 @@ describe("Phase 6 RAG Endpoints (POST /api/v1/ai/ask & POST /api/v1/ai/search)",
 
     // User B should remain unaffected (per-user rate limit)
     const userBRes = await request(app)
-      .post("/api/v1/ai/search")
+      .post("/api/v1/ai/ask")
       .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_B}`)
-      .send({ query: "test rate limit" });
+      .send({ question: "rate limit probe" });
 
     expect(userBRes.status).toBe(200);
   });

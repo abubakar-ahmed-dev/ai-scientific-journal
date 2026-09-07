@@ -50,6 +50,32 @@ export const aiRateLimiter = rateLimit({
   },
 });
 
+// Retrieval-only tier (API.md §4.1): /ai/search is a cheap non-generative
+// read triggered by ordinary page views — browsing related observations must
+// not starve the same bucket as Gemini generation.
+export const searchRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: {
+    ip: false,
+    xForwardedForHeader: false,
+  },
+  keyGenerator: (req: Request): string => {
+    return req.user?.uid || (req.ip ? ipKeyGenerator(req.ip) : "unknown");
+  },
+  handler: (_req: Request, res: Response) => {
+    res.status(429).json({
+      error: {
+        code: "RATE_LIMIT_EXCEEDED",
+        message: "Too many search requests. Please slow down and try again.",
+        requestId: (res.getHeader("x-request-id") as string) || "req_rate_limit",
+      },
+    });
+  },
+});
+
 export const mediaRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 30, // 30 uploads per hour (API.md §4.1 media tier)

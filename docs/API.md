@@ -119,7 +119,8 @@ Expensive endpoints are rate-limited **per user** (IP-based backstop also applie
 | Endpoint group | Default limit |
 | -------------- | ------------- |
 | `POST /conversations/:id/messages` (chat) | 20 requests / 5 min / user |
-| `POST /ai/*` (generation + retrieval) | 10 requests / 5 min / user |
+| `POST /ai/*` (generation, except search) | 10 requests / 5 min / user |
+| `POST /ai/search` (retrieval-only read) | 60 requests / min / user |
 | `POST /observations/:id/media` (upload) | 30 uploads / hour / user |
 | All other mutations | 60 requests / min / user |
 

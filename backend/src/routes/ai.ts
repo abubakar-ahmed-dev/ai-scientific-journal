@@ -18,7 +18,7 @@ import { buildConversationSummaryPrompt } from "../ai/prompts/conversationSummar
 import { buildResearchSuggestionsPrompt } from "../ai/prompts/researchSuggestionsPrompt";
 import { buildAskGroundedPrompt, ASK_PROMPT_VERSION } from "../ai/prompts/askGroundedAnswerPrompt";
 import { retrievalService } from "../ai/retrieval/retrievalService";
-import { aiRateLimiter } from "../middleware/rateLimiter";
+import { aiRateLimiter, searchRateLimiter } from "../middleware/rateLimiter";
 import { env } from "../config/env";
 import { logger } from "../lib/logger";
 import { logAiSignal } from "../lib/aiSignals";
@@ -26,8 +26,18 @@ import { AppError } from "../types/errors";
 
 export const aiRouter = Router();
 
-// Apply AI rate limiter (10 requests / 5 min / user) across all AI routes
-aiRouter.use(aiRateLimiter);
+// /ai/search runs on its own lighter retrieval tier (API.md §4.1): it is a
+// non-generative read triggered by ordinary page views, so it must not
+// consume the AI-generation bucket below.
+aiRouter.use("/search", searchRateLimiter);
+// Apply AI rate limiter (10 requests / 5 min / user) to all generation routes
+aiRouter.use((req: Request, res: Response, next: NextFunction): void => {
+  if (req.path === "/search") {
+    next();
+    return;
+  }
+  aiRateLimiter(req, res, next);
+});
 
 // POST /api/v1/ai/summarize
 aiRouter.post("/summarize", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
