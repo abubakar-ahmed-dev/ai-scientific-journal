@@ -269,7 +269,7 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
       },
     ]);
 
-    vi.mocked(api.searchObservations).mockResolvedValue([]);
+    vi.mocked(api.searchObservations).mockResolvedValue({ items: [], truncated: false });
 
     // Mock AI Analysis pipeline output
     const mockAnalysisOutput = {
@@ -486,7 +486,7 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
       ],
       uncertainties: ["UV-A vs UV-B spectrum contribution remains unseparated in field data."],
       model: "gemini-2.5-flash",
-      promptVersion: "ask-grounded-v1",
+      promptVersion: "ask-grounded-v2",
     });
 
     render(
@@ -514,6 +514,6 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
       "href",
       "/observations/obs_e2e_1"
     );
-    expect(screen.getByText("ask-grounded-v1")).toBeInTheDocument();
+    expect(screen.getByText("ask-grounded-v2")).toBeInTheDocument();
   });
 });

@@ -35,6 +35,7 @@ export default function ObservationDetailPage() {
   const [selectedVersion, setSelectedVersion] = useState<ObservationVersion | null>(null);
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [relatedObservations, setRelatedObservations] = useState<SearchResponseItem[]>([]);
+  const [relatedTruncated, setRelatedTruncated] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,8 +51,9 @@ export default function ObservationDetailPage() {
       const query = `${obs.title} ${(obs.tags || []).join(" ")}`.trim();
       if (!query) return;
       const res = await searchObservations({ query, limit: 5 });
-      const filtered = (res || []).filter((item) => item.observationId !== obs.id);
+      const filtered = (res.items || []).filter((item) => item.observationId !== obs.id);
       setRelatedObservations(filtered);
+      setRelatedTruncated(res.truncated);
     } catch {
       // Non-blocking for base detail view (PRD NFR-02)
     }
@@ -427,7 +429,9 @@ export default function ObservationDetailPage() {
                     <BookOpen className="w-4 h-4 text-brand-600" />
                     <span>Related Observations ({relatedObservations.length})</span>
                   </h3>
-                  <span className="text-xs text-slate-400">Lexical similarity over journal</span>
+                  <span className="text-xs text-slate-400">
+                    Lexical similarity over journal{relatedTruncated ? " (recent observations only)" : ""}
+                  </span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {relatedObservations.map((item) => (
@@ -440,8 +444,11 @@ export default function ObservationDetailPage() {
                         <h4 className="text-sm font-semibold text-app-heading group-hover:text-brand-600 transition line-clamp-1">
                           {item.title}
                         </h4>
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded shrink-0">
-                          {Math.round(item.score * 100)}% match
+                        <span
+                          className="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded shrink-0"
+                          title="Raw lexical similarity score (0–1), not a probabilistic confidence"
+                        >
+                          {item.score.toFixed(2)} lexical match
                         </span>
                       </div>
                       {item.observedAt && (

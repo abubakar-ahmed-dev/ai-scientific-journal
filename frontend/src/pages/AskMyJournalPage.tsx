@@ -38,7 +38,11 @@ export const AskMyJournalPage: React.FC = () => {
     }
   };
 
-  const isInsufficientEvidence = Boolean(result && (!result.evidence || result.evidence.length === 0));
+  // Prefer the explicit backend flag (ask-grounded-v2); keep the evidence-empty
+  // heuristic as fallback for cached/older responses.
+  const isInsufficientEvidence = Boolean(
+    result && (result.insufficientEvidence === true || !result.evidence || result.evidence.length === 0)
+  );
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 space-y-8">
@@ -169,6 +173,16 @@ export const AskMyJournalPage: React.FC = () => {
               {result.answer}
             </div>
 
+            {/* Partial-coverage notice (fixing-plan #16) */}
+            {result.truncated && (
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex gap-2.5 text-slate-700">
+                <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                <p className="text-xs">
+                  Only your most recent observations were searched — older records may not have been
+                  considered for this answer.
+                </p>
+              </div>
+            )}
             {/* Insufficient Evidence Notice */}
             {isInsufficientEvidence && (
               <div className="bg-amber-50/70 border border-amber-200/80 rounded-lg p-4 flex gap-3 text-amber-900">

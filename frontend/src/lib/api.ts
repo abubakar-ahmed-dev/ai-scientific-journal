@@ -10,6 +10,8 @@ export interface ApiResponse<T> {
     nextCursor?: string | null;
     hasMore?: boolean;
     serverTime?: string;
+    resultCount?: number;
+    truncated?: boolean;
   };
 }
 
@@ -600,8 +602,12 @@ export interface AskResponse {
     note?: string;
   }>;
   uncertainties: string[];
+  insufficientEvidence?: boolean;
   model: string;
   promptVersion: string;
+  // True when retrieval hit the candidate cap — older observations were not
+  // searched (fixing-plan #16). Flattened from the response `meta` envelope.
+  truncated?: boolean;
 }
 
 export interface SearchResponseItem {
@@ -625,17 +631,23 @@ export async function askMyJournal(
     headers,
     body: JSON.stringify(body),
   });
-  return res.data;
+  return { ...res.data, truncated: res.meta?.truncated ?? false };
+}
+
+export interface SearchResult {
+  items: SearchResponseItem[];
+  // True when retrieval hit the candidate cap (fixing-plan #16).
+  truncated: boolean;
 }
 
 export async function searchObservations(
   body: { query: string; limit?: number; projectId?: string }
-): Promise<SearchResponseItem[]> {
+): Promise<SearchResult> {
   const res = await api<SearchResponseItem[]>("/ai/search", {
     method: "POST",
     body: JSON.stringify(body),
   });
-  return res.data;
+  return { items: res.data, truncated: res.meta?.truncated ?? false };
 }
 
 // Media types & API (Phase 7 - PRD FR-11, API.md §6.8)

@@ -8,6 +8,7 @@ import {
   deleteConversation,
   fetchObservations,
   fetchProjects,
+  fetchAnalyses,
 } from "../lib/api";
 import type { Conversation, Project } from "../lib/api";
 import { ChatWindow } from "../components/ChatWindow";
@@ -23,6 +24,7 @@ import {
   Trash2,
   Folder,
   FileText,
+  ListChecks,
   X,
   Bot,
 } from "lucide-react";
@@ -36,9 +38,12 @@ export const ConversationsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("active");
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
 
-  // New Chat Form State
+  // New Chat Form State (contextType "research" = analysis-linked chat; the
+  // backend contextType enum is "research", the UI calls it "Analysis")
   const [newTitle, setNewTitle] = useState("");
-  const [newContextType, setNewContextType] = useState<"general" | "observation" | "project">("general");
+  const [newContextType, setNewContextType] = useState<
+    "general" | "observation" | "project" | "research"
+  >("general");
   const [newContextId, setNewContextId] = useState("");
   const [modalError, setModalError] = useState<string | null>(null);
   const [conversationPendingDelete, setConversationPendingDelete] = useState<Conversation | null>(null);
@@ -65,6 +70,12 @@ export const ConversationsPage: React.FC = () => {
     enabled: isNewChatModalOpen && newContextType === "project",
   });
 
+  const { data: analysisData } = useQuery({
+    queryKey: ["analyses-modal"],
+    queryFn: () => fetchAnalyses({ limit: 50 }),
+    enabled: isNewChatModalOpen && newContextType === "research",
+  });
+
   // Selected conversation
   const selectedConversation = conversations.find((c) => c.id === activeConvId) || conversations[0];
 
@@ -79,7 +90,7 @@ export const ConversationsPage: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (data: {
       title?: string | null;
-      contextType: "general" | "observation" | "project";
+      contextType: "general" | "observation" | "project" | "research";
       contextId?: string | null;
     }) => createConversation(data),
     onSuccess: (res) => {
@@ -121,7 +132,11 @@ export const ConversationsPage: React.FC = () => {
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newContextType !== "general" && !newContextId.trim()) {
-      setModalError(`Please select an ${newContextType} for context.`);
+      setModalError(
+        newContextType === "research"
+          ? "Please select an analysis for context."
+          : `Please select an ${newContextType} for context.`
+      );
       return;
     }
     createMutation.mutate({
@@ -226,7 +241,7 @@ export const ConversationsPage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500">
                       <span className="capitalize text-brand-600 bg-brand-50/80 px-1.5 py-0.2 rounded font-medium">
-                        {conv.contextType}
+                        {conv.contextType === "research" ? "analysis" : conv.contextType}
                       </span>
                       <span>{conv.messageCount} msgs</span>
                     </div>
@@ -335,7 +350,7 @@ export const ConversationsPage: React.FC = () => {
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Context Focus
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -379,6 +394,21 @@ export const ConversationsPage: React.FC = () => {
                   >
                     <Folder className="w-3 h-3" />
                     Project
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewContextType("research");
+                      setNewContextId("");
+                    }}
+                    className={`py-2 px-3 text-xs font-medium rounded-lg border text-center flex items-center justify-center gap-1 transition-all ${
+                      newContextType === "research"
+                        ? "border-brand-600 bg-brand-50 text-brand-700 font-semibold shadow-xs"
+                        : "border-app-border text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <ListChecks className="w-3 h-3" />
+                    Analysis
                   </button>
                 </div>
               </div>
@@ -430,6 +460,32 @@ export const ConversationsPage: React.FC = () => {
                       }}
                     />
                   </div>
+                </div>
+              )}
+
+              {newContextType === "research" && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Select Analysis
+                  </label>
+                  <select
+                    value={newContextId}
+                    onChange={(e) => setNewContextId(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+                  >
+                    <option value="">-- Choose Analysis --</option>
+                    {(analysisData?.data || []).map((anl) => (
+                      <option key={anl.id} value={anl.id}>
+                        {anl.summary.length > 70 ? `${anl.summary.slice(0, 70)}…` : anl.summary} (
+                        {new Date(anl.createdAt).toLocaleDateString()})
+                      </option>
+                    ))}
+                  </select>
+                  {(analysisData?.data || []).length === 0 && (
+                    <p className="mt-2 text-[11px] text-slate-400">
+                      No analyses yet — run an AI analysis on an observation first.
+                    </p>
+                  )}
                 </div>
               )}
 
