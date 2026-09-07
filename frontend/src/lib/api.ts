@@ -119,6 +119,8 @@ export interface UserProfile {
   email: string | null;
   displayName: string | null;
   photoURL?: string | null;
+  // Short-lived signed URL for the uploaded avatar; null when none set.
+  avatarUrl?: string | null;
   institution?: string | null;
   fieldOfStudy?: string | null;
   role?: string;
@@ -139,6 +141,19 @@ export async function updateMe(data: Partial<UserProfile>) {
     method: "PATCH",
     body: JSON.stringify(data),
   });
+}
+
+export async function uploadAvatar(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  return api<UserProfile>("/me/avatar", {
+    method: "PATCH",
+    body: formData,
+  });
+}
+
+export async function removeAvatar() {
+  return api<UserProfile>("/me/avatar", { method: "DELETE" });
 }
 
 export const updateCurrentUser = updateMe;

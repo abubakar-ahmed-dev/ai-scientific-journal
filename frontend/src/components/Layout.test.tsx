@@ -3,6 +3,23 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { Layout } from "./Layout";
 
+// Settings refactor: Layout consumes the shared /me profile via react-query;
+// tests stub the hook instead of standing up a QueryClientProvider.
+vi.mock("../lib/useProfile", () => ({
+  useProfile: () => ({
+    profile: null,
+    displayName: "Marie Curie",
+    email: "tester@example.com",
+    avatarUrl: null,
+    memberSince: null,
+    preferences: null,
+    isLoading: false,
+    refetch: vi.fn(),
+  }),
+  useInvalidateProfile: () => vi.fn(),
+}));
+
+
 const mockSignOut = vi.fn();
 
 vi.mock("../lib/firebase/authContext", () => ({
