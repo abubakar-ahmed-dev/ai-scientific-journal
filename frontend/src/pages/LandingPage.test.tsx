@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import LandingPage from "@/pages/LandingPage";
 import * as authContext from "../lib/firebase/authContext";
@@ -139,5 +139,51 @@ describe("LandingPage (redesigned)", () => {
 
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByRole("link", { name: /skip to content/i })).toBeInTheDocument();
+  });
+
+  it("navigates to the dashboard after a successful Google sign-in (no second click)", async () => {
+    // useAuth reads live state so the mock mirrors the real sequence: the
+    // popup promise resolves and onAuthStateChanged commits the user.
+    let currentUser: { uid: string } | null = null;
+    vi.mocked(authContext.useAuth).mockImplementation(
+      () =>
+        ({
+          currentUser,
+          loading: false,
+          signInWithGoogle: vi.fn(async () => {
+            currentUser = { uid: "user_new_1" };
+          }),
+          signOut: vi.fn(),
+        }) as unknown as ReturnType<typeof authContext.useAuth>
+    );
+
+    renderLanding();
+
+    fireEvent.click(screen.getAllByRole("button", { name: /start your journal/i })[0]);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dashboard-target")).toBeInTheDocument();
+    });
+  });
+
+  it("stays on the landing page when the sign-in popup is cancelled", async () => {
+    vi.mocked(authContext.useAuth).mockReturnValue({
+      currentUser: null,
+      loading: false,
+      signInWithGoogle: vi.fn(async () => {
+        throw new Error("auth/popup-closed-by-user");
+      }),
+      signOut: vi.fn(),
+    });
+
+    renderLanding();
+
+    fireEvent.click(screen.getAllByRole("button", { name: /start your journal/i })[0]);
+
+    // Give the rejection a tick to surface — no navigation, no crash.
+    await waitFor(() => {
+      expect(screen.queryByTestId("dashboard-target")).not.toBeInTheDocument();
+    });
+    expect(screen.getAllByRole("heading", { level: 1 })[0]).toBeInTheDocument();
   });
 });

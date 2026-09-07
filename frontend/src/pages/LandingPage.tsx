@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   NotebookPen,
   Menu,
@@ -169,9 +169,32 @@ const ArrowCta: React.FC<{
  */
 export default function LandingPage() {
   const { currentUser, loading, signInWithGoogle } = useAuth();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  // Set once sign-in succeeds; the effect below navigates only after the auth
+  // state has actually flipped, so RequireAuth never bounces the user back to
+  // "/" when /dashboard renders before onAuthStateChanged commits.
+  const [pendingDashboardNav, setPendingDashboardNav] = useState(false);
   const menuPanelRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (pendingDashboardNav && currentUser) {
+      setPendingDashboardNav(false);
+      navigate("/dashboard", { replace: true });
+    }
+  }, [pendingDashboardNav, currentUser, navigate]);
+
+  // Successful sign-in lands the researcher directly in the journal instead
+  // of leaving them on the landing page with a freshly swapped CTA.
+  const handleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      setPendingDashboardNav(true);
+    } catch {
+      // Cancelled popup / closed window — stay on the landing page silently.
+    }
+  };
 
   // Focus trap + Escape for the mobile menu (same pattern as the app drawer).
   useEffect(() => {
@@ -214,7 +237,7 @@ export default function LandingPage() {
   ) : (
     <button
       type="button"
-      onClick={() => signInWithGoogle()}
+      onClick={handleSignIn}
       disabled={loading}
       className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-lp-primary px-8 py-4 text-lg font-bold text-white shadow-md shadow-lp-primary/20 transition hover:bg-lp-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-primary focus-visible:ring-offset-2 disabled:opacity-60"
     >
@@ -271,7 +294,7 @@ export default function LandingPage() {
             ) : (
               <button
                 type="button"
-                onClick={() => signInWithGoogle()}
+                onClick={handleSignIn}
                 disabled={loading}
                 className="cursor-pointer rounded-lg bg-lp-primary px-5 py-2.5 text-[15px] font-bold text-white transition hover:bg-lp-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-primary focus-visible:ring-offset-2 disabled:opacity-60"
               >
@@ -328,7 +351,7 @@ export default function LandingPage() {
                   type="button"
                   onClick={() => {
                     setMenuOpen(false);
-                    signInWithGoogle();
+                    handleSignIn();
                   }}
                   disabled={loading}
                   className="cursor-pointer w-full rounded-lg bg-lp-primary px-4 py-3 text-center text-base font-bold text-white hover:bg-lp-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-primary disabled:opacity-60"
@@ -548,7 +571,7 @@ export default function LandingPage() {
             <div className="mt-12 flex justify-center">
               <ArrowCta
                 to={currentUser ? "/dashboard" : undefined}
-                onClick={currentUser ? undefined : () => signInWithGoogle()}
+                onClick={currentUser ? undefined : handleSignIn}
                 href={currentUser ? undefined : "#"}
               >
                 {currentUser ? "Open Your Journal" : "Start Your Journal"}
