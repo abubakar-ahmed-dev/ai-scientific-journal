@@ -3,7 +3,14 @@ import { getFirebaseFirestore } from "../lib/firebaseAdmin";
 import { CreateProjectDTO, UpdateProjectDTO, ListProjectsQueryDTO } from "../schemas/projectSchema";
 import { assertCursorSort, decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
 import { serializeTimestamps } from "../lib/serialize";
+import { logger } from "../lib/logger";
 import { AppError } from "../types/errors";
+
+export interface ProjectDeleteSummary {
+  observations: number;
+  conversations: number;
+  researchTasks: number;
+}
 
 export interface ProjectDocument {
   id: string;
@@ -134,7 +141,7 @@ export class ProjectRepository {
     return { id: updatedSnap.id, ...serializeTimestamps(updatedSnap.data() as Omit<ProjectDocument, "id">) };
   }
 
-  async delete(uid: string, projectId: string): Promise<void> {
+  async delete(uid: string, projectId: string): Promise<ProjectDeleteSummary> {
     const docRef = this.getCollection(uid).doc(projectId);
     const existing = await docRef.get();
 
@@ -142,26 +149,50 @@ export class ProjectRepository {
       throw new AppError("NOT_FOUND", "Project not found");
     }
 
-    // Delete project
+    // Side effects per API.md §6.4 / DATABASE_SCHEMA §19: observations,
+    // conversations, and research tasks referencing the project are re-filed
+    // to `projectId: null` (unfiled — never deleted); analyses retain their
+    // historical projectId. Children are re-filed BEFORE the project doc is
+    // deleted: a mid-cascade failure then leaves the project (and all
+    // references) intact and the delete retryable, instead of children
+    // dangling at a nonexistent project.
+    const summary: ProjectDeleteSummary = {
+      observations: await this.refileChildren(uid, "observations", projectId),
+      conversations: await this.refileChildren(uid, "conversations", projectId),
+      researchTasks: await this.refileChildren(uid, "researchTasks", projectId),
+    };
+
     await docRef.delete();
+    logger.info({ uid, projectId, ...summary }, "Project deleted; children re-filed");
+    return summary;
+  }
 
-    // Side effect: re-file observations with projectId == deleted to projectId: null (DATABASE_SCHEMA §19)
-    const obsColl = getFirebaseFirestore()
-      .collection("users")
-      .doc(uid)
-      .collection("observations");
-
-    const matchedObs = await obsColl.where("projectId", "==", projectId).get();
-    if (!matchedObs.empty) {
+  // Re-files children in batches, re-querying per chunk so a concurrent
+  // create/update between chunks is re-filed too instead of silently
+  // overwritten from a stale snapshot. Firestore batch limit is 500; 450
+  // leaves headroom.
+  private async refileChildren(
+    uid: string,
+    collectionName: "observations" | "conversations" | "researchTasks",
+    projectId: string
+  ): Promise<number> {
+    const coll = getFirebaseFirestore().collection("users").doc(uid).collection(collectionName);
+    let total = 0;
+    for (;;) {
+      const snap = await coll.where("projectId", "==", projectId).limit(450).get();
+      if (snap.empty) break;
       const batch = getFirebaseFirestore().batch();
-      matchedObs.docs.forEach((d) => {
+      snap.docs.forEach((d) => {
         batch.update(d.ref, {
           projectId: null,
           updatedAt: FieldValue.serverTimestamp(),
         });
       });
       await batch.commit();
+      total += snap.size;
+      if (snap.size < 450) break;
     }
+    return total;
   }
 }
 
