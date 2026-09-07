@@ -12,6 +12,7 @@ import {
   serializeMediaResponse,
   validateFileConsistency,
 } from "../schemas/mediaSchema";
+import { discardStagedFile, readFileHead } from "../lib/stagedUpload";
 import { AppError } from "../types/errors";
 import { env } from "../config/env";
 import { logger } from "../lib/logger";
@@ -54,24 +55,7 @@ const SIZE_LIMITS: Record<"image" | "audio" | "video", number> = {
 
 // Content-type sniffing inspects only the file head (magic bytes live in the
 // first bytes of every supported container) — the staged file is never read
-// into memory.
-async function readFileHead(filePath: string, bytes: number): Promise<Buffer> {
-  const handle = await fs.promises.open(filePath, "r");
-  try {
-    const buf = Buffer.alloc(bytes);
-    const { bytesRead } = await handle.read(buf, 0, bytes, 0);
-    return buf.subarray(0, bytesRead);
-  } finally {
-    await handle.close();
-  }
-}
-
-function discardStagedFile(filePath?: string): void {
-  if (!filePath) return;
-  fs.promises.unlink(filePath).catch((err) => {
-    logger.warn({ err, filePath }, "Failed to remove staged media upload temp file");
-  });
-}
+// into memory. Head-read and cleanup helpers live in lib/stagedUpload.ts.
 
 // POST /api/v1/observations/:observationId/media — API.md §6.8
 mediaRouter.post(

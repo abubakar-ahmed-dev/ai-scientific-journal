@@ -211,13 +211,17 @@ Authentication is **required** for every endpoint in 6.2–6.15.
 
 ## 6.2 Me
 
+Every `/me` response carries `avatarUrl` — a fresh short-lived signed read URL
+for the uploaded avatar (`null` when none). The internal `avatarPath` storage
+location is never exposed (same rule as media, ADR-016).
+
 ### `GET /api/v1/me`
 
 | Aspect | Specification |
 | ------ | ------------- |
 | Auth | Required |
 | Authorization | Own profile only (UID from token) |
-| Response | `200` — `{ "data": { user } }` — the `users/{uid}` document per `DATABASE_SCHEMA.md` §5.1 |
+| Response | `200` — `{ "data": { user } }` — the `users/{uid}` document per `DATABASE_SCHEMA.md` §5.1, plus `avatarUrl` |
 | Side effects | Ensures the user document exists; updates `lastLoginAt` (server timestamp) |
 
 ### `PATCH /api/v1/me`
@@ -226,8 +230,18 @@ Authentication is **required** for every endpoint in 6.2–6.15.
 | ------ | ------------- |
 | Body | `{ "displayName"?, "photoURL"?, "preferences"? }` — partial update |
 | Validation | `displayName` 1–100 chars; `photoURL` valid HTTPS URL ≤ 2048 chars; `preferences` object validated against the schema (enum checks for `theme`, IANA timezone string, booleans); unknown fields rejected |
+| Side effects | `displayName` is also propagated to the Firebase Auth profile (best-effort; Firestore remains the source of truth) |
 | Immutable | `role`, `accountStatus`, `createdAt` — attempts are rejected with `400 VALIDATION_ERROR` naming the field |
 | Response | `200` — updated `{ "data": { user } }` |
+
+### `PATCH|DELETE /api/v1/me/avatar` (profile avatar — settings refactor 2026-09-07)
+
+| Aspect | Specification |
+| ------ | ------------- |
+| `PATCH /avatar` | multipart field `file`: JPEG/PNG/WebP/HEIC image, ≤ 2 MB (413 on excess), magic-byte sniffed against the declared MIME (415 on mismatch); streams to `users/{uid}/avatar/avatar` (fixed object name — a new upload overwrites the old binary in place); sets `avatarPath` |
+| `DELETE /avatar` | Clears `avatarPath` and best-effort deletes the object |
+| Errors | `400 VALIDATION_ERROR` (no file), `413 PAYLOAD_TOO_LARGE`, `415 UNSUPPORTED_MEDIA_TYPE` |
+| Response | `200` — updated `{ "data": { user } }` with fresh `avatarUrl` (`null` after delete) |
 
 ---
 

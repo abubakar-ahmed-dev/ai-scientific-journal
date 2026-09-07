@@ -4,6 +4,23 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import ProjectDetailPage from "./ProjectDetailPage";
 import * as api from "../lib/api";
 
+// Settings refactor: Layout consumes the shared /me profile via react-query;
+// tests stub the hook instead of standing up a QueryClientProvider.
+vi.mock("../lib/useProfile", () => ({
+  useProfile: () => ({
+    profile: null,
+    displayName: "Test Researcher",
+    email: "tester@example.com",
+    avatarUrl: null,
+    memberSince: null,
+    preferences: null,
+    isLoading: false,
+    refetch: vi.fn(),
+  }),
+  useInvalidateProfile: () => vi.fn(),
+}));
+
+
 vi.mock("../lib/firebase/authContext", () => ({
   useAuth: () => ({
     currentUser: { uid: "user_test", email: "scientist@lab.edu" },

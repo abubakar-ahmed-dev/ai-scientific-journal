@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   fetchObservation,
@@ -9,6 +9,7 @@ import {
 import type { Project, Measurement } from "../lib/api";
 import { Layout } from "../components/Layout";
 import { InlineProjectCreator } from "../components/InlineProjectCreator";
+import { useProfile } from "../lib/useProfile";
 import { MapPin, Loader2, Info } from "lucide-react";
 
 export default function ObservationFormPage() {
@@ -113,6 +114,21 @@ export default function ObservationFormPage() {
         .finally(() => setLoading(false));
     }
   }, [id, isEdit]);
+
+  // "Capture location by default" journal preference (Settings): on a NEW
+  // observation, open the advanced panel and attempt GPS capture once. Edit
+  // mode is untouched, and the attempt fires at most once per page load.
+  const { preferences } = useProfile();
+  const locationDefaultApplied = useRef(false);
+  useEffect(() => {
+    if (isEdit || locationDefaultApplied.current || preferences === null) return;
+    locationDefaultApplied.current = true;
+    if (preferences?.locationEnabled ?? true) {
+      setAdvancedOpen(true);
+      handleGetCurrentLocation();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEdit, preferences]);
 
   function addMeasurement() {
     setMeasurements([
@@ -294,21 +310,6 @@ export default function ObservationFormPage() {
                   className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
                 />
               </div>
-            </div>
-
-            {/* Measurements are central to the scientific workflow — keep a
-                visible action in the form body (guidelines §30 fix). */}
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setAdvancedOpen(true);
-                  addMeasurement();
-                }}
-                className="text-xs font-medium text-brand-600 hover:text-brand-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1 py-0.5"
-              >
-                ＋ Add Measurement
-              </button>
             </div>
 
             {/* Advanced fields (guidelines §52): collapsed by default so the

@@ -17,6 +17,7 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import { useAuth } from "../lib/firebase/authContext";
+import { useProfile } from "../lib/useProfile";
 import { CommandPalette } from "./CommandPalette";
 
 interface NavLinkItem {
@@ -69,6 +70,7 @@ function readSidebarCollapsed(): boolean {
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, signOut } = useAuth();
+  const { displayName: profileName, avatarUrl } = useProfile();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -158,7 +160,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     });
   };
 
-  const userInitial = (currentUser?.displayName?.[0] || currentUser?.email?.[0] || "U").toUpperCase();
+  const headerName = profileName || currentUser?.displayName || currentUser?.email || "Researcher";
+  const userInitial = (headerName[0] || "U").toUpperCase();
 
   const renderNavItem = (
     link: NavLinkItem,
@@ -300,12 +303,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
             {currentUser && (
               <div className="flex items-center space-x-2 text-xs text-slate-600 bg-slate-50 py-1 px-2.5 rounded-full border border-app-border">
-                <div className="w-5 h-5 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-[10px]">
-                  {userInitial}
-                </div>
-                <span className="max-w-[150px] truncate font-medium">
-                  {currentUser.displayName || currentUser.email}
-                </span>
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    className="w-5 h-5 rounded-full object-cover border border-app-border"
+                  />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-[10px]">
+                    {userInitial}
+                  </div>
+                )}
+                <span className="max-w-[150px] truncate font-medium">{headerName}</span>
               </div>
             )}
             <button
@@ -334,13 +343,19 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             >
               {currentUser && (
                 <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg border border-app-border mb-2">
-                  <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-sm">
-                    {userInitial}
-                  </div>
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt=""
+                      className="w-8 h-8 rounded-full object-cover border border-app-border"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-sm">
+                      {userInitial}
+                    </div>
+                  )}
                   <div className="truncate">
-                    <p className="text-sm font-semibold text-slate-800 truncate">
-                      {currentUser.displayName || "Researcher"}
-                    </p>
+                    <p className="text-sm font-semibold text-slate-800 truncate">{headerName}</p>
                     <p className="text-xs text-slate-500 truncate">{currentUser.email}</p>
                   </div>
                 </div>

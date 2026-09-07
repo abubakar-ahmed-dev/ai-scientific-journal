@@ -11,6 +11,23 @@ import { ResearchMapPage } from "../pages/ResearchMapPage";
 import * as api from "../lib/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+// Settings refactor: Layout consumes the shared /me profile via react-query;
+// tests stub the hook instead of standing up a QueryClientProvider.
+vi.mock("../lib/useProfile", () => ({
+  useProfile: () => ({
+    profile: null,
+    displayName: "Test Researcher",
+    email: "tester@example.com",
+    avatarUrl: null,
+    memberSince: null,
+    preferences: null,
+    isLoading: false,
+    refetch: vi.fn(),
+  }),
+  useInvalidateProfile: () => vi.fn(),
+}));
+
+
 // Mock Leaflet for JSDOM
 vi.mock("react-leaflet", () => ({
   MapContainer: ({ children }: { children: React.ReactNode }) => (
