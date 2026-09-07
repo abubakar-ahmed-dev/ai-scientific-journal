@@ -52,6 +52,8 @@ export default function DashboardPage() {
     queryKey: ["dashboard", "brief-observations", currentResearch?.id ?? "none"],
     queryFn: () => fetchObservations({ projectId: currentResearch!.id, limit: 50 }),
     enabled: Boolean(currentResearch),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   if (isEmptyWorkspace) {
