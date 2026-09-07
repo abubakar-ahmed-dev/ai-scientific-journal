@@ -9,7 +9,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Docker](https://img.shields.io/badge/Container-Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
-**Status:** 🚧 In Development — built for the **Gen AI Academy APAC Edition** challenge (Cloud Run AI Challenge, label `dev-tutorial=cloud-run-ai-challenge`).
+**Status:** 🚧 In Development — built for the **Gen AI Academy APAC Edition** challenge (Cloud Run AI Challenge, label `dev-tutorial=cloud-run-ai-challenge`), deployed and usable.
 
 ---
 
@@ -199,7 +199,7 @@ Full model: [`docs/SECURITY.md`](docs/SECURITY.md); API contract: [`docs/API.md`
 ## Repository Structure
 
 ```text
-scientific-gemini-journal/
+ai-scientific-journal/
 │
 ├── frontend/          ← React + TypeScript + Vite SPA        (implementation)
 ├── backend/           ← Node.js + TypeScript + Express API   (implementation)
@@ -217,37 +217,79 @@ scientific-gemini-journal/
 
 ---
 
-## Local Development
+## Getting Started (Local Development)
+
+The app runs **fully offline** against the Firebase Emulator Suite with a built-in Fake AI service — **no Google Cloud project, no Firebase project, and no Gemini API key are required** to try it locally.
 
 ### Prerequisites
 
 * Node.js (LTS) + npm
-* Docker
-* Google Cloud CLI
-* Firebase CLI
-* A Firebase project (Authentication + Firestore) and a Google Cloud project (Cloud Run, Secret Manager)
-* A Gemini API key (Google AI Studio)
+* Firebase CLI (`npm install -g firebase-tools`) — for the local Auth/Firestore/Storage emulators
 
-### Setup
+> Docker, the Google Cloud CLI, a Firebase/GCP project, and a Gemini API key are only needed for **deployment** (see [Deployment](#deployment)).
+
+### Quick Start
 
 ```bash
 # 1. Clone
 git clone <repository-url>
-cd scientific-gemini-journal
+cd ai-scientific-journal
 
-# 2. Install dependencies
+# 2. Install dependencies (two apps)
 cd frontend && npm install
 cd ../backend && npm install
+cd ..
 
-# 3. Configure environment
-#    Copy the .env.example files in frontend/ and backend/ and fill in values.
-#    Never commit .env files.
+# 3. Configure environment (defaults target the emulators + Fake AI)
+cp frontend/.env.example frontend/.env
+cp backend/.env.example  backend/.env
 
-# 4. Run in development
-npm run dev   # per-app dev scripts (see package.json)
+# 4. Start the Firebase emulators (Auth :9099, Firestore :8082, Storage :9199, UI :4000)
+firebase emulators:start
+
+# 5. Start the backend (http://localhost:8081)
+cd backend && npm run dev
+
+# 6. Start the frontend (http://localhost:5173) — in a second terminal
+cd frontend && npm run dev
 ```
 
-> **Note:** Implementation is in progress — exact script names and tooling are finalized per-app as components land. The authoritative interface contracts are the documents referenced below.
+Then open **http://localhost:5173**, click **Sign in with Google**, and the Auth emulator signs you in with a generated local account — nothing leaves your machine.
+
+### How the offline mode works
+
+* The frontend `.env` sets `VITE_USE_FIREBASE_EMULATORS=true` and a `demo-` project ID — Firebase's offline mode, so no real Firebase project is contacted.
+* The backend `.env` points at the running emulators and sets `USE_FAKE_AI=true` — Gemini calls are served by a built-in fake AI service (deterministic, no network). The fake AI is **forbidden in production** (startup fails fast if enabled there).
+* Add a real `GEMINI_API_KEY` and set `USE_FAKE_AI=false` in `backend/.env` only when you want real model responses locally.
+
+### Validation
+
+```bash
+cd frontend && npm run lint && npm run typecheck && npm test
+cd backend  && npm run lint && npm run typecheck && npm test
+npm run build   # per app; production build
+```
+
+The backend security suite (`npm run test:security`) runs the Firestore rules tests with the security flag enabled.
+
+> Never commit `.env` files — they are local-only and git-ignored.
+
+---
+
+## Using the App
+
+The product loop is **Observe → Record → Analyze → Organize → Discover → Investigate Further**:
+
+1. **Sign in** with Google (Firebase Authentication). Everything you create is private to your account.
+2. **Record an Observation** — the fundamental record. Title + description are all that's required; measurements, hypothesis, tags, evidence photos, and location (with precision you control: exact, approximate, or hidden) are optional. Use **Quick Capture** on the dashboard to save a draft in seconds.
+3. **Organize (optional)** — group observations into Projects. Nothing requires a project; deleting one re-files its records rather than deleting them.
+4. **Analyze** — from an observation's page, run a Gemini analysis: findings, hypotheses, uncertainties, and suggested next steps, always labeled as AI output and never overwriting your record.
+5. **Ask My Journal** — question your whole history; answers cite the observations they rely on and say so plainly when the evidence is insufficient.
+6. **Discuss** — multi-turn AI chat, optionally grounded in a specific observation or project.
+7. **Investigate** — accept AI-suggested next steps as research tasks and track them to done.
+8. **Research Map** — see where your observations happened; approximate locations render as areas, hidden locations never appear.
+
+Settings covers your profile (display name, avatar) and journal defaults. Sign-out asks for confirmation; account data stays isolated per user at the Firestore rules and API layers.
 
 ---
 
