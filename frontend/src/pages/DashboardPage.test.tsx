@@ -198,7 +198,7 @@ describe("DashboardPage — returning-user state (dashboard refactor 2026-09-07)
       expect(screen.getByText("Enzyme Kinetics Study")).toBeInTheDocument();
     });
     const briefObsLabel = screen.getByText(
-      (content, element) => element?.tagName === "P" && element.textContent === "Observations"
+      (_content, element) => element?.tagName === "P" && element.textContent === "Observations"
     );
     await waitFor(() => {
       expect(briefObsLabel.previousElementSibling).toHaveTextContent("2");
