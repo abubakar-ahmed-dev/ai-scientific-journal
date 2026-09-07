@@ -1,0 +1,19 @@
+// LOCAL EMULATOR ONLY — never deployed.
+//
+// These rules exist solely so `firebase emulators:start` can boot the Storage
+// emulator (firebase.json references this file). Local development media
+// uploads go to the emulator; they never touch a real bucket.
+//
+// Production media security does NOT use Firebase Storage Rules: the media
+// bucket (ai-scientific-journal-media) is a plain GCS bucket governed by IAM
+// (runtime SA: roles/storage.objectAdmin) and short-lived V4 signed read URLs.
+// There is intentionally no `firebase deploy --only storage` step in the
+// deploy runbook.
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}
