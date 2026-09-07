@@ -85,7 +85,7 @@ export default function ObservationsPage() {
             />
             <button
               type="submit"
-              className="px-4 py-2 bg-slate-800 text-white rounded-md text-sm font-medium hover:bg-slate-900 transition"
+              className="px-4 py-2 bg-brand-600 text-white rounded-md text-sm font-medium hover:bg-brand-400 transition cursor-pointer"
             >
               Search
             </button>
@@ -99,7 +99,7 @@ export default function ObservationsPage() {
                   id="filter-project"
                   value={selectedProject}
                   onChange={(e) => setSelectedProject(e.target.value)}
-                  className="px-2.5 py-1.5 border border-slate-300 rounded-md text-sm bg-white"
+                  className="px-2.5 py-1.5 border border-slate-300 rounded-md text-sm bg-white cursor-pointer"
                 >
                   <option value="">All Projects</option>
                   <option value="unfiled">Unfiled Only</option>
@@ -117,7 +117,7 @@ export default function ObservationsPage() {
                   id="filter-status"
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="px-2.5 py-1.5 border border-slate-300 rounded-md text-sm bg-white"
+                  className="px-2.5 py-1.5 border border-slate-300 rounded-md text-sm bg-white cursor-pointer"
                 >
                   <option value="">All Statuses</option>
                   <option value="draft">Draft</option>
@@ -134,7 +134,7 @@ export default function ObservationsPage() {
                 id="sort-by"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as "updated" | "observed")}
-                className="px-2.5 py-1.5 border border-slate-300 rounded-md text-sm bg-white"
+                className="px-2.5 py-1.5 border border-slate-300 rounded-md text-sm bg-white cursor-pointer"
               >
                 <option value="updated">Recently Updated (Default)</option>
                 <option value="observed">Observed Date (Scientific)</option>
