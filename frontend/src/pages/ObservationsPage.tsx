@@ -143,12 +143,25 @@ export default function ObservationsPage() {
           </div>
         </div>
 
-        {/* Observations List */}
-        <div className="bg-white rounded-lg border border-app-border shadow-sm overflow-hidden">
+        {/* Observation Records — section heading separates filters from list */}
+        <section aria-labelledby="records-heading" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 id="records-heading" className="text-lg font-bold text-app-heading">
+              Observation Records
+            </h2>
+            {!loading && observations.length > 0 && (
+              <span className="text-xs font-medium text-slate-500">
+                {observations.length} shown{hasMore ? " (more available)" : ""}
+              </span>
+            )}
+          </div>
+
           {loading ? (
-            <div className="p-8 text-center text-slate-500 text-sm">Loading observations...</div>
+            <div className="bg-white p-8 rounded-xl border border-app-border shadow-sm text-center text-slate-500 text-sm">
+              Loading observations...
+            </div>
           ) : observations.length === 0 ? (
-            <div className="p-12 text-center space-y-3">
+            <div className="bg-white p-12 rounded-xl border border-app-border shadow-sm text-center space-y-3">
               <p className="text-slate-500 text-sm">No observations match your current filter.</p>
               <Link
                 to="/observations/new"
@@ -158,17 +171,18 @@ export default function ObservationsPage() {
               </Link>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="space-y-4">
               {observations.map((obs) => (
-                <div key={obs.id} className="p-6 hover:bg-slate-50 transition flex flex-col gap-2">
+                <Link
+                  key={obs.id}
+                  to={`/observations/${obs.id}`}
+                  className="group block bg-white p-5 sm:p-6 rounded-xl border border-app-border shadow-sm hover:border-brand-300 hover:shadow-xs transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
+                >
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <Link
-                        to={`/observations/${obs.id}`}
-                        className="text-lg font-semibold text-brand-600 hover:text-brand-800"
-                      >
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-semibold text-app-heading transition-colors group-hover:text-brand-600">
                         {obs.title}
-                      </Link>
+                      </h3>
                       <p className="mt-1 text-sm text-slate-600 line-clamp-2">{obs.description}</p>
                     </div>
 
@@ -185,7 +199,7 @@ export default function ObservationsPage() {
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-2">
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-3">
                     <span>
                       Observed: <strong>{new Date(obs.observedAt).toLocaleString()}</strong>
                     </span>
@@ -206,14 +220,14 @@ export default function ObservationsPage() {
                       </span>
                     ))}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
 
           {/* Pagination */}
           {hasMore && nextCursor && (
-            <div className="p-4 bg-slate-50 border-t border-app-border flex justify-center">
+            <div className="flex justify-center pt-1">
               <button
                 onClick={() => loadObservations(nextCursor)}
                 className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-100 transition shadow-sm"
@@ -222,7 +236,7 @@ export default function ObservationsPage() {
               </button>
             </div>
           )}
-        </div>
+        </section>
       </div>
     </Layout>
   );

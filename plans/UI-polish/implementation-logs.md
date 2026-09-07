@@ -72,3 +72,59 @@ app untouched.
   live Firebase session (emulator not running).
 - Full frontend suite not run (pre-existing MarkdownText worker-OOM on this machine;
   touched suites run individually instead).
+
+## Dashboard refactor (authenticated, both states)
+
+**Plan**: `plans/UI-polish/dashboard-refactor-plan.md` (user guide:
+`dashboard-refactor.md` treated as advice; deviations recorded there and
+resolved in review 2026-09-07).
+
+**What changed**
+- Data layer: `lib/useDashboardData.ts` (react-query per source — replaces the
+  hand-rolled Promise.allSettled loader; per-section retry from each query's
+  refetch; staleTime 60s). Dead conversations fetch deleted (result was never
+  rendered). Shared utils in `lib/format.ts` (greeting, relativeTime); pure
+  derivations in `lib/dashboardHelpers.ts` (pickCurrentResearch, summarizeTasks,
+  buildActivity, nextStepSuggestion, buildStatItems).
+- Components under `components/dashboard/`: DashboardHeader, ResearchBrief,
+  AiActionsRow, StatsRow, RecentObservationsFeed, TasksPanel, ActivityFeed,
+  NewUserDashboard, QuickCaptureForm, WorkspaceReadiness, FeaturePreviews.
+  `DashboardPage.tsx` is now composition only.
+- New-user state: observation-first primary CTA, real Quick Capture draft save
+  (existing POST /observations, `status: "draft"`), evidence-based readiness
+  rows, previews that describe tools instead of "locking" them. Rocket +
+  numbered onboarding list + `0` stat tiles removed.
+- Returning state: Research Brief (real per-project counts via projectId
+  query — fixes the old hero's miscount that filtered the 6 fetched rows;
+  deterministic next-step rules, or the latest analysis' own
+  suggestedNextSteps[0] when it postdates every observation, explicitly
+  labeled), AI band (2+1 card rows, violet section container), stats row with
+  explicit `+` cap markers (backend exposes hasMore, not totals), 2fr/1fr
+  feeds, Recent Activity moved to its own full-width bottom grid.
+- Honesty: header subtext is non-count wording; capped numbers only inside
+  stat tiles with `+`; "No analyses yet" empty variant instead of a dead link.
+- Quick Capture hand-off: Save Draft routes to the created record's edit page;
+  Open Full Form carries title/description via router state into
+  ObservationFormPage without saving anything (new-observation prefill only).
+
+**Files**: `frontend/src/pages/DashboardPage.tsx` (+test),
+`frontend/src/pages/ObservationFormPage.tsx` (prefill effect),
+`frontend/src/test/e2eJourney.test.tsx` (QueryClientProvider + copy updates),
+`frontend/src/lib/{format,dashboardHelpers,useDashboardData}.ts` (+test),
+`frontend/src/components/dashboard/*` (new).
+
+**Validation**
+- `npx vitest run` — 96/96 (dashboard state tests incl. next-step rules table,
+  draft-save routing, prefill hand-off, partial-failure retry; helpers table
+  tests; e2e journey updated for react-query + singular copy).
+- `npm run lint` — no new warnings; `tsc --noEmit` clean; `npm run build` ok.
+- Browser (emulators): fresh account → onboarding layout + Quick Capture draft
+  round-trip (dashboard auto-updates, routes to edit page); returning account →
+  brief counts real, next-step rule correct, AI band + stats + feeds + activity
+  grid; mobile 390px single column, no overflow.
+
+**Decisions**
+- Stats row kept for returning users only (reviewer decision); secondary lines
+  are links, no trend/due-soon claims (not computable honestly — no endpoints).
+- "Review Analyses" targets the latest analyzed observation's detail page (the
+  analysis viewer lives there); no new listing page.
