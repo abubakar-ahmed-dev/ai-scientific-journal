@@ -6,6 +6,7 @@ import {
   fetchResearchTasks,
   deleteProject,
   updateProject,
+  ApiRequestError,
 } from "../lib/api";
 import type { Project, Observation, ResearchTask } from "../lib/api";
 import { Layout } from "../components/Layout";
@@ -22,6 +23,9 @@ export default function ProjectDetailPage() {
   const [observations, setObservations] = useState<Observation[]>([]);
   const [tasks, setTasks] = useState<ResearchTask[]>([]);
   const [loading, setLoading] = useState(true);
+  // Distinguishes "project genuinely missing/foreign" (404) from transient
+  // failures (network/5xx) so a server blip doesn't render as deletion.
+  const [loadFailed, setLoadFailed] = useState<"not_found" | "error" | null>(null);
   const [editing, setEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<"observations" | "tasks">("observations");
   const [title, setTitle] = useState("");
@@ -33,6 +37,7 @@ export default function ProjectDetailPage() {
   async function loadData() {
     if (!id) return;
     setLoading(true);
+    setLoadFailed(null);
     try {
       const [projRes, obsRes, tasksRes] = await Promise.all([
         fetchProject(id),
@@ -48,6 +53,7 @@ export default function ProjectDetailPage() {
       setTasks(tasksRes.data || []);
     } catch (err) {
       console.error("Failed to load project details", err);
+      setLoadFailed(err instanceof ApiRequestError && err.status === 404 ? "not_found" : "error");
     } finally {
       setLoading(false);
     }
@@ -121,7 +127,23 @@ export default function ProjectDetailPage() {
           <div className="p-12 text-center text-slate-500 text-sm">Loading project details...</div>
         ) : !project ? (
           <div className="bg-white p-12 text-center rounded-lg border border-app-border">
-            <p className="text-slate-500 text-sm">Project not found.</p>
+            {loadFailed === "error" ? (
+              <>
+                <p className="text-slate-700 text-sm font-medium">Couldn't load this project.</p>
+                <p className="text-slate-500 text-sm mt-1">
+                  This looks like a temporary problem, not a deleted project.
+                </p>
+                <button
+                  type="button"
+                  onClick={loadData}
+                  className="mt-4 px-4 py-2 text-xs font-semibold text-brand-700 bg-brand-50 border border-brand-200 rounded hover:bg-brand-100 transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
+                >
+                  Try again
+                </button>
+              </>
+            ) : (
+              <p className="text-slate-500 text-sm">Project not found.</p>
+            )}
           </div>
         ) : (
           <div className="space-y-6">

@@ -105,9 +105,13 @@ function mockApis(overrides: {
   vi.mocked(api.fetchProjects).mockResolvedValue(
     overrides.projects ?? ({ data: [PROJECT], meta: { limit: 50, hasMore: false } } as ApiMock<typeof PROJECT>)
   );
-  vi.mocked(api.fetchResearchTasks).mockResolvedValue(
-    overrides.tasks ?? ({ data: [TASK], meta: { limit: 50, hasMore: false } } as ApiMock<typeof TASK>)
-  );
+  // The dashboard fetches tasks per status (suggested/planned/in_progress/
+  // completed); the mock honors the filter so pages don't duplicate entries.
+  vi.mocked(api.fetchResearchTasks).mockImplementation(async (params) => {
+    const wanted = (params as { status?: string } | undefined)?.status ?? TASK.status;
+    const data = wanted === TASK.status ? [TASK] : [];
+    return (overrides.tasks ?? { data, meta: { limit: 50, hasMore: false } }) as ApiMock<typeof TASK>;
+  });
   vi.mocked(api.fetchConversations).mockResolvedValue(
     overrides.conversations ?? ({ data: [], meta: { limit: 5 } } as ApiMock<never>)
   );
@@ -198,7 +202,10 @@ describe("DashboardPage Component", () => {
     // Observations fail; other endpoints succeed
     vi.mocked(api.fetchObservations).mockRejectedValue(new Error("Network connection lost"));
     vi.mocked(api.fetchProjects).mockResolvedValue({ data: [PROJECT], meta: { limit: 50 } });
-    vi.mocked(api.fetchResearchTasks).mockResolvedValue({ data: [TASK], meta: { limit: 50 } });
+    vi.mocked(api.fetchResearchTasks).mockImplementation(async (params) => {
+      const wanted = (params as { status?: string } | undefined)?.status ?? TASK.status;
+      return { data: wanted === TASK.status ? [TASK] : [], meta: { limit: 50 } } as ApiMock<typeof TASK>;
+    });
     vi.mocked(api.fetchConversations).mockResolvedValue({ data: [], meta: { limit: 5 } });
     vi.mocked(api.fetchAnalyses).mockResolvedValue({ data: [ANALYSIS], meta: { limit: 5 } });
 
