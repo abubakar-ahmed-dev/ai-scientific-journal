@@ -11,7 +11,9 @@ import {
  * Dashboard data layer (plans/UI-polish/dashboard-refactor-plan.md §6).
  * One react-query query per source replaces the old hand-rolled
  * Promise.allSettled loader: per-section retry comes from each query's own
- * refetch, and staleTime keeps sidebar round-trips from refetching everything.
+ * refetch. No staleTime: every visit to the dashboard refetches in the
+ * background (cached data still renders instantly), so records created or
+ * changed on other pages show up without a manual reload.
  *
  * The conversations fetch from the old dashboard was deleted — its result was
  * never rendered (dead request).
@@ -24,13 +26,11 @@ export function useDashboardData() {
   const observations = useQuery({
     queryKey: ["dashboard", "observations"],
     queryFn: () => fetchObservations({ limit: 4 }),
-    staleTime: 60_000,
   });
 
   const projects = useQuery({
     queryKey: ["dashboard", "projects"],
     queryFn: () => fetchProjects({ limit: 50 }),
-    staleTime: 60_000,
   });
 
   // Open tasks are fetched per status so the dashboard's "caught up" claim is
@@ -39,28 +39,23 @@ export function useDashboardData() {
   const tasksSuggested = useQuery({
     queryKey: ["dashboard", "tasks", "suggested"],
     queryFn: () => fetchResearchTasks({ status: "suggested", limit: 50 }),
-    staleTime: 60_000,
   });
   const tasksPlanned = useQuery({
     queryKey: ["dashboard", "tasks", "planned"],
     queryFn: () => fetchResearchTasks({ status: "planned", limit: 50 }),
-    staleTime: 60_000,
   });
   const tasksInProgress = useQuery({
     queryKey: ["dashboard", "tasks", "in_progress"],
     queryFn: () => fetchResearchTasks({ status: "in_progress", limit: 50 }),
-    staleTime: 60_000,
   });
   const tasksCompleted = useQuery({
     queryKey: ["dashboard", "tasks", "completed"],
     queryFn: () => fetchResearchTasks({ status: "completed", limit: 6 }),
-    staleTime: 60_000,
   });
 
   const analyses = useQuery({
     queryKey: ["dashboard", "analyses"],
     queryFn: () => fetchAnalyses({ limit: 5 }),
-    staleTime: 60_000,
   });
 
   const allQueries = [
