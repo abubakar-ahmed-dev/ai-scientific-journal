@@ -282,3 +282,17 @@ Lesson: IAM-grant runbook steps need post-execution verification
 3. **F2–F5:** §13 full smoke documentation, observability dashboard/alerts (F3),
    SECURITY §16 checklist + real-Gemini injection probe (F4), regression gates + PR (F5).
 4. `deploy-values.md` stays untracked (contains Firebase web config + project values).
+
+## Deploy 2026-09-07 — image v5, revision ai-scientific-journal-00006-8qm
+
+- Source: `dev` @ `838038b` (dashboard refactor + UX polish + form location fixes + README).
+- Build: Cloud Build `cloudbuild.yaml`, image `app:v5`, Firebase web config injected
+  via substitutions (retrieved with `firebase apps:sdkconfig web` — public-by-design).
+- Deploy: same env/secrets as previous revision; image bumped v4 → v5.
+- Verified: frontend 200; API returns proper `UNAUTHENTICATED` envelope (auth middleware
+  intact). Revision serving 100%.
+- First build failed: `tsc -b` (Docker) caught unused `content` arg in
+  `DashboardPage.test.tsx` that `tsc --noEmit` smoke checks missed — use
+  `npm run typecheck` (`tsc -b`) locally, it type-checks the same file set as the image build.
+- Rollback: `gcloud run deploy-commands` revert to revision `ai-scientific-journal-00005-bsf`
+  or redeploy image `app:v4`.
