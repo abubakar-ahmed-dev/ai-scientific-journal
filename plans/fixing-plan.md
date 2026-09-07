@@ -18,6 +18,14 @@ Status legend: **FIXED** (verified correct in code), **CONFIRMED** (defect prese
 | 2026-09-07 | #8 search-index recovery | ✅ Fixed — one retry w/ backoff inside `observationSearchRepository.upsert/delete` (single point, all call sites covered) + `backend/scripts/reconcile-search-index.ts` (rebuilds stale/missing, drops orphans; `--uid`/`--dry-run`; ADC or emulator; verified on emulator: dry-run → apply → idempotent). `scripts/` added to tsconfig typecheck. |
 | 2026-09-07 | #10 upload buffering | ✅ Fixed — `rejectOversizedContentLength` guards before body parse; multer disk staging (RAM flat); magic bytes sniffed from 64-byte head; staged file streams to GCS via new `IStorageService.uploadStream` (+ Mock twin); temp file removed on every exit path. Validation order, per-type limits, idempotency replay, metadata rollback preserved. |
 | 2026-09-07 | Validation (batch 2) | ✅ typecheck + lint clean; full backend suite **198/198** (196 prior + 2 new). Skipped by request: #5, #6 (idempotency). |
+| 2026-09-07 | #29 retrieval quota | ✅ Fixed — new `searchRateLimiter` (60/min) on `/ai/search`; generation bucket no longer consumed by page views. Rate-limit tests cover both tiers; API.md §4.1 updated. |
+| 2026-09-07 | #31 destructive dialog focus | ✅ Fixed — `ConfirmDialog` autofocuses Cancel when `destructive`; Enter can no longer confirm irreversible deletes. |
+| 2026-09-07 | #33 dashboard failure state | ✅ Fixed — onboarding gated on `!failedSections.observations && !failedSections.projects`; outage no longer renders as new account. |
+| 2026-09-07 | #24 "caught up" honesty | ✅ Fixed — open tasks fetched per status (`suggested`/`planned`/`in_progress`, 50 each); empty state now means genuinely zero open tasks; completed tasks (limit 6) still feed recent activity; "+" stays hasMore-driven. |
+| 2026-09-07 | #26 project lookup errors | ✅ Fixed — 404 renders "not found"; other failures render retryable error panel. |
+| 2026-09-07 | #32 source links | ✅ Fixed — chips render inert/pulse while source resolution pending (both hypotheses supporting-IDs and referenced-sources sections). |
+| 2026-09-07 | #30 measurements visibility | ✅ Fixed — top-level "＋ Add Measurement" opens the advanced panel (state-controlled `<details>`) and adds a row. |
+| 2026-09-07 | Validation (batch 3) | ✅ Backend: typecheck + lint clean, suite **199/199** (rate-limit tests rewritten for the two tiers). Frontend: typecheck clean, tests **70/70** (dashboard mock made status-aware); lint warnings = pre-existing `set-state-in-effect` class. |
 
 ---
 
@@ -53,13 +61,13 @@ Status legend: **FIXED** (verified correct in code), **CONFIRMED** (defect prese
 
 | # | Issue | Evidence | Fix plan | Effort |
 |---|-------|----------|----------|--------|
-| 31 | Destructive confirmation dialogs autofocus Confirm — Enter confirms irreversible deletes | `frontend/src/components/ui/ConfirmDialog.tsx:50` (`autoFocus` on confirm; used for project/observation/conversation/task deletion) | Move `autoFocus` to Cancel (or make it conditional on `!destructive`) | Tiny |
-| 33 | Dashboard total-fetch-failure renders new-user onboarding (empty state) | `frontend/src/pages/DashboardPage.tsx:214` — `isEmptyWorkspace` from lengths only; onboarding panel lines 259-279 | Gate onboarding with `!failedSections.observations && !failedSections.projects`; render full-page error + retry when sections failed | Small |
-| 24 | Dashboard "caught up" claim can be wrong — open tasks filtered from first 50 only, no server-side status filter | `frontend/src/pages/DashboardPage.tsx:104` (`limit: 50`), 159-161, 631; metrics tile honest ("+" suffix at :474) | Pass `status=open` filter to the server query so completeness is real; keep or drop the "+" accordingly | Small |
-| 26 | Project lookup failure of any kind renders "Project not found" | `frontend/src/pages/ProjectDetailPage.tsx:49-52` swallows all errors; :124 renders not-found | Branch on `ApiRequestError.status === 404` → not-found; otherwise error panel with retry | Small |
-| 32 | Analysis source links render clickable before existence resolution | `frontend/src/components/AnalysisViewer.tsx:136-143` (`found: true` default while loading), 231-238 | Render chips inert/disabled while `sourceSummaries` fetch pending; resolve to link or "deleted" after | Small |
-| 30 | Measurements hidden under collapsed Advanced Fields in create mode | `frontend/src/pages/ObservationFormPage.tsx:298` (`<details>` collapsed on create), add action at 337-343 | Hoist the measurements section out of `<details>` (keep location/tags collapsed) or add a top-level "Add Measurement" affordance that opens it | Small |
-| 29 | Related-observation browsing consumes the AI-generation rate-limit bucket | `frontend/src/pages/ObservationDetailPage.tsx:52` → `POST /ai/search`; `backend/src/routes/ai.ts:30` applies `aiRateLimiter` (10/5 min) to the whole `/ai` router | Give `/ai/search` its own lighter limiter (e.g. 60/min per user) — cheap, non-generative read | Small |
+| 31 | ✅ **FIXED 2026-09-07** — was: destructive dialogs autofocus Confirm. Now Cancel is focused when `destructive` | `frontend/src/components/ui/ConfirmDialog.tsx` | Done | — |
+| 33 | ✅ **FIXED 2026-09-07** — was: total fetch failure rendered onboarding. Now gated on both fetches succeeding | `frontend/src/pages/DashboardPage.tsx` | Done | — |
+| 24 | ✅ **FIXED 2026-09-07** — was: "caught up" derived from first unfiltered 50. Now open tasks fetched per status; claim is complete-data-backed | `frontend/src/pages/DashboardPage.tsx` | Done | — |
+| 26 | ✅ **FIXED 2026-09-07** — was: every error rendered "Project not found". Now 404 vs retryable error distinguished | `frontend/src/pages/ProjectDetailPage.tsx` | Done | — |
+| 32 | ✅ **FIXED 2026-09-07** — was: source chips clickable before resolution. Now inert pulse pills while resolving | `frontend/src/components/AnalysisViewer.tsx` | Done | — |
+| 30 | ✅ **FIXED 2026-09-07** — was: measurements buried in collapsed details. Now visible top-level action opens panel + adds row | `frontend/src/pages/ObservationFormPage.tsx` | Done | — |
+| 29 | ✅ **FIXED 2026-09-07** — was: /ai/search shared the generation bucket. Now dedicated 60/min retrieval tier; API.md §4.1 updated | `backend/src/middleware/rateLimiter.ts`, `backend/src/routes/ai.ts`, `docs/API.md` | Done | — |
 
 ### P1/P2 — AI quality (real-Gemini work gated on Gemini billing resolution)
 
