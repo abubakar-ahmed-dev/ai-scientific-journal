@@ -296,3 +296,21 @@ Lesson: IAM-grant runbook steps need post-execution verification
   `npm run typecheck` (`tsc -b`) locally, it type-checks the same file set as the image build.
 - Rollback: `gcloud run deploy-commands` revert to revision `ai-scientific-journal-00005-bsf`
   or redeploy image `app:v4`.
+
+## Deploy 2026-09-08 — image v6, revision ai-scientific-journal-00007-25t (CSP media fix)
+
+- Bug (user-reported): deployed observation record page blocked all media. Console:
+  signed `storage.googleapis.com/...` image URL "violates the following Content
+  Security Policy directive: img-src …".
+- Root cause: helmet CSP in `backend/src/app.ts` — `imgSrc` listed Firebase Auth +
+  OSM tile origins but not the signed-read-URL host `storage.googleapis.com`.
+  Local dev never hits it (no helmet CSP in emulator flows) → only visible in prod.
+- Fix: `dev` @ `73cb9cc` adds `https://storage.googleapis.com` to `imgSrc` only;
+  no other directive loosened.
+- Validation: backend typecheck + full test suite (209/209).
+- Build: image `app:v6` (Cloud Build, same substitutions as v5). Deploy: image-only
+  update; env/SA/secrets carried over. Revision `ai-scientific-journal-00007-25t`
+  serving 100%.
+- Verified live: response CSP header now contains
+  `img-src … https://storage.googleapis.com`; `/api/health` ok.
+- Rollback: redeploy image `app:v5`.
