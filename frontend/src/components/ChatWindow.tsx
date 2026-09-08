@@ -311,6 +311,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           <div className="relative flex items-end gap-2 bg-slate-50 border border-slate-300 rounded-xl p-2 focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-transparent transition-all">
             <textarea
               rows={2}
+              data-no-focus-ring="true"
               value={inputContent}
               onChange={(e) => setInputContent(e.target.value)}
               onKeyDown={handleKeyDown}
