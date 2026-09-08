@@ -37,6 +37,7 @@ export function createApp(): express.Express {
           imgSrc: [
             "'self'",
             "data:",
+            "blob:",
             "https://www.gstatic.com",
             "https://*.googleusercontent.com",
             "https://*.tile.openstreetmap.org",
