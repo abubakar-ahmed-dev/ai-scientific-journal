@@ -14,6 +14,10 @@ export interface UserDocument {
   displayName: string;
   email: string;
   photoURL: string | null;
+  // Storage path of the uploaded profile avatar (users/{uid}/avatar/avatar).
+  // Optional in the type so documents created before the field existed
+  // deserialize without migration (fixing-plan: settings refactor 2026-09-07).
+  avatarPath?: string | null;
   role: "user" | "admin";
   accountStatus: "active" | "suspended" | "deleted";
   preferences: UserPreferences;
@@ -53,6 +57,7 @@ export class UserRepository {
         displayName: tokenClaims.name || tokenClaims.email?.split("@")[0] || "User",
         email: tokenClaims.email || "",
         photoURL: tokenClaims.picture || null,
+        avatarPath: null,
         role: "user",
         accountStatus: "active",
         preferences: defaultPreferences,

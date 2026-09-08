@@ -345,7 +345,7 @@ export const ResearchTasksPage: React.FC = () => {
                     }
                     disabled={updateTaskMutation.isPending}
                     aria-label={`Change status for task: ${task.title}`}
-                    className="px-2 py-1 text-xs font-medium text-slate-700 bg-white border border-app-border rounded-md hover:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50"
+                    className="px-2 py-1 text-xs font-medium text-slate-700 bg-white border border-app-border rounded-md hover:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50 cursor-pointer"
                   >
                     <option value={task.status}>{statusLabel(task.status)}</option>
                     {STATUS_TRANSITIONS[task.status].map((next) => (
@@ -447,7 +447,7 @@ export const ResearchTasksPage: React.FC = () => {
                 <select
                   value={newProjectId}
                   onChange={(e) => setNewProjectId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer"
                 >
                   <option value="">Unfiled (No project)</option>
                   {projects.map((p) => (
@@ -535,7 +535,7 @@ export const ResearchTasksPage: React.FC = () => {
                 <select
                   value={editStatus}
                   onChange={(e) => setEditStatus(e.target.value as TaskStatus)}
-                  className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer"
                 >
                   <option value={editingTask.status}>{statusLabel(editingTask.status)} (current)</option>
                   {STATUS_TRANSITIONS[editingTask.status].map((next) => (
@@ -557,7 +557,7 @@ export const ResearchTasksPage: React.FC = () => {
                   id="edit-task-project"
                   value={editProjectId}
                   onChange={(e) => setEditProjectId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer"
                 >
                   <option value="">Unfiled (No project)</option>
                   {projects.map((p) => (

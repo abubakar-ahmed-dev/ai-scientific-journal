@@ -22,6 +22,11 @@ export interface RetrievedObservation {
 export interface RetrievalResult {
   candidates: RetrievedObservation[];
   totalIndexed: number;
+  // True when the index scan hit the candidate cap: the newest observations
+  // (by observedAt) were scored, but older records beyond the cap were never
+  // candidates. Callers must surface this so users know coverage is partial
+  // (fixing-plan #16).
+  truncated: boolean;
 }
 
 const STOP_WORDS = new Set([
@@ -154,27 +159,33 @@ export class RetrievalService {
   ): Promise<RetrievalResult> {
     const queryTokens = tokenize(query);
     if (queryTokens.length === 0) {
-      return { candidates: [], totalIndexed: 0 };
+      return { candidates: [], totalIndexed: 0, truncated: false };
     }
 
-    // 1. Fetch candidate index records from users/{uid}/observationSearch
+    // 1. Fetch candidate index records from users/{uid}/observationSearch,
+    //    newest-observed first so the cap keeps the most recent records as
+    //    candidates instead of an arbitrary creation-order slice (#16).
     const searchCol = getFirebaseFirestore()
       .collection("users")
       .doc(uid)
       .collection("observationSearch");
 
-    const snapshot = await searchCol.limit(env.AI_SEARCH_MAX_CANDIDATES).get();
+    const snapshot = await searchCol
+      .orderBy("observedAt", "desc")
+      .limit(env.AI_SEARCH_MAX_CANDIDATES)
+      .get();
     const totalIndexed = snapshot.size;
+    const truncated = totalIndexed >= env.AI_SEARCH_MAX_CANDIDATES;
 
-    if (totalIndexed >= env.AI_SEARCH_MAX_CANDIDATES) {
+    if (truncated) {
       logger.warn(
         { uid, count: totalIndexed, cap: env.AI_SEARCH_MAX_CANDIDATES },
-        "Observation search index scan reached maximum candidate cap"
+        "Observation search index scan reached maximum candidate cap; older observations were not candidates"
       );
     }
 
     if (snapshot.empty) {
-      return { candidates: [], totalIndexed: 0 };
+      return { candidates: [], totalIndexed: 0, truncated: false };
     }
 
     // 2. Score each document
@@ -202,7 +213,7 @@ export class RetrievalService {
     }
 
     if (scoredDocs.length === 0) {
-      return { candidates: [], totalIndexed };
+      return { candidates: [], totalIndexed, truncated };
     }
 
     // 3. Sort by score descending
@@ -283,6 +294,7 @@ export class RetrievalService {
     return {
       candidates: verifiedCandidates,
       totalIndexed,
+      truncated,
     };
   }
 }

@@ -254,6 +254,25 @@ Service URL: `https://ai-scientific-journal-291307045855.asia-south1.run.app`
 CLI smoke (runbook §14, `scripts/smoke-test.mjs`): health 200, SPA 200,
 unauthenticated `/api/v1` → 401, label verified on service.
 
+### Correction (2026-09-07) — runtime SA `tokenCreator` was never actually granted
+
+The §9 row above marked the self `iam.serviceAccountTokenCreator` binding ✅, but a
+`gcloud projects get-iam-policy` audit (2026-09-07, while fixing media-upload 500s)
+showed the only `tokenCreator` member was the deploy-time `firebase-adminsdk` SA —
+the runtime SA binding was missing. Consequence: every signed-URL generation
+(`POST .../media` response, media list/detail) fails on Cloud Run with 500.
+Grant applied 2026-09-07:
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding \
+  ai-scientific-journal-runtime@ai-scientific-journal.iam.gserviceaccount.com \
+  --member="serviceAccount:ai-scientific-journal-runtime@ai-scientific-journal.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountTokenCreator" --project=ai-scientific-journal
+```
+
+Lesson: IAM-grant runbook steps need post-execution verification
+(`gcloud iam service-accounts describe --format ...`), not just a checklist tick.
+
 ### Remaining (phase exit §322)
 
 1. **👤 E3 (blocks browser sign-in):** Firebase console → Authentication → Settings →
@@ -263,3 +282,64 @@ unauthenticated `/api/v1` → 401, label verified on service.
 3. **F2–F5:** §13 full smoke documentation, observability dashboard/alerts (F3),
    SECURITY §16 checklist + real-Gemini injection probe (F4), regression gates + PR (F5).
 4. `deploy-values.md` stays untracked (contains Firebase web config + project values).
+
+## Deploy 2026-09-07 — image v5, revision ai-scientific-journal-00006-8qm
+
+- Source: `dev` @ `838038b` (dashboard refactor + UX polish + form location fixes + README).
+- Build: Cloud Build `cloudbuild.yaml`, image `app:v5`, Firebase web config injected
+  via substitutions (retrieved with `firebase apps:sdkconfig web` — public-by-design).
+- Deploy: same env/secrets as previous revision; image bumped v4 → v5.
+- Verified: frontend 200; API returns proper `UNAUTHENTICATED` envelope (auth middleware
+  intact). Revision serving 100%.
+- First build failed: `tsc -b` (Docker) caught unused `content` arg in
+  `DashboardPage.test.tsx` that `tsc --noEmit` smoke checks missed — use
+  `npm run typecheck` (`tsc -b`) locally, it type-checks the same file set as the image build.
+- Rollback: `gcloud run deploy-commands` revert to revision `ai-scientific-journal-00005-bsf`
+  or redeploy image `app:v4`.
+
+## Deploy 2026-09-08 — image v6, revision ai-scientific-journal-00007-25t (CSP media fix)
+
+- Bug (user-reported): deployed observation record page blocked all media. Console:
+  signed `storage.googleapis.com/...` image URL "violates the following Content
+  Security Policy directive: img-src …".
+- Root cause: helmet CSP in `backend/src/app.ts` — `imgSrc` listed Firebase Auth +
+  OSM tile origins but not the signed-read-URL host `storage.googleapis.com`.
+  Local dev never hits it (no helmet CSP in emulator flows) → only visible in prod.
+- Fix: `dev` @ `73cb9cc` adds `https://storage.googleapis.com` to `imgSrc` only;
+  no other directive loosened.
+- Validation: backend typecheck + full test suite (209/209).
+- Build: image `app:v6` (Cloud Build, same substitutions as v5). Deploy: image-only
+  update; env/SA/secrets carried over. Revision `ai-scientific-journal-00007-25t`
+  serving 100%.
+- Verified live: response CSP header now contains
+  `img-src … https://storage.googleapis.com`; `/api/health` ok.
+- Rollback: redeploy image `app:v5`.
+
+## Deploy 2026-09-08 — image v7, revision ai-scientific-journal-00008-54j (blob: avatar preview)
+
+- Bug (user-reported): after v6, avatar upload preview still blocked. Console:
+  `blob:https://…run.app/…` violates `img-src` — avatar preview uses
+  `URL.createObjectURL(file)`, and helmet's `imgSrc` lacked the `blob:` scheme.
+- Fix: `dev` @ `583fea4` adds `blob:` to `imgSrc` only.
+- Validation: backend typecheck + tests 209/209. Build `app:v7`, image-only deploy.
+- Verified live: header `img-src 'self' data: blob: … storage.googleapis.com`;
+  `/api/health` ok. Revision `ai-scientific-journal-00008-54j` serving 100%.
+- Rollback: redeploy image `app:v6`.
+- Note: two CSP rounds in two deploys — before next header-affecting change,
+  enumerate frontend image/asset sources (createObjectURL, external hosts) and
+  diff against `imgSrc` locally via a helmet header snapshot test.
+
+## Config 2026-09-08 — secret v2 + model pin (revision 00010, no image change)
+
+- `gemini-api-key` bumped to version 2 in Secret Manager (console). Cloud Run pins
+  secret version at revision creation → `gcloud run services update --update-secrets
+  "GEMINI_API_KEY=gemini-api-key:latest"` created revision
+  `ai-scientific-journal-00009-lx5`. Lesson: secret rotation always needs a new
+  revision; no image rebuild required.
+- AI calls still failed: service had no `AI_MODEL` env var, so prod used the code
+  default `gemini-3.6-flash`, which the new key rejects. Local worked because
+  `backend/.env` sets `AI_MODEL=gemini-3.5-flash`.
+- Fix: service env `AI_MODEL=gemini-3.5-flash` (revision
+  `ai-scientific-journal-00010-ph4`), and default in `backend/src/config/env.ts`
+  changed to `gemini-3.5-flash` (`278a8dc`, env-default test updated).
+- Rollback note: model is env-config only — no image rollback involved.

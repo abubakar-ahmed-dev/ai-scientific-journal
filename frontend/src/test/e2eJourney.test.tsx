@@ -11,6 +11,23 @@ import { ResearchMapPage } from "../pages/ResearchMapPage";
 import * as api from "../lib/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+// Settings refactor: Layout consumes the shared /me profile via react-query;
+// tests stub the hook instead of standing up a QueryClientProvider.
+vi.mock("../lib/useProfile", () => ({
+  useProfile: () => ({
+    profile: null,
+    displayName: "Test Researcher",
+    email: "tester@example.com",
+    avatarUrl: null,
+    memberSince: null,
+    preferences: null,
+    isLoading: false,
+    refetch: vi.fn(),
+  }),
+  useInvalidateProfile: () => vi.fn(),
+}));
+
+
 // Mock Leaflet for JSDOM
 vi.mock("react-leaflet", () => ({
   MapContainer: ({ children }: { children: React.ReactNode }) => (
@@ -158,7 +175,9 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
 
     const { unmount: unmountDashboard } = render(
       <MemoryRouter initialEntries={["/dashboard"]}>
-        <DashboardPage />
+        <QueryClientProvider client={queryClient}>
+          <DashboardPage />
+        </QueryClientProvider>
       </MemoryRouter>
     );
 
@@ -170,7 +189,7 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
     });
 
     expect(screen.getByText("Jungfraujoch Ridge")).toBeInTheDocument();
-    expect(screen.getByText("1 files attached")).toBeInTheDocument();
+    expect(screen.getByText("1 file attached")).toBeInTheDocument();
     // Old "Research Projects" quick-action card replaced by "View all projects" hero link
     expect(screen.getByRole("link", { name: /view all projects/i })).toBeInTheDocument();
     unmountDashboard();
@@ -269,7 +288,7 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
       },
     ]);
 
-    vi.mocked(api.searchObservations).mockResolvedValue([]);
+    vi.mocked(api.searchObservations).mockResolvedValue({ items: [], truncated: false });
 
     // Mock AI Analysis pipeline output
     const mockAnalysisOutput = {
@@ -486,7 +505,7 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
       ],
       uncertainties: ["UV-A vs UV-B spectrum contribution remains unseparated in field data."],
       model: "gemini-2.5-flash",
-      promptVersion: "ask-grounded-v1",
+      promptVersion: "ask-grounded-v2",
     });
 
     render(
@@ -514,6 +533,6 @@ describe("Stubbed-AI E2E Researcher Journey (TESTING.md §8)", () => {
       "href",
       "/observations/obs_e2e_1"
     );
-    expect(screen.getByText("ask-grounded-v1")).toBeInTheDocument();
+    expect(screen.getByText("ask-grounded-v2")).toBeInTheDocument();
   });
 });

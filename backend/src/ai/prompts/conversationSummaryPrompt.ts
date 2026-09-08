@@ -1,3 +1,5 @@
+import { escapeContextText } from "./contextSanitizer";
+
 export const CONVERSATION_SUMMARY_PROMPT_VERSION = "conversation-summary-v1";
 
 export function buildConversationSummaryPrompt(
@@ -11,12 +13,14 @@ export function buildConversationSummaryPrompt(
 } {
   const contextLines: string[] = [
     `<context_data type="conversation">`,
-    `  <title>${conversationTitle || "Untitled Conversation"}</title>`,
+    `  <title>${escapeContextText(conversationTitle || "Untitled Conversation")}</title>`,
     `  <transcript>`,
   ];
 
   for (const m of messages) {
-    contextLines.push(`    <message sequence="${m.sequence}" role="${m.role}">${m.content}</message>`);
+    contextLines.push(
+      `    <message sequence="${m.sequence}" role="${m.role}">${escapeContextText(m.content)}</message>`
+    );
   }
 
   contextLines.push("  </transcript>", "</context_data>");

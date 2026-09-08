@@ -1,9 +1,12 @@
+import { pipeline } from "stream/promises";
+import type { Readable } from "stream";
 import { getFirebaseStorage } from "../lib/firebaseAdmin";
 import { env } from "../config/env";
 import { logger } from "../lib/logger";
 
 export interface IStorageService {
   upload(storagePath: string, buffer: Buffer, mimeType: string): Promise<void>;
+  uploadStream(storagePath: string, source: Readable, mimeType: string): Promise<void>;
   getSignedReadUrl(storagePath: string, ttlMinutes: number): Promise<string>;
   delete(storagePath: string): Promise<void>;
   deletePrefix(prefix: string): Promise<void>;
@@ -20,6 +23,16 @@ export class FirebaseStorageService implements IStorageService {
       metadata: { contentType: mimeType },
       resumable: false,
     });
+  }
+
+  // Streams the source into the object without buffering it in memory —
+  // the media route stages uploads to a temp file and streams it here.
+  async uploadStream(storagePath: string, source: Readable, mimeType: string): Promise<void> {
+    const file = this.getBucket().file(storagePath);
+    await pipeline(source, file.createWriteStream({
+      metadata: { contentType: mimeType },
+      resumable: false,
+    }));
   }
 
   async getSignedReadUrl(storagePath: string, ttlMinutes: number): Promise<string> {
@@ -68,6 +81,14 @@ export class MockStorageService implements IStorageService {
 
   async upload(storagePath: string, buffer: Buffer, mimeType: string): Promise<void> {
     this.files.set(storagePath, { buffer, mimeType });
+  }
+
+  async uploadStream(storagePath: string, source: Readable, mimeType: string): Promise<void> {
+    const chunks: Buffer[] = [];
+    for await (const chunk of source) {
+      chunks.push(chunk as Buffer);
+    }
+    this.files.set(storagePath, { buffer: Buffer.concat(chunks), mimeType });
   }
 
   async getSignedReadUrl(storagePath: string, ttlMinutes: number): Promise<string> {

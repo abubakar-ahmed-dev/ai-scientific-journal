@@ -2,7 +2,7 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getFirebaseFirestore } from "../lib/firebaseAdmin";
 import { ListAnalysesQueryDTO } from "../schemas/analysisSchema";
 import { StructuredAnalysisOutput, HypothesisOutput } from "../ai/parsers/analysisOutputSchema";
-import { decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
+import { assertCursorSort, decodeCursor, encodeCursor, PaginationMeta } from "../schemas/paginationSchema";
 import { observationRepository } from "./observationRepository";
 import { serializeTimestamps } from "../lib/serialize";
 
@@ -106,6 +106,7 @@ export class AnalysisRepository {
     }
 
     const cursor = decodeCursor(query.cursor);
+    assertCursorSort(cursor, "createdAt");
     if (cursor) {
       const cursorDoc = await this.getCollection(uid).doc(cursor.id).get();
       if (cursorDoc.exists) {

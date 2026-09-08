@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AppError } from "../types/errors";
 
 export const PaginationQuerySchema = z
   .object({
@@ -34,5 +35,18 @@ export function decodeCursor(cursorStr?: string): CursorPayload | null {
     return null;
   } catch {
     return null;
+  }
+}
+
+// API.md §5.3: cursors are bound to the sort they were minted with — mixing
+// sorts between pages (or replaying a cursor from another endpoint) is a
+// VALIDATION_ERROR, never a silent mis-ordered page. Call right after
+// decodeCursor, before startAfter.
+export function assertCursorSort(cursor: CursorPayload | null, expectedField: string): void {
+  if (cursor && cursor.sortField !== expectedField) {
+    throw new AppError(
+      "VALIDATION_ERROR",
+      "Cursor does not match the requested sort. Restart the list from the first page."
+    );
   }
 }

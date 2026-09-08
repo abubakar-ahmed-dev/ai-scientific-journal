@@ -225,7 +225,7 @@ export const ResearchMapPage: React.FC = () => {
             aria-label="Filter by project"
             value={selectedProjectId}
             onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-brand-500"
+            className="px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-brand-500 cursor-pointer"
           >
             <option value="all">All Projects</option>
             <option value="unfiled">Unfiled Only</option>
@@ -244,7 +244,7 @@ export const ResearchMapPage: React.FC = () => {
             aria-label="Filter by tag"
             value={selectedTag}
             onChange={(e) => setSelectedTag(e.target.value)}
-            className="px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-brand-500"
+            className="px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-brand-500 cursor-pointer"
           >
             <option value="all">All Tags</option>
             {allTags.map((tag) => (
@@ -262,7 +262,7 @@ export const ResearchMapPage: React.FC = () => {
             aria-label="Filter by date"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-brand-500"
+            className="px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-brand-500 cursor-pointer"
           >
             <option value="all">All Recorded Dates</option>
             <option value="30days">Last 30 Days</option>

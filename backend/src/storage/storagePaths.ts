@@ -13,3 +13,9 @@ export function mediaStoragePath(
 ): string {
   return `${observationStoragePrefix(uid, observationId)}${mediaId}`;
 }
+
+// Profile avatar object. Fixed object name: uploading a new avatar overwrites
+// the previous one in place, so replacement can never strand the old binary.
+export function avatarStoragePath(uid: string): string {
+  return `users/${uid}/avatar/avatar`;
+}

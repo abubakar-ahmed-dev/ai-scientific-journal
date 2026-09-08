@@ -10,6 +10,7 @@ import {
 } from "../types";
 import { StructuredAnalysisOutputSchema } from "../parsers/analysisOutputSchema";
 import { GroundedAnswerOutputSchema } from "../../schemas/askSchema";
+import { escapeContextText } from "../prompts/contextSanitizer";
 import { AppError } from "../../types/errors";
 
 export class GeminiAdapter implements IAIService {
@@ -37,17 +38,19 @@ export class GeminiAdapter implements IAIService {
       const contextLines: string[] = [
         `<context_data type="${data.type}" id="${data.id || ""}">`,
       ];
-      if (data.title) contextLines.push(`Title: ${data.title}`);
-      if (data.field) contextLines.push(`Discipline/Field: ${data.field}`);
-      if (data.description) contextLines.push(`Description: ${data.description}`);
-      if (data.hypothesis) contextLines.push(`Hypothesis: ${data.hypothesis}`);
-      if (data.notes) contextLines.push(`Notes: ${data.notes}`);
-      if (data.tags && data.tags.length > 0) contextLines.push(`Tags: ${data.tags.join(", ")}`);
+      if (data.title) contextLines.push(`Title: ${escapeContextText(data.title)}`);
+      if (data.field) contextLines.push(`Discipline/Field: ${escapeContextText(data.field)}`);
+      if (data.description) contextLines.push(`Description: ${escapeContextText(data.description)}`);
+      if (data.hypothesis) contextLines.push(`Hypothesis: ${escapeContextText(data.hypothesis)}`);
+      if (data.notes) contextLines.push(`Notes: ${escapeContextText(data.notes)}`);
+      if (data.tags && data.tags.length > 0) contextLines.push(`Tags: ${escapeContextText(data.tags.join(", "))}`);
       if (data.measurements && data.measurements.length > 0) {
         contextLines.push(
-          `Measurements: ${data.measurements
-            .map((m) => `${m.name}=${m.value} ${m.unit}${m.notes ? ` (${m.notes})` : ""}`)
-            .join("; ")}`
+          `Measurements: ${escapeContextText(
+            data.measurements
+              .map((m) => `${m.name}=${m.value} ${m.unit}${m.notes ? ` (${m.notes})` : ""}`)
+              .join("; ")
+          )}`
         );
       }
       contextLines.push("</context_data>");
@@ -83,6 +86,9 @@ export class GeminiAdapter implements IAIService {
         contents,
         config: {
           systemInstruction: context.systemInstruction,
+          // Cancel the underlying request at the deadline; the race below is
+          // the belt-and-suspenders so the caller never waits past timeoutMs.
+          abortSignal: AbortSignal.timeout(this.timeoutMs),
         },
       });
 
@@ -93,8 +99,12 @@ export class GeminiAdapter implements IAIService {
         }, this.timeoutMs);
       });
 
-      const response = await Promise.race([apiCall, timeoutPromise]);
-      clearTimeout(timer!);
+      let response;
+      try {
+        response = await Promise.race([apiCall, timeoutPromise]);
+      } finally {
+        clearTimeout(timer!);
+      }
 
       const candidate = response.candidates?.[0];
       const text = response.text || candidate?.content?.parts?.[0]?.text;
@@ -147,6 +157,9 @@ export class GeminiAdapter implements IAIService {
         config: {
           systemInstruction: payload.systemInstruction,
           responseMimeType: "application/json",
+          // Cancel the underlying request at the deadline; the race below is
+          // the belt-and-suspenders so the caller never waits past timeoutMs.
+          abortSignal: AbortSignal.timeout(this.timeoutMs),
         },
       });
 
@@ -157,8 +170,12 @@ export class GeminiAdapter implements IAIService {
         }, this.timeoutMs);
       });
 
-      const response = await Promise.race([apiCall, timeoutPromise]);
-      clearTimeout(timer!);
+      let response;
+      try {
+        response = await Promise.race([apiCall, timeoutPromise]);
+      } finally {
+        clearTimeout(timer!);
+      }
 
       const candidate = response.candidates?.[0];
       const text = response.text || candidate?.content?.parts?.[0]?.text;
@@ -226,6 +243,9 @@ export class GeminiAdapter implements IAIService {
         config: {
           systemInstruction: payload.systemInstruction,
           responseMimeType: "application/json",
+          // Cancel the underlying request at the deadline; the race below is
+          // the belt-and-suspenders so the caller never waits past timeoutMs.
+          abortSignal: AbortSignal.timeout(this.timeoutMs),
         },
       });
 
@@ -236,8 +256,12 @@ export class GeminiAdapter implements IAIService {
         }, this.timeoutMs);
       });
 
-      const response = await Promise.race([apiCall, timeoutPromise]);
-      clearTimeout(timer!);
+      let response;
+      try {
+        response = await Promise.race([apiCall, timeoutPromise]);
+      } finally {
+        clearTimeout(timer!);
+      }
 
       const candidate = response.candidates?.[0];
       const text = response.text || candidate?.content?.parts?.[0]?.text;
@@ -288,7 +312,13 @@ export class GeminiAdapter implements IAIService {
 
     const errMsg = err instanceof Error ? err.message : String(err);
 
-    if (errMsg === "AI_TIMEOUT" || errMsg.includes("timeout") || errMsg.includes("deadline")) {
+    if (
+      errMsg === "AI_TIMEOUT" ||
+      errMsg.includes("timeout") ||
+      errMsg.includes("deadline") ||
+      // AbortSignal.timeout aborts with a TimeoutError/AbortError
+      errMsg.includes("abort")
+    ) {
       throw new AppError("AI_UNAVAILABLE", "AI model generation timed out. Please retry.");
     }
 

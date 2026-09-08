@@ -1,15 +1,18 @@
 import { Router, Request, Response, NextFunction } from "express";
+import fs from "fs";
+import { Readable } from "stream";
 import { observationRepository, ObservationDocument } from "../repository/observationRepository";
 import { mediaRepository } from "../repository/mediaRepository";
 import { getStorageService } from "../storage/storageService";
 import { mediaStoragePath } from "../storage/storagePaths";
-import { mediaUpload } from "../middleware/mediaUpload";
+import { mediaUpload, rejectOversizedContentLength } from "../middleware/mediaUpload";
 import { mediaRateLimiter } from "../middleware/rateLimiter";
 import {
   UploadMediaMetadataSchema,
   serializeMediaResponse,
   validateFileConsistency,
 } from "../schemas/mediaSchema";
+import { discardStagedFile, readFileHead } from "../lib/stagedUpload";
 import { AppError } from "../types/errors";
 import { env } from "../config/env";
 import { logger } from "../lib/logger";
@@ -50,10 +53,15 @@ const SIZE_LIMITS: Record<"image" | "audio" | "video", number> = {
   video: env.MEDIA_MAX_VIDEO_SIZE_BYTES,
 };
 
+// Content-type sniffing inspects only the file head (magic bytes live in the
+// first bytes of every supported container) — the staged file is never read
+// into memory. Head-read and cleanup helpers live in lib/stagedUpload.ts.
+
 // POST /api/v1/observations/:observationId/media — API.md §6.8
 mediaRouter.post(
   "/",
   mediaRateLimiter,
+  rejectOversizedContentLength,
   mediaUpload.single("file"),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -69,25 +77,30 @@ mediaRouter.post(
       }
 
       // 2b. Reject uploads that declared a Content-Length above every per-type
-      // limit before doing any validation work (early cost guard).
+      // limit (defense in depth behind rejectOversizedContentLength).
       const absoluteMax = Math.max(SIZE_LIMITS.image, SIZE_LIMITS.audio, SIZE_LIMITS.video);
       const declaredLength = Number(req.headers["content-length"] ?? req.file.size);
       if (Number.isFinite(declaredLength) && declaredLength > absoluteMax) {
+        discardStagedFile(req.file.path);
         throw new AppError(
           "PAYLOAD_TOO_LARGE",
           `File exceeds the maximum allowed upload size of ${Math.round(absoluteMax / (1024 * 1024))} MB`
         );
       }
 
+      // From here on, every exit path must remove the staged temp file.
+      try {
       // 3. Content-level validation (SECURITY §15): sniff magic bytes, require
       // agreement with the declared MIME type and the file extension.
+      const head = await readFileHead(req.file.path, 64);
       const mediaType = validateFileConsistency(
-        req.file.buffer,
+        head,
         req.file.mimetype,
         req.file.originalname
       );
 
-      // 4. Per-type size limits (API.md §6.8: 10 MB / 25 MB / 100 MB)
+      // 4. Per-type size limits (API.md §6.8: 10 MB / 25 MB / 100 MB) —
+      // req.file.size is the actual received size, not the declared one.
       const sizeLimit = SIZE_LIMITS[mediaType];
       if (req.file.size > sizeLimit) {
         throw new AppError(
@@ -123,6 +136,7 @@ mediaRouter.post(
             existing.storagePath,
             env.MEDIA_SIGNED_URL_TTL_MINUTES
           );
+          discardStagedFile(req.file.path);
           res.status(200).json({ data: serializeMediaResponse(existing, replayUrl) });
           return;
         }
@@ -132,8 +146,12 @@ mediaRouter.post(
       const mediaId = `med_${Date.now()}_${randomUUID().slice(0, 8)}`;
       const storagePath = mediaStoragePath(uid, observationId, mediaId);
 
-      // 7. Upload binary to storage
-      await getStorageService().upload(storagePath, req.file.buffer, req.file.mimetype);
+      // 7. Stream the staged file to storage (never buffered in memory)
+      await getStorageService().uploadStream(
+        storagePath,
+        fs.createReadStream(req.file.path) as Readable,
+        req.file.mimetype
+      );
 
       // 8. Write Firestore metadata record (with rollback on failure to prevent orphan objects)
       let mediaDoc;
@@ -161,7 +179,11 @@ mediaRouter.post(
       res.status(201).json({
         data: serializeMediaResponse(mediaDoc, signedUrl),
       });
+      } finally {
+        discardStagedFile(req.file?.path);
+      }
     } catch (err) {
+      discardStagedFile(req.file?.path);
       next(err);
     }
   }

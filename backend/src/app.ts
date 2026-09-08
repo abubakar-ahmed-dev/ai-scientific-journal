@@ -34,7 +34,17 @@ export function createApp(): express.Express {
           scriptSrc: ["'self'", "https://apis.google.com", "https://accounts.google.com"],
           frameSrc: ["'self'", "https://*.firebaseapp.com", "https://accounts.google.com"],
           connectSrc: ["'self'", "https://*.googleapis.com"],
-          imgSrc: ["'self'", "data:", "https://www.gstatic.com", "https://*.googleusercontent.com"],
+          imgSrc: [
+            "'self'",
+            "data:",
+            "blob:",
+            "https://www.gstatic.com",
+            "https://*.googleusercontent.com",
+            "https://*.tile.openstreetmap.org",
+            // Observation media loads via short-lived signed read URLs hosted on
+            // storage.googleapis.com (SECURITY.md §private media).
+            "https://storage.googleapis.com",
+          ],
         },
       },
     }),

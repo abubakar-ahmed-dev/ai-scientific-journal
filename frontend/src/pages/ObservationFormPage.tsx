@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import {
   fetchObservation,
   createObservation,
@@ -30,14 +30,16 @@ export default function ObservationFormPage() {
   const [hypothesis, setHypothesis] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Location State
+  // Location State — coordinates stay null until actually provided, so a
+  // toggled-on location can never silently submit (0, 0).
   const [hasLocation, setHasLocation] = useState(false);
-  const [latitude, setLatitude] = useState<number>(0);
-  const [longitude, setLongitude] = useState<number>(0);
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [locationLabel, setLocationLabel] = useState("");
   const [precision, setPrecision] = useState<"exact" | "approximate" | "hidden">("exact");
   const [fetchingGps, setFetchingGps] = useState(false);
   const [gpsMessage, setGpsMessage] = useState<{ text: string; isError: boolean } | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -69,6 +71,10 @@ export default function ObservationFormPage() {
 
   // Measurements State
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  // Measurements are a first-class scientific input, so the section must be
+  // reachable in one click from the form body — the top-level "Add Measurement"
+  // action opens the advanced panel (state-controlled <details>) and adds a row.
+  const [advancedOpen, setAdvancedOpen] = useState(isEdit);
 
   // Tags State
   const [tagInput, setTagInput] = useState("");
@@ -76,6 +82,21 @@ export default function ObservationFormPage() {
 
   // Version tracking for optimistic locking
   const [expectedVersion, setExpectedVersion] = useState<number | undefined>(undefined);
+
+  // Quick Capture hand-off (dashboard): the typed title/description arrive via
+  // router state on a NEW observation. Nothing is saved here — the record is
+  // only created when this form is submitted.
+  const location = useLocation();
+  const quickCapturePrefill = (
+    location.state as { quickCapture?: { title?: string; description?: string } } | null
+  )?.quickCapture;
+
+  useEffect(() => {
+    if (isEdit || !quickCapturePrefill) return;
+    if (quickCapturePrefill.title) setTitle(quickCapturePrefill.title);
+    if (quickCapturePrefill.description) setDescription(quickCapturePrefill.description);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetchProjects().then((res) => setProjects(res.data || []));
@@ -110,6 +131,10 @@ export default function ObservationFormPage() {
     }
   }, [id, isEdit]);
 
+  // Advanced panel: open when editing an existing record (details were
+  // presumably deliberate), closed for new observations — the user expands it
+  // only when the extra fields are actually needed.
+
   function addMeasurement() {
     setMeasurements([
       ...measurements,
@@ -141,8 +166,17 @@ export default function ObservationFormPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
     setErrorMessage(null);
+
+    // A toggled-on location must carry real coordinates — null (empty input)
+    // is not acceptable, and never fall back to (0, 0).
+    if (hasLocation && (latitude === null || longitude === null || Number.isNaN(latitude) || Number.isNaN(longitude))) {
+      setLocationError("Enter both latitude and longitude, or turn the location toggle off.");
+      return;
+    }
+    setLocationError(null);
+
+    setSaving(true);
 
     const payload: any = {
       title,
@@ -295,11 +329,15 @@ export default function ObservationFormPage() {
             {/* Advanced fields (guidelines §52): collapsed by default so the
                 common path — title, notes, project, save — stays fast. Native
                 <details> keeps it keyboard-accessible without extra JS. */}
-            <details className="group advanced-fields" open={isEdit || undefined}>
-              <summary className="flex items-center gap-2 cursor-pointer select-none text-sm font-semibold text-brand-700 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500 rounded-md px-1 py-1.5 w-fit">
+            <details
+              className="group advanced-fields"
+              open={advancedOpen}
+              onToggle={(e) => setAdvancedOpen((e.currentTarget as HTMLDetailsElement).open)}
+            >
+              <summary className="flex items-center gap-2 cursor-pointer select-none text-md font-semibold text-brand-700 hover:text-brand-900 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500 rounded-md px-1 py-1.5 w-fit">
                 <span className="group-open:hidden">＋ Advanced Fields</span>
                 <span className="hidden group-open:inline">－ Advanced Fields</span>
-                <span className="text-xs font-normal text-slate-400">(hypothesis, measurements, location, tags)</span>
+                <span className="text-sm font-normal text-slate-400">(hypothesis, measurements, location, tags)</span>
               </summary>
 
               <div className="space-y-6 pt-4">
@@ -337,7 +375,7 @@ export default function ObservationFormPage() {
                 <button
                   type="button"
                   onClick={addMeasurement}
-                  className="text-xs font-medium text-brand-600 hover:text-brand-800"
+                  className="text-sm font-medium text-brand-600 hover:text-brand-800"
                 >
                   + Add Measurement Row
                 </button>
@@ -381,17 +419,29 @@ export default function ObservationFormPage() {
             {/* Location Section */}
             <div className="space-y-3 pt-2 border-t border-app-border">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="hasLocation"
-                    checked={hasLocation}
-                    onChange={(e) => setHasLocation(e.target.checked)}
-                    className="h-4 w-4 text-brand-600 border-slate-300 rounded"
-                  />
-                  <label htmlFor="hasLocation" className="text-sm font-semibold text-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={hasLocation}
+                    aria-label="Attach geographic location"
+                    onClick={() => {
+                      setHasLocation((v) => !v);
+                      setLocationError(null);
+                    }}
+                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
+                      hasLocation ? "bg-brand-600" : "bg-slate-300"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                        hasLocation ? "translate-x-4" : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
+                  <span id="hasLocation-label" className="text-sm font-semibold text-slate-800">
                     Attach Geographic Location
-                  </label>
+                  </span>
                 </div>
 
                 {hasLocation && (
@@ -431,6 +481,12 @@ export default function ObservationFormPage() {
                     </div>
                   )}
 
+                  {locationError && (
+                    <p role="alert" className="text-xs text-red-700 font-medium">
+                      {locationError}
+                    </p>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                     <div>
                       <label htmlFor="loc-lat" className="block text-xs font-medium text-slate-600 mb-1">Latitude</label>
@@ -440,9 +496,12 @@ export default function ObservationFormPage() {
                         step="any"
                         min={-90}
                         max={90}
-                        value={latitude}
-                        onChange={(e) => setLatitude(parseFloat(e.target.value) || 0)}
-                        className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm bg-white"
+                        value={latitude ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setLatitude(v === "" ? null : parseFloat(v));
+                        }}
+                        className={`w-full px-2.5 py-1.5 border rounded text-sm bg-white ${locationError && latitude === null ? "border-red-400" : "border-slate-300"}`}
                       />
                     </div>
                     <div>
@@ -453,9 +512,12 @@ export default function ObservationFormPage() {
                         step="any"
                         min={-180}
                         max={180}
-                        value={longitude}
-                        onChange={(e) => setLongitude(parseFloat(e.target.value) || 0)}
-                        className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm bg-white"
+                        value={longitude ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setLongitude(v === "" ? null : parseFloat(v));
+                        }}
+                        className={`w-full px-2.5 py-1.5 border rounded text-sm bg-white ${locationError && longitude === null ? "border-red-400" : "border-slate-300"}`}
                       />
                     </div>
                     <div>
