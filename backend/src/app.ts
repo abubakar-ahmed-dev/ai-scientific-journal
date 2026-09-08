@@ -40,6 +40,9 @@ export function createApp(): express.Express {
             "https://www.gstatic.com",
             "https://*.googleusercontent.com",
             "https://*.tile.openstreetmap.org",
+            // Observation media loads via short-lived signed read URLs hosted on
+            // storage.googleapis.com (SECURITY.md §private media).
+            "https://storage.googleapis.com",
           ],
         },
       },
