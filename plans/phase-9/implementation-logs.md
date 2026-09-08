@@ -314,3 +314,17 @@ Lesson: IAM-grant runbook steps need post-execution verification
 - Verified live: response CSP header now contains
   `img-src … https://storage.googleapis.com`; `/api/health` ok.
 - Rollback: redeploy image `app:v5`.
+
+## Deploy 2026-09-08 — image v7, revision ai-scientific-journal-00008-54j (blob: avatar preview)
+
+- Bug (user-reported): after v6, avatar upload preview still blocked. Console:
+  `blob:https://…run.app/…` violates `img-src` — avatar preview uses
+  `URL.createObjectURL(file)`, and helmet's `imgSrc` lacked the `blob:` scheme.
+- Fix: `dev` @ `583fea4` adds `blob:` to `imgSrc` only.
+- Validation: backend typecheck + tests 209/209. Build `app:v7`, image-only deploy.
+- Verified live: header `img-src 'self' data: blob: … storage.googleapis.com`;
+  `/api/health` ok. Revision `ai-scientific-journal-00008-54j` serving 100%.
+- Rollback: redeploy image `app:v6`.
+- Note: two CSP rounds in two deploys — before next header-affecting change,
+  enumerate frontend image/asset sources (createObjectURL, external hosts) and
+  diff against `imgSrc` locally via a helmet header snapshot test.
