@@ -328,3 +328,18 @@ Lesson: IAM-grant runbook steps need post-execution verification
 - Note: two CSP rounds in two deploys — before next header-affecting change,
   enumerate frontend image/asset sources (createObjectURL, external hosts) and
   diff against `imgSrc` locally via a helmet header snapshot test.
+
+## Config 2026-09-08 — secret v2 + model pin (revision 00010, no image change)
+
+- `gemini-api-key` bumped to version 2 in Secret Manager (console). Cloud Run pins
+  secret version at revision creation → `gcloud run services update --update-secrets
+  "GEMINI_API_KEY=gemini-api-key:latest"` created revision
+  `ai-scientific-journal-00009-lx5`. Lesson: secret rotation always needs a new
+  revision; no image rebuild required.
+- AI calls still failed: service had no `AI_MODEL` env var, so prod used the code
+  default `gemini-3.6-flash`, which the new key rejects. Local worked because
+  `backend/.env` sets `AI_MODEL=gemini-3.5-flash`.
+- Fix: service env `AI_MODEL=gemini-3.5-flash` (revision
+  `ai-scientific-journal-00010-ph4`), and default in `backend/src/config/env.ts`
+  changed to `gemini-3.5-flash` (`278a8dc`, env-default test updated).
+- Rollback note: model is env-config only — no image rollback involved.
