@@ -22,7 +22,7 @@ const envSchema = z.object({
   FIRESTORE_EMULATOR_HOST: z.string().optional(),
   FIREBASE_AUTH_EMULATOR_HOST: z.string().optional(),
   FIREBASE_STORAGE_EMULATOR_HOST: z.string().optional(),
-  AI_MODEL: z.string().default("gemini-3.6-flash"),
+  AI_MODEL: z.string().default("gemini-3.5-flash"),
   AI_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
   AI_MAX_CONTEXT_MESSAGES: z.coerce.number().int().positive().default(20),
   AI_SEARCH_MAX_CANDIDATES: z.coerce.number().int().positive().default(500),
