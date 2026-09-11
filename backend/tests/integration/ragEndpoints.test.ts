@@ -247,7 +247,7 @@ describe("Phase 6 RAG Endpoints (POST /api/v1/ai/ask & POST /api/v1/ai/search)",
     expect(askRes.body.data).toHaveProperty("uncertainties");
     expect(askRes.body.data.insufficientEvidence).toBe(false);
     expect(askRes.body.data.model).toBe("fake-gemini-model");
-    expect(askRes.body.data.promptVersion).toBe("ask-grounded-v2");
+    expect(askRes.body.data.promptVersion).toBe("ask-grounded-v3");
 
     expect(askRes.body.data.evidence.length).toBeGreaterThan(0);
     expect(askRes.body.data.evidence[0].observationId).toBe(obsId);
@@ -267,7 +267,7 @@ describe("Phase 6 RAG Endpoints (POST /api/v1/ai/ask & POST /api/v1/ai/search)",
     expect(askRes.body.data.uncertainties.length).toBeGreaterThan(0);
     expect(askRes.body.data.insufficientEvidence).toBe(true);
     expect(askRes.body.data.model).toBe("none");
-    expect(askRes.body.data.promptVersion).toBe("ask-grounded-v2");
+    expect(askRes.body.data.promptVersion).toBe("ask-grounded-v3");
 
     // Model must not have been invoked
     expect(fakeAiService.groundedHistory.length).toBe(0);
@@ -277,7 +277,7 @@ describe("Phase 6 RAG Endpoints (POST /api/v1/ai/ask & POST /api/v1/ai/search)",
     // One matching token ("temperature") out of seven unique query tokens,
     // with the title boost: 1.5 / (7 * 1.8) = 0.119 — above AI_RAG_MIN_SCORE
     // (0.1) so it survives retrieval, but below AI_RAG_WEAK_EVIDENCE_SCORE
-    // (0.15), so generation must be gated deterministically (fixing-plan #18).
+    // (0.12), so generation must be gated deterministically (fixing-plan #18).
     const createObs = await request(app)
       .post("/api/v1/observations")
       .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
