@@ -61,7 +61,7 @@ describe("Phase 6 RAG Evaluation Suite (AI_EVALUATION.md §5 & §6)", () => {
       expect(answerResult.output.evidence.length).toBeGreaterThan(0);
       expect(answerResult.output.evidence[0]!.observationId).toBe("obs_birds_1");
       expect(answerResult.model).toBe("fake-gemini-model");
-      expect(answerResult.promptVersion).toBe("ask-grounded-v2");
+      expect(answerResult.promptVersion).toBe("ask-grounded-v3");
     });
 
     it("Handles zero evidence gracefully without hallucinating citations", async () => {

@@ -43,7 +43,7 @@ AI is the intelligence layer — never the source of truth, never the authorizat
 * **AI analyses** — summarization, observation analysis, and research suggestions as validated, append-only documents (`type`: `summary`, `analysis`, `research_suggestions`), each stamped with model and prompt version.
 * **Research suggestions → tasks** — Gemini suggests next investigations; a research task exists only after you explicitly accept a suggestion.
 * **Ask My Journal (RAG)** — grounded question answering over your own observations, with evidence attribution and honest "insufficient evidence" behavior.
-* **Research map** — your observations displayed geographically (map provider deferred; see [Scope](#mvp-scope--deferred-capabilities)).
+* **Research map** — your observations displayed geographically with Leaflet and OpenStreetMap.
 * **Strict data isolation** — every record is owned by its authenticated creator and inaccessible to anyone else.
 
 ---
@@ -100,7 +100,7 @@ The application follows a **modular monolith** on Cloud Run (stateless, horizont
 | Authentication | Firebase Authentication (Google Sign-In) |
 | Database | Cloud Firestore |
 | Media | Cloud Storage (private; binaries + Firestore metadata) |
-| Maps | Provider deferred — decided at the map-feature implementation ([ADR-020](docs/ADR.md)) |
+| Maps | Leaflet + OpenStreetMap ([ADR-024](docs/ADR.md)) |
 | Secrets | Google Cloud Secret Manager |
 | Validation | Zod |
 | Deployment | Docker → Google Cloud Run |
@@ -353,7 +353,9 @@ Full procedure and pre-launch checklists: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT
 | [`docs/TESTING.md`](docs/TESTING.md) | Testing strategy |
 | [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) | Monitoring, logging, metrics, alerts |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Production deployment |
-| [`docs/ADR.md`](docs/ADR.md) | Architecture Decision Records (ADR-001 … ADR-020) |
+| [`docs/ADR.md`](docs/ADR.md) | Architecture Decision Records (ADR-001 … ADR-024) |
+| [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) | User-facing guide to app workflows and features |
+| [`docs/DEVELOPER_GUIDE.md`](docs/DEVELOPER_GUIDE.md) | Engineering guide to architecture, implementation, testing, and deployment |
 
 ---
 
@@ -366,15 +368,14 @@ Full procedure and pre-launch checklists: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT
 * Multi-turn Gemini conversations and automatic analyses (summary / analysis / research_suggestions)
 * Research tasks via explicit user acceptance of suggestions
 * Ask My Journal (grounded RAG) and related-observation retrieval
-* Location fields with user-controlled precision; private evidence media
+* Location fields with user-controlled precision; private evidence media through Cloud Storage signed URLs
+* Research map with Leaflet/OpenStreetMap and observation edit provenance snapshots
 * Cloud Run deployment with Secret Manager, CI, and observability
 
-**Explicitly deferred** (decisions and features intentionally postponed — see the linked docs):
+**Explicitly deferred** (features intentionally postponed — see the linked docs):
 
-* **Maps provider** (Google Maps Platform vs Leaflet) — decided when map features are implemented ([ADR-020](docs/ADR.md))
-* **Storage client choice** (Firebase Storage SDK vs Cloud Storage SDK) — media phase ([ADR-020](docs/ADR.md))
-* **Observation version history UI/API activation** — ships with the observation-editing phase ([ADR-016](docs/ADR.md))
 * **Reserved analysis types** `hypothesis` and `classification` — defined in the data model, no generation workflows yet
+* Vector/embedding retrieval — current Ask My Journal retrieval is grounded in the user's own observations without making embeddings authoritative
 * Optional polish items — voice journaling, AI auto-tagging, pattern detection, reports, offline mode (PRD Phase 5)
 
 ---
