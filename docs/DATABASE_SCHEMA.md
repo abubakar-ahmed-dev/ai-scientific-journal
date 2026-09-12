@@ -115,8 +115,6 @@ Stores minimal application-specific information about an authenticated user. Fir
   "role": "user",
   "accountStatus": "active",
   "preferences": {
-    "theme": "system",
-    "timezone": "Asia/Karachi",
     "locationEnabled": true,
     "aiSuggestionsEnabled": true
   },
@@ -137,10 +135,10 @@ Stores minimal application-specific information about an authenticated user. Fir
 | `role` | string | Yes | `user` \| `admin` — server-managed |
 | `accountStatus` | string | Yes | `active` \| `suspended` \| `deleted` — server-managed |
 | `preferences` | map | Yes | Inline user preferences (see below) |
-| `preferences.theme` | string | Yes | `light` \| `dark` \| `system` — stored for API compatibility; the UI has no theme switcher (2026-09-07) |
-| `preferences.timezone` | string | Yes | IANA timezone identifier — stored for API compatibility; timestamps render in the browser's locale (2026-09-07) |
 | `preferences.locationEnabled` | boolean | Yes | New observations open the location panel and attempt GPS capture by default |
 | `preferences.aiSuggestionsEnabled` | boolean | Yes | Stored for API compatibility; not consumed by the UI (2026-09-07 — the only proactive AI surface did not justify a setting) |
+
+> **Retired fields (2026-09-12):** `preferences.theme` and `preferences.timezone` were removed from the schema — the UI renders no theme switcher and renders timestamps in the browser's locale, so the fields had no consumer. The API rejects them (`400 VALIDATION_ERROR`, strict validation), and the backend strips them from any stored document on its next profile write. Documents not edited since the removal may still carry the stale keys; they are ignored.
 | `createdAt` | timestamp | Yes | Account creation (server timestamp) |
 | `updatedAt` | timestamp | Yes | Last profile update (server timestamp) |
 | `lastLoginAt` | timestamp | No | Last recorded login (server timestamp) |

@@ -229,7 +229,7 @@ location is never exposed (same rule as media, ADR-016).
 | Aspect | Specification |
 | ------ | ------------- |
 | Body | `{ "displayName"?, "photoURL"?, "preferences"? }` — partial update |
-| Validation | `displayName` 1–100 chars; `photoURL` valid HTTPS URL ≤ 2048 chars; `preferences` object validated against the schema (enum checks for `theme`, IANA timezone string, booleans); unknown fields rejected |
+| Validation | `displayName` 1–100 chars; `photoURL` valid HTTPS URL ≤ 2048 chars; `preferences` object validated against the schema (`locationEnabled` / `aiSuggestionsEnabled` booleans; `theme` and `timezone` were retired 2026-09-12 and are rejected); unknown fields rejected |
 | Side effects | `displayName` is also propagated to the Firebase Auth profile (best-effort; Firestore remains the source of truth) |
 | Immutable | `role`, `accountStatus`, `createdAt` — attempts are rejected with `400 VALIDATION_ERROR` naming the field |
 | Response | `200` — updated `{ "data": { user } }` |

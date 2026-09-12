@@ -2,8 +2,6 @@ import { z } from "zod";
 
 export const UserPreferencesSchema = z
   .object({
-    theme: z.enum(["light", "dark", "system"]).optional(),
-    timezone: z.string().min(1, "Timezone string cannot be empty").optional(),
     locationEnabled: z.boolean().optional(),
     aiSuggestionsEnabled: z.boolean().optional(),
   })

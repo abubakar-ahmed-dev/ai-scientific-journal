@@ -3,8 +3,6 @@ import { getFirebaseFirestore } from "../lib/firebaseAdmin";
 import { serializeTimestamps } from "../lib/serialize";
 
 export interface UserPreferences {
-  theme: "light" | "dark" | "system";
-  timezone: string;
   locationEnabled: boolean;
   aiSuggestionsEnabled: boolean;
 }
@@ -27,8 +25,6 @@ export interface UserDocument {
 }
 
 export const defaultPreferences: UserPreferences = {
-  theme: "system",
-  timezone: "UTC",
   locationEnabled: true,
   aiSuggestionsEnabled: true,
 };
@@ -91,6 +87,12 @@ export class UserRepository {
     }
 
     const currentData = doc.data() as UserDocument;
+    // Documents created before the 2026-09-12 schema change may still carry
+    // the retired `theme`/`timezone` preference keys — strip them on every
+    // write so stored documents converge on the current schema.
+    const legacyPrefs = currentData.preferences as unknown as Record<string, unknown> | undefined;
+    delete legacyPrefs?.theme;
+    delete legacyPrefs?.timezone;
     const updatedPreferences = patch.preferences
       ? { ...currentData.preferences, ...patch.preferences }
       : currentData.preferences;

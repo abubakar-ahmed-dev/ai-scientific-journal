@@ -634,8 +634,6 @@ interface User {
   role: "user" | "admin";
 
   preferences: {
-    theme: "light" | "dark" | "system";
-    timezone: string;
     locationEnabled: boolean;
     aiSuggestionsEnabled: boolean;
   };
