@@ -12,6 +12,11 @@ export interface PaginationMeta {
   nextCursor: string | null;
   hasMore: boolean;
   limit: number;
+  // Exact count of resources matching the filters, independent of the current
+  // page. Only present when the endpoint can compute it exactly (see
+  // observationRepository.list — omitted when the `q` in-memory prefilter
+  // would make a Firestore count inaccurate).
+  total?: number;
 }
 
 export interface CursorPayload {

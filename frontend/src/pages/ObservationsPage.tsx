@@ -15,11 +15,18 @@ export default function ObservationsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [sortBy, setSortBy] = useState<"updated" | "observed">("updated");
 
-  // Pagination
+  // Pagination — cursor-based. Page 1 opens with no cursor; each later page
+  // records the cursor it was opened with so "Previous" can walk back through
+  // visited pages without a backend prev-cursor.
+  const [page, setPage] = useState(1);
+  const [pageCursors, setPageCursors] = useState<(string | null)[]>([null]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
+  // Exact match count from the backend (meta.total). Null when absent —
+  // currently for `q` searches, where the backend cannot count exactly.
+  const [total, setTotal] = useState<number | null>(null);
 
-  async function loadObservations(cursor?: string) {
+  async function loadObservations(cursor?: string, targetPage = 1) {
     setLoading(true);
     try {
       const res = await fetchObservations({
@@ -34,6 +41,8 @@ export default function ObservationsPage() {
       setObservations(res.data || []);
       setNextCursor(res.meta?.nextCursor || null);
       setHasMore(!!res.meta?.hasMore);
+      setTotal(res.meta?.total ?? null);
+      setPage(targetPage);
     } catch (err) {
       console.error("Failed to fetch observations", err);
     } finally {
@@ -41,17 +50,35 @@ export default function ObservationsPage() {
     }
   }
 
+  // Filter/search changes restart the list from the first page.
+  function restartFromFirstPage() {
+    setPageCursors([null]);
+    loadObservations(undefined, 1);
+  }
+
+  function goToNextPage() {
+    if (!hasMore || !nextCursor) return;
+    setPageCursors((prev) => [...prev, nextCursor]);
+    loadObservations(nextCursor, page + 1);
+  }
+
+  function goToPrevPage() {
+    if (page <= 1) return;
+    const targetCursor = pageCursors[page - 2] ?? null;
+    loadObservations(targetCursor ?? undefined, page - 1);
+  }
+
   useEffect(() => {
     fetchProjects().then((res) => setProjects(res.data || []));
   }, []);
 
   useEffect(() => {
-    loadObservations();
+    restartFromFirstPage();
   }, [selectedProject, selectedStatus, sortBy]);
 
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
-    loadObservations();
+    restartFromFirstPage();
   }
 
   return (
@@ -151,7 +178,9 @@ export default function ObservationsPage() {
             </h2>
             {!loading && observations.length > 0 && (
               <span className="text-xs font-medium text-slate-500">
-                {observations.length} shown{hasMore ? " (more available)" : ""}
+                {total != null
+                  ? `Showing ${(page - 1) * 10 + 1}–${(page - 1) * 10 + observations.length} of ${total} observations`
+                  : `Page ${page} — ${observations.length} shown${hasMore ? " (more available)" : ""}`}
               </span>
             )}
           </div>
@@ -226,13 +255,26 @@ export default function ObservationsPage() {
           )}
 
           {/* Pagination */}
-          {hasMore && nextCursor && (
-            <div className="flex justify-center pt-1">
+          {!loading && (page > 1 || hasMore) && (
+            <div className="flex items-center justify-center gap-4 pt-1">
               <button
-                onClick={() => loadObservations(nextCursor)}
-                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-100 transition shadow-sm"
+                onClick={goToPrevPage}
+                disabled={page <= 1}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
               >
-                Load Next Page &rarr;
+                &larr; Previous
+              </button>
+              <span className="text-xs text-slate-500" aria-live="polite">
+                {total != null
+                  ? `Page ${page} of ${Math.max(1, Math.ceil(total / 10))}`
+                  : `Page ${page}`}
+              </span>
+              <button
+                onClick={goToNextPage}
+                disabled={!hasMore || !nextCursor}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
+              >
+                Next &rarr;
               </button>
             </div>
           )}

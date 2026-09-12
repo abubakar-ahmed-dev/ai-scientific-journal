@@ -157,12 +157,13 @@ All list endpoints use **cursor pagination** — no offset/limit scanning of unb
   "meta": {
     "nextCursor": "eyJ2IjoxLCJvIjoxNz...",
     "hasMore": true,
-    "limit": 20
+    "limit": 20,
+    "total": 55
   }
 }
 ```
 
-`hasMore: false` ⇒ `nextCursor` is `null` and the page is final. Cursors are **opaque** to clients: they must be treated as black-box tokens, passed through unchanged, and never parsed, constructed, or assumed to encode any particular ordering. Cursor encoding, signing, and expiration are **implementation details**, not API guarantees. A stale, expired, or invalid cursor yields `400 VALIDATION_ERROR` instructing the client to restart the list from the first page.
+`hasMore: false` ⇒ `nextCursor` is `null` and the page is final. `total` (optional) is the exact count of resources matching the filters, independent of the current page; it is included only where the endpoint can compute it exactly — for the observations list it is **omitted when `q` is present**, because that search prefilter runs in memory and a database count would overcount. Cursors are **opaque** to clients: they must be treated as black-box tokens, passed through unchanged, and never parsed, constructed, or assumed to encode any particular ordering. Cursor encoding, signing, and expiration are **implementation details**, not API guarantees. A stale, expired, or invalid cursor yields `400 VALIDATION_ERROR` instructing the client to restart the list from the first page.
 
 ### 5.3 Ordering — server timestamps vs scientific ordering (per `DATABASE_SCHEMA.md` §16)
 
