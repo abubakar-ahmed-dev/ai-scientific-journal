@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import {
   fetchObservation,
@@ -7,6 +7,7 @@ import {
   fetchProjects,
 } from "../lib/api";
 import type { Project, Measurement } from "../lib/api";
+import { useProfile } from "../lib/useProfile";
 import { Layout } from "../components/Layout";
 import { InlineProjectCreator } from "../components/InlineProjectCreator";
 import { MapPin, Loader2, Info } from "lucide-react";
@@ -41,7 +42,7 @@ export default function ObservationFormPage() {
   const [gpsMessage, setGpsMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  const handleGetCurrentLocation = () => {
+  const handleGetCurrentLocation = (auto = false) => {
     if (!navigator.geolocation) {
       setGpsMessage({ text: "Geolocation is not supported by your browser.", isError: true });
       return;
@@ -52,6 +53,10 @@ export default function ObservationFormPage() {
       (position) => {
         setLatitude(parseFloat(position.coords.latitude.toFixed(6)));
         setLongitude(parseFloat(position.coords.longitude.toFixed(6)));
+        // Auto-capture (settings preference): the location section only
+        // switches on once real coordinates exist, so a denied/unavailable
+        // fix never blocks submission.
+        if (auto) setHasLocation(true);
         setFetchingGps(false);
         setGpsMessage({
           text: `Captured GPS coordinates (±${Math.round(position.coords.accuracy || 10)}m accuracy).`,
@@ -97,6 +102,27 @@ export default function ObservationFormPage() {
     if (quickCapturePrefill.description) setDescription(quickCapturePrefill.description);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Settings preference "location capture by default" (preferences.locationEnabled,
+  // DATABASE_SCHEMA.md §5.1): when enabled, a NEW observation opens the advanced
+  // panel and attempts GPS capture once; the location section switches itself
+  // on only if capture succeeds, so a denied/unavailable fix never blocks
+  // submission. Missing preference falls back to the backend default (true).
+  // Applied exactly once, after the profile resolves — never on edit, where the
+  // record's own location drives the form.
+  const { preferences, isLoading: profileLoading } = useProfile();
+  const locationByDefault = preferences?.locationEnabled ?? true;
+  const defaultAppliedRef = useRef(false);
+
+  useEffect(() => {
+    if (isEdit || defaultAppliedRef.current || profileLoading) return;
+    defaultAppliedRef.current = true;
+    if (locationByDefault) {
+      setAdvancedOpen(true);
+      handleGetCurrentLocation(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEdit, profileLoading, locationByDefault]);
 
   useEffect(() => {
     fetchProjects().then((res) => setProjects(res.data || []));
@@ -447,7 +473,7 @@ export default function ObservationFormPage() {
                 {hasLocation && (
                   <button
                     type="button"
-                    onClick={handleGetCurrentLocation}
+                    onClick={() => handleGetCurrentLocation()}
                     disabled={fetchingGps}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded transition disabled:opacity-50"
                   >
