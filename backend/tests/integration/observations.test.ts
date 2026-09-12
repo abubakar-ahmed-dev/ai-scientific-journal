@@ -87,42 +87,74 @@ vi.mock("../../src/lib/firebaseAdmin", () => {
       return {
         collection: (rootColl: string) => ({
           doc: (uid: string) => ({
-            collection: (subColl: string) => ({
-              doc: (id?: string) => {
-                const docId = id || `obs_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-                const fullPath = `${rootColl}/${uid}/${subColl}/${docId}`;
-                return {
-                  id: docId,
-                  ...getDocHandler(fullPath),
-                };
-              },
-              orderBy: () => ({
-                limit: (lim: number) => ({
-                  get: async () => {
-                    const prefix = `${rootColl}/${uid}/${subColl}/`;
-                    const docs: Array<{ id?: string; data: () => Record<string, unknown>; get: (f: string) => unknown }> = [];
-                    inMemoryStore.forEach((val, key) => {
-                      if (key.startsWith(prefix)) {
-                        docs.push({
-                          id: key.split("/").pop(),
-                          data: () => val,
-                          get: (f: string) => val[f],
-                        });
-                      }
+            collection: (subColl: string) => {
+              const prefix = `${rootColl}/${uid}/${subColl}/`;
+              const allDocs = () => {
+                const docs: Array<{ id?: string; data: () => Record<string, unknown>; get: (f: string) => unknown }> = [];
+                inMemoryStore.forEach((val, key) => {
+                  if (key.startsWith(prefix)) {
+                    docs.push({
+                      id: key.split("/").pop(),
+                      data: () => val,
+                      get: (f: string) => val[f],
                     });
-                    return { docs: docs.slice(0, lim) };
+                  }
+                });
+                return docs;
+              };
+              // Minimal query builder: equality + array-contains clauses, a
+              // page fetch via limit(), and the count() aggregation used by
+              // list() for meta.total.
+              const buildQuery = () => {
+                const clauses: Array<{ field: string; op: string; value: unknown }> = [];
+                const matches = (val: Record<string, unknown>) =>
+                  clauses.every(({ field, op, value }) => {
+                    if (op === "==") return val[field] === value;
+                    if (op === "array-contains") {
+                      return Array.isArray(val[field]) && (val[field] as unknown[]).includes(value);
+                    }
+                    return false;
+                  });
+                const filteredDocs = () => allDocs().filter((d) => matches(d.data()));
+                const q = {
+                  where: (field: string, op: string, value: unknown) => {
+                    clauses.push({ field, op, value });
+                    return q;
                   },
-                }),
-                where: () => ({
-                  limit: () => ({
-                    get: async () => ({ docs: [] }),
+                  limit: (lim: number) => ({
+                    get: async () => ({ docs: filteredDocs().slice(0, lim) }),
                   }),
+                  get: async () => {
+                    const docs = filteredDocs();
+                    return { empty: docs.length === 0, docs };
+                  },
+                  count: () => ({
+                    get: async () => ({ data: () => ({ count: filteredDocs().length }) }),
+                  }),
+                };
+                return q;
+              };
+              return {
+                doc: (id?: string) => {
+                  const docId = id || `obs_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+                  const fullPath = `${rootColl}/${uid}/${subColl}/${docId}`;
+                  return {
+                    id: docId,
+                    ...getDocHandler(fullPath),
+                  };
+                },
+                orderBy: () => ({
+                  limit: (lim: number) => ({
+                    get: async () => ({ docs: allDocs().slice(0, lim) }),
+                  }),
+                  where: () => buildQuery(),
                 }),
-              }),
-              where: () => ({
-                get: async () => ({ empty: true, docs: [] }),
-              }),
-            }),
+                where: () => buildQuery(),
+                count: () => ({
+                  get: async () => ({ data: () => ({ count: allDocs().length }) }),
+                }),
+              };
+            },
           }),
         }),
         batch: () => ({
@@ -139,6 +171,52 @@ describe("Observations API (/api/v1/observations)", () => {
     const res = await request(app).get("/api/v1/observations");
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe("UNAUTHENTICATED");
+  });
+
+  it("list includes meta.total equal to the full filtered match count (API.md §5.2)", async () => {
+    // Seed observations with a distinctive status so the filtered count is
+    // meaningful even though earlier tests already created rows for USER_A.
+    for (const title of ["Total-count probe one", "Total-count probe two", "Total-count probe three"]) {
+      const res = await request(app)
+        .post("/api/v1/observations")
+        .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`)
+        .send({ title, description: `Seed for ${title}` });
+      expect(res.status).toBe(201);
+    }
+
+    // Unfiltered: total equals the number of rows actually returned across
+    // the whole collection (single page, limit above the store size).
+    const all = await request(app)
+      .get("/api/v1/observations?limit=100")
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`);
+    expect(all.status).toBe(200);
+    expect(all.body.meta.total).toBe(all.body.data.length);
+
+    // Page smaller than the collection: total stays the full count while
+    // hasMore/nextCursor describe the page.
+    const page1 = await request(app)
+      .get("/api/v1/observations?limit=2")
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`);
+    expect(page1.body.data).toHaveLength(2);
+    expect(page1.body.meta.total).toBe(all.body.meta.total);
+    expect(page1.body.meta.hasMore).toBe(true);
+    expect(page1.body.meta.nextCursor).toBeTruthy();
+
+    // Filtered: count reflects the filter, not the whole collection.
+    const filtered = await request(app)
+      .get("/api/v1/observations?limit=100&status=observed")
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`);
+    expect(filtered.body.meta.total).toBe(filtered.body.data.length);
+    expect(filtered.body.meta.total).toBeLessThanOrEqual(all.body.meta.total);
+  });
+
+  it("list omits meta.total when the q prefilter is active (in-memory match count)", async () => {
+    const res = await request(app)
+      .get("/api/v1/observations?limit=10&q=zzz-no-such-token-xyz")
+      .set("Authorization", `Bearer ${MOCK_ID_TOKEN_USER_A}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(0);
+    expect(res.body.meta.total).toBeUndefined();
   });
 
   it("creates an observation with measurements and location, initializing version 1 and mediaCount 0", async () => {

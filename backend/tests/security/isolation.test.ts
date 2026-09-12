@@ -27,8 +27,6 @@ vi.mock("../../src/lib/firebaseAdmin", () => {
         role: "user",
         accountStatus: "active",
         preferences: {
-          theme: "system",
-          timezone: "UTC",
           locationEnabled: true,
           aiSuggestionsEnabled: true,
         },
@@ -93,7 +91,7 @@ describe("API Security & Authorization Middleware", () => {
       .send({
         displayName: "Updated Alice Name",
         preferences: {
-          theme: "dark",
+          aiSuggestionsEnabled: false,
         },
       });
     expect(res.status).toBe(200);

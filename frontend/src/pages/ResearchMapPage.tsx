@@ -315,7 +315,7 @@ export const ResearchMapPage: React.FC = () => {
             </Link>
           </div>
         ) : (
-          <div className="h-[650px] w-full relative z-0">
+          <div className="h-[500px] w-full relative z-0">
             <MapContainer
               center={initialCenter}
               zoom={initialZoom}

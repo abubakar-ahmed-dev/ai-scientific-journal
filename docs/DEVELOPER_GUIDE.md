@@ -615,7 +615,7 @@ Recent production lessons to preserve:
 The following notes were found while reading the current docs, phase logs, and implementation:
 
 - `frontend/README.md` is still the default Vite template, not an app-specific frontend guide.
-- `backend/.env.example` currently lists `AI_MODEL=gemini-3.6-flash`, while `backend/src/config/env.ts` defaults to `gemini-3.5-flash` and Phase 9 notes say production was pinned to `gemini-3.5-flash`.
+- ~~`backend/.env.example` currently lists `AI_MODEL=gemini-3.6-flash`~~ Resolved 2026-09-12: `.env.example` now matches the `env.ts` default `gemini-3.5-flash` and the production pin.
 - The canonical API documents idempotency broadly. Phase logs confirm explicit follow-up coverage for task acceptance, Ask My Journal, chat, and media, but any new write endpoint should still be checked before relying on idempotency behavior.
 - Phase 9 logs note 12 frontend lint warnings around state-setting-in-effect patterns; they were considered non-blocking and deferred to a future TanStack Query migration.
 - `TECHNICAL_ARCHITECTURE.md` still contains some older baseline examples in long sections; prefer the canonical ADRs, `API.md`, and `DATABASE_SCHEMA.md` where there is any conflict.

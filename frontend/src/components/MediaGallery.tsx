@@ -273,7 +273,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
               accept="image/*,audio/*,video/mp4"
               onChange={handleFileSelect}
               disabled={uploadMutation.isPending}
-              className="w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
+              className="w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-brand-100 file:text-brand-700 hover:file:bg-brand-200 file:cursor-pointer cursor-pointer"
             />
             <p className="text-[10px] text-slate-400 mt-1">
               Image ≤ {humanLimit(MEDIA_SIZE_LIMITS.image)} &bull; Audio ≤ {humanLimit(MEDIA_SIZE_LIMITS.audio)} &bull; Video ≤ {humanLimit(MEDIA_SIZE_LIMITS.video)}

@@ -128,6 +128,8 @@ An observation can include:
 
 The Observations page lets you browse your records. You can search, filter by project or status, and sort by recently updated records or observed date.
 
+The list is paginated: the header shows how many records match (for example, "Showing 1–10 of 55 observations"), and Previous / Next buttons move between pages. During a text search the exact total is not shown, because matching happens while reading your records — the header then shows the current page number instead.
+
 Observation cards are clickable. They show useful hints such as tags, status, measurements, media count, and location label when available.
 
 Screenshot placeholder: observations list.

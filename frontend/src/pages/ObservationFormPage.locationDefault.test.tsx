@@ -19,6 +19,23 @@ vi.mock("../lib/api", async () => {
   };
 });
 
+// Settings preference under test (DATABASE_SCHEMA.md §5.1): the suite flips
+// this value per case instead of standing up a QueryClientProvider.
+let mockPreferences: { locationEnabled?: boolean } | null;
+vi.mock("../lib/useProfile", () => ({
+  useProfile: () => ({
+    profile: null,
+    displayName: "Test Researcher",
+    email: "tester@example.com",
+    avatarUrl: null,
+    memberSince: null,
+    preferences: mockPreferences,
+    isLoading: false,
+    refetch: vi.fn(),
+  }),
+  useInvalidateProfile: () => vi.fn(),
+}));
+
 function renderNewObservation() {
   const router = createMemoryRouter(
     [{ path: "/observations/new", element: <ObservationFormPage /> }],
@@ -38,11 +55,12 @@ async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>) {
   );
 }
 
-describe("ObservationFormPage — location defaults and validation (2026-09-08)", () => {
+describe("ObservationFormPage — location defaults and validation", () => {
   const originalGeolocation = navigator.geolocation;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPreferences = { locationEnabled: false };
     vi.mocked(api.createObservation).mockResolvedValue({
       data: { id: "obs_new" },
     } as never);
@@ -64,7 +82,31 @@ describe("ObservationFormPage — location defaults and validation (2026-09-08)"
     return getCurrentPosition;
   }
 
-  it("keeps the advanced panel closed on a new observation — no auto GPS prompt", async () => {
+  it("preference ON: opens the advanced panel, attempts GPS once, and attaches location on success", async () => {
+    mockPreferences = { locationEnabled: true };
+    // GPS succeeds immediately — the location section must switch itself on
+    // and fill the captured coordinates without any user interaction.
+    const getCurrentPosition = vi.fn((success: (pos: { coords: { latitude: number; longitude: number; accuracy: number } }) => void) =>
+      success({ coords: { latitude: 47.3769, longitude: 8.5417, accuracy: 12 } })
+    );
+    Object.defineProperty(navigator, "geolocation", {
+      value: { getCurrentPosition },
+      configurable: true,
+    });
+
+    renderNewObservation();
+
+    const locationSwitch = await screen.findByRole("switch", {
+      name: /attach geographic location/i,
+    });
+    await waitFor(() => expect(locationSwitch).toBeVisible());
+    await waitFor(() => expect(getCurrentPosition).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByLabelText(/^latitude$/i)).toHaveValue(47.3769));
+    await waitFor(() => expect(screen.getByLabelText(/^longitude$/i)).toHaveValue(8.5417));
+    expect(screen.getByText(/captured gps coordinates/i)).toBeInTheDocument();
+  });
+
+  it("preference OFF: keeps the advanced panel closed — no auto GPS prompt", async () => {
     const getCurrentPosition = stubGeolocation();
 
     renderNewObservation();

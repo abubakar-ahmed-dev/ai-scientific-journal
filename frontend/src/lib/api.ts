@@ -107,8 +107,6 @@ export async function api<T>(endpoint: string, options: RequestInit = {}): Promi
 
 // User Profile types & API
 export interface UserPreferences {
-  theme?: "light" | "dark" | "system";
-  timezone?: string;
   locationEnabled?: boolean;
   aiSuggestionsEnabled?: boolean;
 }

@@ -224,12 +224,39 @@ export class ObservationRepository {
       });
     }
 
+    // Total matching observations (meta.total, API.md §5.2): one count
+    // aggregation over the same filters, independent of the page cursor. Only
+    // computed when `q` is absent — the `q` prefilter runs in memory, so a
+    // Firestore count would overcount and must not be presented as a total.
+    let total: number | undefined;
+    if (!qLower) {
+      let countQuery: FirebaseFirestore.Query = this.getCollection(uid);
+      if (query.projectId) {
+        countQuery =
+          query.projectId === "unfiled" || query.projectId === "null"
+            ? countQuery.where("projectId", "==", null)
+            : countQuery.where("projectId", "==", query.projectId);
+      }
+      if (query.status) {
+        countQuery = countQuery.where("status", "==", query.status);
+      }
+      if (query.tag) {
+        const tagValue = Array.isArray(query.tag) ? query.tag[0] : query.tag;
+        if (tagValue) {
+          countQuery = countQuery.where("tags", "array-contains", tagValue);
+        }
+      }
+      const countSnap = await countQuery.count().get();
+      total = countSnap.data().count;
+    }
+
     return {
       data: resultDocs,
       meta: {
         nextCursor,
         hasMore,
         limit,
+        total,
       },
     };
   }
