@@ -430,7 +430,7 @@ export default function ObservationDetailPage() {
                     <span>Related Observations ({relatedObservations.length})</span>
                   </h3>
                   <span className="text-xs text-slate-400">
-                    Lexical similarity over journal{relatedTruncated ? " (recent observations only)" : ""}
+                    Ranked by text similarity{relatedTruncated ? " (recent observations only)" : ""}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -446,9 +446,9 @@ export default function ObservationDetailPage() {
                         </h4>
                         <span
                           className="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded shrink-0"
-                          title="Raw lexical similarity score (0–1), not a probabilistic confidence"
+                          title="How strongly this observation's text overlaps with yours (word-overlap match, not AI confidence)"
                         >
-                          {item.score.toFixed(2)} lexical match
+                          {Math.round(item.score * 100)}% match
                         </span>
                       </div>
                       {item.observedAt && (

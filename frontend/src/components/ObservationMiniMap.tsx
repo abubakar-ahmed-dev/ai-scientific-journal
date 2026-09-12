@@ -85,7 +85,7 @@ export const ObservationMiniMap: React.FC<ObservationMiniMapProps> = ({
         </div>
       </div>
 
-      <div className="h-44 w-full relative z-0">
+      <div className="h-86 w-full relative z-0">
         {hasCoords ? (
           <MapContainer
             center={[displayLat!, displayLng!]}
