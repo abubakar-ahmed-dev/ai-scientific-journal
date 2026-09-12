@@ -23,5 +23,6 @@ firebase-debug.log
 # misc
 .DS_Store
 *.log
+*.tsbuildinfo
 .claude/
 .playwright-mcp/*.yml
