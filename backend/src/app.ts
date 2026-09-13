@@ -40,7 +40,10 @@ export function createApp(): express.Express {
             "blob:",
             "https://www.gstatic.com",
             "https://*.googleusercontent.com",
-            "https://*.tile.openstreetmap.org",
+            // Leaflet basemap tiles: CARTO's public Positron raster tiles
+            // (lib/mapTiles.ts) — OSM's own tile servers block cloud-hosted
+            // Referers, so CARTO is the tile source in production.
+            "https://*.basemaps.cartocdn.com",
             // Observation media loads via short-lived signed read URLs hosted on
             // storage.googleapis.com (SECURITY.md §private media).
             "https://storage.googleapis.com",

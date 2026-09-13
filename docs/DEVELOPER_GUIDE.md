@@ -607,6 +607,7 @@ Recent production lessons to preserve:
 - Cloud Run Secret Manager bindings are revision-pinned. Secret rotation needs a new revision, not an image rebuild.
 - Signed media URLs require `https://storage.googleapis.com` in `img-src`.
 - Avatar previews created with `URL.createObjectURL` require `blob:` in `img-src`.
+- Leaflet basemaps use CARTO Positron tiles, so `img-src` needs `https://*.basemaps.cartocdn.com`; OSM's own tile servers block cloud-hosted Referers (`*.run.app`).
 - Runtime signed URLs require the Cloud Run service account to have the correct token-signing IAM permission.
 - Production Gemini calls should explicitly set a supported `AI_MODEL`; the current code default is `gemini-3.5-flash`.
 
