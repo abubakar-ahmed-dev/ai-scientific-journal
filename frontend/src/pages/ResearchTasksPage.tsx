@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ListTodo,
@@ -23,6 +24,7 @@ import {
 } from "../lib/api";
 import type { ResearchTask, Project } from "../lib/api";
 import { InlineProjectCreator } from "../components/InlineProjectCreator";
+import { Badge } from "../components/ui/Badge";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { useToast } from "../components/ui/Toast";
 
@@ -177,23 +179,8 @@ export const ResearchTasksPage: React.FC = () => {
     updateTaskMutation.mutate({ taskId: editingTask.id, patch });
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "suggested":
-        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">Suggested</span>;
-      case "planned":
-        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">Planned</span>;
-      case "in_progress":
-        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">In Progress</span>;
-      case "completed":
-        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Completed</span>;
-      case "dismissed":
-        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-600 border border-app-border">Dismissed</span>;
-      default:
-        return null;
-    }
-  };
-
+  // Current status is always visible as the select's own value in the footer,
+  // so a separate status pill on the card would only repeat it.
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -234,7 +221,7 @@ export const ResearchTasksPage: React.FC = () => {
         <div
           role="group"
           aria-label="Filter tasks by status"
-          className="flex items-center gap-1 overflow-x-auto bg-slate-100/80 p-1 rounded-xl w-fit"
+          className="flex items-center gap-1 overflow-x-auto bg-white border border-app-border shadow-xs p-1 rounded-xl w-fit"
         >
           {(["all", "suggested", "planned", "in_progress", "completed", "dismissed"] as TaskStatusFilter[]).map((tab) => (
             <button
@@ -244,8 +231,8 @@ export const ResearchTasksPage: React.FC = () => {
               aria-pressed={statusFilter === tab}
               className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all capitalize ${
                 statusFilter === tab
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-brand-600 text-white shadow-xs"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               }`}
             >
               {tab.replace("_", " ")}
@@ -280,23 +267,17 @@ export const ResearchTasksPage: React.FC = () => {
           {tasks.map((task) => (
             <div
               key={task.id}
-              className="bg-white rounded-xl border border-app-border p-5 shadow-xs space-y-3 flex flex-col justify-between"
+              className="bg-white rounded-xl border border-app-border p-5 shadow-xs space-y-4 flex flex-col justify-between hover:border-brand-200 transition-colors"
             >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    {task.source === "gemini" ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
-                        <Sparkles className="w-3 h-3 text-purple-600" /> AI Suggested
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-app-border">
-                        <User className="w-3 h-3 text-slate-500" /> User Authored
-                      </span>
-                    )}
-                    {getStatusBadge(task.status)}
-                  </div>
-                  <div className="flex items-center gap-1">
+              <div>
+                {/* Content first: title and description lead the card; the
+                    source pill and project link drop below the text so they
+                    stop competing with what the task actually says. */}
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-[22px] font-display font-semibold text-app-heading leading-snug line-clamp-2">
+                    {task.title}
+                  </h3>
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
                       type="button"
                       onClick={() => openEditModal(task)}
@@ -319,22 +300,41 @@ export const ResearchTasksPage: React.FC = () => {
                   </div>
                 </div>
 
-                <h3 className="text-sm font-bold text-app-heading leading-snug">{task.title}</h3>
-                {task.projectId && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
-                    <FolderKanban className="w-3 h-3" />
-                    {projects.find((p) => p.id === task.projectId)?.title ?? "Project"}
-                  </span>
-                )}
-                <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">{task.description}</p>
+                <p className="mt-2.5 text-sm text-slate-600 leading-relaxed line-clamp-3">{task.description}</p>
+
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                  {task.projectId && (
+                    <Link
+                      to={`/projects/${task.projectId}`}
+                      className="inline-flex items-center gap-1 max-w-[12rem] rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-[11px] font-semibold text-brand-700 transition-colors hover:bg-brand-100 hover:text-brand-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
+                      title={`Open project: ${projects.find((p) => p.id === task.projectId)?.title ?? ""}`}
+                    >
+                      <FolderKanban className="w-3 h-3 shrink-0" />
+                      <span className="truncate">
+                        {projects.find((p) => p.id === task.projectId)?.title ?? "Project"}
+                      </span>
+                    </Link>
+                  )}
+                  {task.source === "gemini" ? (
+                    <Badge variant="purple" size="sm">
+                      <Sparkles className="w-3 h-3 text-purple-600" /> AI Suggested
+                    </Badge>
+                  ) : (
+                    <Badge variant="neutral" size="sm">
+                      <User className="w-3 h-3 text-slate-500" /> User Authored
+                    </Badge>
+                  )}
+                </div>
               </div>
 
-              {/* Status controls */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                <span className="text-[11px] text-slate-400">
+              {/* Status controls — wrapping is deliberate: if the footer runs
+                  out of width the action buttons drop to their own row instead
+                  of squashing or overflowing. */}
+              <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
+                <span className="text-xs text-slate-400 shrink-0">
                   {new Date(task.updatedAt).toLocaleDateString()}
                 </span>
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center justify-end gap-1.5">
                   <select
                     value={task.status}
                     onChange={(e) =>
@@ -345,7 +345,7 @@ export const ResearchTasksPage: React.FC = () => {
                     }
                     disabled={updateTaskMutation.isPending}
                     aria-label={`Change status for task: ${task.title}`}
-                    className="px-2 py-1 text-xs font-medium text-slate-700 bg-white border border-app-border rounded-md hover:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50 cursor-pointer"
+                    className="max-w-[9.5rem] px-2 py-1 text-xs font-medium text-slate-700 bg-white border border-app-border rounded-md hover:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50 cursor-pointer"
                   >
                     <option value={task.status}>{statusLabel(task.status)}</option>
                     {STATUS_TRANSITIONS[task.status].map((next) => (
@@ -358,27 +358,27 @@ export const ResearchTasksPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => updateTaskMutation.mutate({ taskId: task.id, patch: { status: "planned" } })}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                      className="inline-flex shrink-0 items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 shadow-xs hover:bg-blue-100 rounded-md transition-colors"
                     >
-                      <Clock className="w-3.5 h-3.5" /> Plan Task
+                      <Clock className="w-3.5 h-3.5" /> Plan this task
                     </button>
                   )}
                   {task.status === "planned" && (
                     <button
                       type="button"
                       onClick={() => updateTaskMutation.mutate({ taskId: task.id, patch: { status: "in_progress" } })}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-md transition-colors"
+                      className="inline-flex shrink-0 items-center gap-1 px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 shadow-xs hover:bg-amber-100 rounded-md transition-colors"
                     >
-                      <Play className="w-3.5 h-3.5" /> Start
+                      <Play className="w-3.5 h-3.5" /> Start working
                     </button>
                   )}
                   {task.status === "in_progress" && (
                     <button
                       type="button"
                       onClick={() => updateTaskMutation.mutate({ taskId: task.id, patch: { status: "completed" } })}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-md transition-colors"
+                      className="inline-flex shrink-0 items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 shadow-xs hover:bg-emerald-100 rounded-md transition-colors"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Complete
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Mark as complete
                     </button>
                   )}
                   {task.status !== "dismissed" && task.status !== "completed" && (
@@ -388,7 +388,7 @@ export const ResearchTasksPage: React.FC = () => {
                       className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-500 hover:text-slate-700 rounded-md transition-colors"
                       title="Dismiss task"
                     >
-                      <Archive className="w-3.5 h-3.5" /> Dismiss
+                      <Archive className="w-3.5 h-3.5" /> Dismiss task
                     </button>
                   )}
                 </div>
