@@ -327,12 +327,14 @@ export const ResearchTasksPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Status controls */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                <span className="text-xs text-slate-400">
+              {/* Status controls — wrapping is deliberate: if the footer runs
+                  out of width the action buttons drop to their own row instead
+                  of squashing or overflowing. */}
+              <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
+                <span className="text-xs text-slate-400 shrink-0">
                   {new Date(task.updatedAt).toLocaleDateString()}
                 </span>
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center justify-end gap-1.5">
                   <select
                     value={task.status}
                     onChange={(e) =>
@@ -343,7 +345,7 @@ export const ResearchTasksPage: React.FC = () => {
                     }
                     disabled={updateTaskMutation.isPending}
                     aria-label={`Change status for task: ${task.title}`}
-                    className="px-2 py-1 text-xs font-medium text-slate-700 bg-white border border-app-border rounded-md hover:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50 cursor-pointer"
+                    className="max-w-[9.5rem] px-2 py-1 text-xs font-medium text-slate-700 bg-white border border-app-border rounded-md hover:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50 cursor-pointer"
                   >
                     <option value={task.status}>{statusLabel(task.status)}</option>
                     {STATUS_TRANSITIONS[task.status].map((next) => (
@@ -356,7 +358,7 @@ export const ResearchTasksPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => updateTaskMutation.mutate({ taskId: task.id, patch: { status: "planned" } })}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 shadow-xs hover:bg-blue-100 rounded-md transition-colors"
+                      className="inline-flex shrink-0 items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 shadow-xs hover:bg-blue-100 rounded-md transition-colors"
                     >
                       <Clock className="w-3.5 h-3.5" /> Plan this task
                     </button>
@@ -365,7 +367,7 @@ export const ResearchTasksPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => updateTaskMutation.mutate({ taskId: task.id, patch: { status: "in_progress" } })}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 shadow-xs hover:bg-amber-100 rounded-md transition-colors"
+                      className="inline-flex shrink-0 items-center gap-1 px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 shadow-xs hover:bg-amber-100 rounded-md transition-colors"
                     >
                       <Play className="w-3.5 h-3.5" /> Start working
                     </button>
@@ -374,7 +376,7 @@ export const ResearchTasksPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => updateTaskMutation.mutate({ taskId: task.id, patch: { status: "completed" } })}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 shadow-xs hover:bg-emerald-100 rounded-md transition-colors"
+                      className="inline-flex shrink-0 items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 shadow-xs hover:bg-emerald-100 rounded-md transition-colors"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" /> Mark as complete
                     </button>
