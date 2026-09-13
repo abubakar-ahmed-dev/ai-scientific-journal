@@ -6,7 +6,7 @@ import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 const projectId = process.env.FIREBASE_PROJECT_ID || "demo-test";
-const uid = process.env.DEMO_UID || "demo-researcher-uid";
+const requestedUid = process.env.DEMO_UID || "demo-researcher-uid";
 const email = process.env.DEMO_EMAIL || "demo.researcher@example.test";
 const displayName = process.env.DEMO_DISPLAY_NAME || "Dr. Maya Fielding";
 
@@ -39,9 +39,15 @@ initializeApp({ projectId, storageBucket });
 const auth = getAuth();
 const db = getFirestore();
 const bucket = getStorage().bucket(storageBucket);
-const userRef = db.collection("users").doc(uid);
+let uid = requestedUid;
+let userRef = db.collection("users").doc(uid);
 
 const ts = (iso: string) => Timestamp.fromDate(new Date(iso));
+
+function useAuthUid(actualUid: string) {
+  uid = actualUid;
+  userRef = db.collection("users").doc(uid);
+}
 
 type ObservationSeed = {
   id: string;
@@ -1032,7 +1038,22 @@ async function findMediaDir() {
 
 async function upsertAuthUser() {
   try {
+    const existingByEmail = await auth.getUserByEmail(email);
+    useAuthUid(existingByEmail.uid);
     await auth.updateUser(uid, {
+      emailVerified: true,
+      displayName,
+    });
+    return;
+  } catch (err: any) {
+    if (err?.code !== "auth/user-not-found") {
+      throw err;
+    }
+  }
+
+  useAuthUid(requestedUid);
+  try {
+    await auth.updateUser(requestedUid, {
       email,
       emailVerified: true,
       displayName,
@@ -1049,12 +1070,12 @@ async function upsertAuthUser() {
       throw err;
     }
     await auth.createUser({
-      uid,
+      uid: requestedUid,
       email,
       emailVerified: true,
       displayName,
     });
-    await auth.updateUser(uid, {
+    await auth.updateUser(requestedUid, {
       providerToLink: {
         providerId: "google.com",
         uid: "demo-google-researcher",
