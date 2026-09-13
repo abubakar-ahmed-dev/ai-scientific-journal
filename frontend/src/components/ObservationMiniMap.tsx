@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Circle, Popup } from "react-leaflet";
 import { setupLeafletIcons } from "../lib/leafletSetup";
 import { sanitizeLocation, APPROXIMATE_FUZZ_DECIMALS } from "../lib/locationPrivacy";
+import { BASEMAP_URL, BASEMAP_ATTRIBUTION } from "../lib/mapTiles";
 import { MapPin, Shield, EyeOff } from "lucide-react";
 
 interface ObservationMiniMapProps {
@@ -93,10 +94,7 @@ export const ObservationMiniMap: React.FC<ObservationMiniMapProps> = ({
             scrollWheelZoom={false}
             className="h-full w-full"
           >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+            <TileLayer attribution={BASEMAP_ATTRIBUTION} url={BASEMAP_URL} />
 
             {safe.precision === "approximate" ? (
               <>
