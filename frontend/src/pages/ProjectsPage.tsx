@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 import { fetchProjects, createProject } from "../lib/api";
 import type { Project } from "../lib/api";
 import { Layout } from "../components/Layout";
+import { Badge, type BadgeVariant } from "../components/ui/Badge";
+import { TagList } from "../components/ui/TagList";
 import { useToast } from "../components/ui/Toast";
+
+const projectStatusVariant: Record<string, BadgeVariant> = {
+  active: "emerald",
+  completed: "blue",
+};
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -241,40 +249,43 @@ export default function ProjectsPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map((proj) => (
-              <div key={proj.id} className="bg-white p-6 rounded-lg border border-app-border shadow-sm flex flex-col justify-between hover:border-brand-200 transition">
+              <Link
+                key={proj.id}
+                to={`/projects/${proj.id}`}
+                aria-label={`Open project: ${proj.title}`}
+                className="group flex flex-col justify-between bg-white p-6 rounded-xl border border-app-border shadow-xs hover:border-brand-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
+              >
                 <div>
-                  <div className="flex items-start justify-between">
-                    {proj.field && (
-                      <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded">
-                        {proj.field}
-                      </span>
+                  <div className="flex items-start justify-between gap-2">
+                    {proj.field ? (
+                      <Badge variant="brand">
+                        <span className="truncate">{proj.field}</span>
+                      </Badge>
+                    ) : (
+                      <span />
                     )}
-                    <span className="text-xs text-slate-400 capitalize">{proj.status}</span>
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      <Badge variant={projectStatusVariant[proj.status] ?? "neutral"} className="capitalize">
+                        {proj.status}
+                      </Badge>
+                      <ArrowRight className="w-4 h-4 -translate-x-1 text-brand-600 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" />
+                    </span>
                   </div>
 
-                  <h3 className="mt-3 text-lg font-bold text-app-heading">
-                    <Link to={`/projects/${proj.id}`} className="hover:text-brand-600">
-                      {proj.title}
-                    </Link>
+                  <h3 className="mt-3 text-lg font-display font-bold leading-snug text-app-heading transition-colors group-hover:text-brand-700">
+                    {proj.title}
                   </h3>
                   {proj.description && (
-                    <p className="mt-1 text-sm text-slate-600 line-clamp-2">{proj.description}</p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-slate-600 line-clamp-2">
+                      {proj.description}
+                    </p>
                   )}
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                  <div className="flex gap-1">
-                    {proj.tags.map((t) => (
-                      <span key={t} className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
-                        #{t}
-                      </span>
-                    ))}
-                  </div>
-                  <Link to={`/projects/${proj.id}`} className="text-brand-600 hover:text-brand-800 font-medium">
-                    View &rarr;
-                  </Link>
+                <div className="mt-5 border-t border-slate-100 pt-4">
+                  <TagList tags={proj.tags} />
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         ))}

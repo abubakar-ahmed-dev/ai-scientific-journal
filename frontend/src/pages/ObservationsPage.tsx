@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Calendar, FlaskConical, History, MapPin } from "lucide-react";
 import { fetchObservations, fetchProjects } from "../lib/api";
 import type { Observation, Project } from "../lib/api";
 import { Layout } from "../components/Layout";
+import { Badge, type BadgeVariant } from "../components/ui/Badge";
+import { TagList } from "../components/ui/TagList";
+
+const statusVariant: Record<string, BadgeVariant> = {
+  draft: "amber",
+  analyzed: "purple",
+};
 
 export default function ObservationsPage() {
   const [observations, setObservations] = useState<Observation[]>([]);
@@ -205,50 +213,62 @@ export default function ObservationsPage() {
                 <Link
                   key={obs.id}
                   to={`/observations/${obs.id}`}
-                  className="group block bg-white p-5 sm:p-6 rounded-xl border border-app-border shadow-sm hover:border-brand-300 hover:shadow-xs transition focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
+                  className="group block bg-white p-5 sm:p-6 rounded-xl border border-app-border shadow-xs hover:border-brand-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <h3 className="text-lg font-semibold text-app-heading transition-colors group-hover:text-brand-600">
+                      <h3 className="text-lg font-display font-semibold text-app-heading leading-snug transition-colors group-hover:text-brand-700">
                         {obs.title}
                       </h3>
-                      <p className="mt-1 text-sm text-slate-600 line-clamp-2">{obs.description}</p>
+                      <p className="mt-1.5 text-sm text-slate-600 leading-relaxed line-clamp-2">
+                        {obs.description}
+                      </p>
                     </div>
 
-                    <span
-                      className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        obs.status === "draft"
-                          ? "bg-amber-100 text-amber-800"
-                          : obs.status === "analyzed"
-                          ? "bg-purple-100 text-purple-800"
-                          : "bg-emerald-100 text-emerald-800"
-                      }`}
+                    <Badge
+                      variant={statusVariant[obs.status] ?? "emerald"}
+                      className="shrink-0 capitalize"
                     >
                       {obs.status}
-                    </span>
+                    </Badge>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-3">
-                    <span>
-                      Observed: <strong>{new Date(obs.observedAt).toLocaleString()}</strong>
-                    </span>
-                    <span>Version: v{obs.version}</span>
+                  {/* One fact per meta cell — the single wrapped line this
+                      replaces crammed date, version, counts, and tags together. */}
+                  <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-slate-100 pt-3.5 sm:grid-cols-2">
+                    <div className="flex min-w-0 items-center gap-2 text-xs">
+                      <Calendar className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                      <dt className="shrink-0 text-slate-400">Observed</dt>
+                      <dd className="truncate font-medium text-slate-700">
+                        {new Date(obs.observedAt).toLocaleString()}
+                      </dd>
+                    </div>
+                    <div className="flex min-w-0 items-center gap-2 text-xs">
+                      <History className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                      <dt className="shrink-0 text-slate-400">Version</dt>
+                      <dd className="font-medium text-slate-700">v{obs.version}</dd>
+                    </div>
                     {obs.measurements.length > 0 && (
-                      <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
-                        {obs.measurements.length} Measurements
-                      </span>
+                      <div className="flex min-w-0 items-center gap-2 text-xs">
+                        <FlaskConical className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                        <dt className="shrink-0 text-slate-400">Measurements</dt>
+                        <dd className="font-medium text-slate-700">
+                          {obs.measurements.length} recorded
+                        </dd>
+                      </div>
                     )}
                     {obs.location && (
-                      <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded">
-                        Location: {obs.location.label || obs.location.precision}
-                      </span>
+                      <div className="flex min-w-0 items-center gap-2 text-xs">
+                        <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                        <dt className="shrink-0 text-slate-400">Location</dt>
+                        <dd className="truncate font-medium text-slate-700">
+                          {obs.location.label || obs.location.precision}
+                        </dd>
+                      </div>
                     )}
-                    {obs.tags.map((t) => (
-                      <span key={t} className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-                        #{t}
-                      </span>
-                    ))}
-                  </div>
+                  </dl>
+
+                  <TagList tags={obs.tags} className="mt-3.5" />
                 </Link>
               ))}
             </div>
