@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ListTodo,
@@ -23,7 +24,7 @@ import {
 } from "../lib/api";
 import type { ResearchTask, Project } from "../lib/api";
 import { InlineProjectCreator } from "../components/InlineProjectCreator";
-import { Badge, type BadgeVariant } from "../components/ui/Badge";
+import { Badge } from "../components/ui/Badge";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { useToast } from "../components/ui/Toast";
 
@@ -178,23 +179,8 @@ export const ResearchTasksPage: React.FC = () => {
     updateTaskMutation.mutate({ taskId: editingTask.id, patch });
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, BadgeVariant> = {
-      suggested: "purple",
-      planned: "blue",
-      in_progress: "amber",
-      completed: "emerald",
-      dismissed: "neutral",
-    };
-    const variant = variants[status];
-    if (!variant) return null;
-    return (
-      <Badge variant={variant} size="sm">
-        {statusLabel(status as TaskStatus)}
-      </Badge>
-    );
-  };
-
+  // Current status is always visible as the select's own value in the footer,
+  // so a separate status pill on the card would only repeat it.
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -281,14 +267,14 @@ export const ResearchTasksPage: React.FC = () => {
           {tasks.map((task) => (
             <div
               key={task.id}
-              className="bg-white rounded-xl border border-app-border p-5 shadow-xs space-y-3 flex flex-col justify-between hover:border-brand-200 transition-colors"
+              className="bg-white rounded-xl border border-app-border p-5 shadow-xs space-y-4 flex flex-col justify-between hover:border-brand-200 transition-colors"
             >
-              <div className="space-y-2">
+              <div>
                 {/* Content first: title and description lead the card; the
-                    source/status/project pills drop below the text so they
+                    source pill and project link drop below the text so they
                     stop competing with what the task actually says. */}
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-base font-display font-semibold text-app-heading leading-snug line-clamp-2">
+                  <h3 className="text-[22px] font-display font-semibold text-app-heading leading-snug line-clamp-2">
                     {task.title}
                   </h3>
                   <div className="flex items-center gap-1 shrink-0">
@@ -314,9 +300,9 @@ export const ResearchTasksPage: React.FC = () => {
                   </div>
                 </div>
 
-                <p className="text-sm text-slate-600 leading-relaxed line-clamp-3">{task.description}</p>
+                <p className="mt-2.5 text-sm text-slate-600 leading-relaxed line-clamp-3">{task.description}</p>
 
-                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                   {task.source === "gemini" ? (
                     <Badge variant="purple" size="sm">
                       <Sparkles className="w-3 h-3 text-purple-600" /> AI Suggested
@@ -326,12 +312,17 @@ export const ResearchTasksPage: React.FC = () => {
                       <User className="w-3 h-3 text-slate-500" /> User Authored
                     </Badge>
                   )}
-                  {getStatusBadge(task.status)}
                   {task.projectId && (
-                    <Badge variant="sky" size="sm">
-                      <FolderKanban className="w-3 h-3" />
-                      {projects.find((p) => p.id === task.projectId)?.title ?? "Project"}
-                    </Badge>
+                    <Link
+                      to={`/projects/${task.projectId}`}
+                      className="inline-flex items-center gap-1 max-w-[12rem] rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-[11px] font-semibold text-brand-700 transition-colors hover:bg-brand-100 hover:text-brand-800 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500"
+                      title={`Open project: ${projects.find((p) => p.id === task.projectId)?.title ?? ""}`}
+                    >
+                      <FolderKanban className="w-3 h-3 shrink-0" />
+                      <span className="truncate">
+                        {projects.find((p) => p.id === task.projectId)?.title ?? "Project"}
+                      </span>
+                    </Link>
                   )}
                 </div>
               </div>
@@ -365,27 +356,27 @@ export const ResearchTasksPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => updateTaskMutation.mutate({ taskId: task.id, patch: { status: "planned" } })}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 shadow-xs hover:bg-blue-100 rounded-md transition-colors"
                     >
-                      <Clock className="w-3.5 h-3.5" /> Plan Task
+                      <Clock className="w-3.5 h-3.5" /> Plan this task
                     </button>
                   )}
                   {task.status === "planned" && (
                     <button
                       type="button"
                       onClick={() => updateTaskMutation.mutate({ taskId: task.id, patch: { status: "in_progress" } })}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-md transition-colors"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 shadow-xs hover:bg-amber-100 rounded-md transition-colors"
                     >
-                      <Play className="w-3.5 h-3.5" /> Start
+                      <Play className="w-3.5 h-3.5" /> Start working
                     </button>
                   )}
                   {task.status === "in_progress" && (
                     <button
                       type="button"
                       onClick={() => updateTaskMutation.mutate({ taskId: task.id, patch: { status: "completed" } })}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-md transition-colors"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 shadow-xs hover:bg-emerald-100 rounded-md transition-colors"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Complete
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Mark as complete
                     </button>
                   )}
                   {task.status !== "dismissed" && task.status !== "completed" && (
@@ -395,7 +386,7 @@ export const ResearchTasksPage: React.FC = () => {
                       className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-500 hover:text-slate-700 rounded-md transition-colors"
                       title="Dismiss task"
                     >
-                      <Archive className="w-3.5 h-3.5" /> Dismiss
+                      <Archive className="w-3.5 h-3.5" /> Dismiss task
                     </button>
                   )}
                 </div>
