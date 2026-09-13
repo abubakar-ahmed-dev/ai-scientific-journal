@@ -18,6 +18,8 @@ steps:
       - VITE_USE_FIREBASE_EMULATORS=
       - --build-arg
       - VITE_FIREBASE_AUTH_EMULATOR_HOST=
+      - --build-arg
+      - VITE_CARTO_API_KEY=${_VITE_CARTO_API_KEY}
       - .
 
 images:
@@ -27,8 +29,9 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 # Defaults: _IMAGE points at the real production registry; _VITE_FIREBASE_* remain
-# demo placeholders — production builds MUST override them via --substitutions
-# (real values stay out of Git; see plans/phase-9/deploy-guide.md §0/§11).
+# demo placeholders and _VITE_CARTO_API_KEY stays empty — production builds MUST
+# override them via --substitutions (real values stay out of Git; see
+# plans/phase-9/deploy-guide.md §0/§11).
 substitutions:
   _IMAGE: asia-south1-docker.pkg.dev/ai-scientific-journal/ai-scientific-journal/app:manual
   _VITE_API_BASE_URL: /api/v1
@@ -36,3 +39,4 @@ substitutions:
   _VITE_FIREBASE_AUTH_DOMAIN: demo-test.firebaseapp.com
   _VITE_FIREBASE_PROJECT_ID: demo-test
   _VITE_FIREBASE_APP_ID: 1:123456789:web:abcdef
+  _VITE_CARTO_API_KEY: ""
