@@ -268,7 +268,7 @@ export default function ObservationsPage() {
                     )}
                   </dl>
 
-                  <TagList tags={obs.tags} className="mt-3.5" />
+                  <TagList tags={obs.tags} className="mt-5.5" />
                 </Link>
               ))}
             </div>
