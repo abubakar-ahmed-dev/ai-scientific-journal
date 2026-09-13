@@ -13,7 +13,10 @@
  */
 const CARTO_API_KEY = import.meta.env.VITE_CARTO_API_KEY ?? "";
 
-export const BASEMAP_URL = `https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png?key=${CARTO_API_KEY}`;
+// The {s} subdomain matters for more than parallelism: the helmet CSP only
+// allowlists https://*.basemaps.cartocdn.com, and a host wildcard does not
+// match the bare apex host in browsers.
+export const BASEMAP_URL = `https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png?key=${CARTO_API_KEY}`;
 
 export const BASEMAP_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
