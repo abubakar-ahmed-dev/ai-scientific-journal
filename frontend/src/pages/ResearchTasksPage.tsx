@@ -303,15 +303,6 @@ export const ResearchTasksPage: React.FC = () => {
                 <p className="mt-2.5 text-sm text-slate-600 leading-relaxed line-clamp-3">{task.description}</p>
 
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                  {task.source === "gemini" ? (
-                    <Badge variant="purple" size="sm">
-                      <Sparkles className="w-3 h-3 text-purple-600" /> AI Suggested
-                    </Badge>
-                  ) : (
-                    <Badge variant="neutral" size="sm">
-                      <User className="w-3 h-3 text-slate-500" /> User Authored
-                    </Badge>
-                  )}
                   {task.projectId && (
                     <Link
                       to={`/projects/${task.projectId}`}
@@ -323,6 +314,15 @@ export const ResearchTasksPage: React.FC = () => {
                         {projects.find((p) => p.id === task.projectId)?.title ?? "Project"}
                       </span>
                     </Link>
+                  )}
+                  {task.source === "gemini" ? (
+                    <Badge variant="purple" size="sm">
+                      <Sparkles className="w-3 h-3 text-purple-600" /> AI Suggested
+                    </Badge>
+                  ) : (
+                    <Badge variant="neutral" size="sm">
+                      <User className="w-3 h-3 text-slate-500" /> User Authored
+                    </Badge>
                   )}
                 </div>
               </div>
