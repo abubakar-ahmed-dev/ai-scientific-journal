@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";
 import { setupLeafletIcons } from "../lib/leafletSetup";
 import { sanitizeLocation } from "../lib/locationPrivacy";
+import { BASEMAP_URL, BASEMAP_ATTRIBUTION } from "../lib/mapTiles";
 import {
   fetchObservations,
   fetchProjects,
@@ -322,10 +323,7 @@ export const ResearchMapPage: React.FC = () => {
               scrollWheelZoom={true}
               className="h-full w-full"
             >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
+              <TileLayer attribution={BASEMAP_ATTRIBUTION} url={BASEMAP_URL} />
 
               {plottableObservations.map((obs) => {
                 const loc = obs.displayLocation;
