@@ -608,6 +608,7 @@ Recent production lessons to preserve:
 - Signed media URLs require `https://storage.googleapis.com` in `img-src`.
 - Avatar previews created with `URL.createObjectURL` require `blob:` in `img-src`.
 - Leaflet basemaps use CARTO Positron tiles, so `img-src` needs `https://*.basemaps.cartocdn.com`; OSM's own tile servers block cloud-hosted Referers (`*.run.app`).
+- CARTO raster basemaps require a free API key (`VITE_CARTO_API_KEY`, carto.com/basemaps/apikey) — anonymous requests get an "API KEY REQUIRED" watermark baked into the tiles.
 - Runtime signed URLs require the Cloud Run service account to have the correct token-signing IAM permission.
 - Production Gemini calls should explicitly set a supported `AI_MODEL`; the current code default is `gemini-3.5-flash`.
 
