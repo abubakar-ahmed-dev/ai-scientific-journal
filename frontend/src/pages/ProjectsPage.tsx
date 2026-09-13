@@ -264,12 +264,12 @@ export default function ProjectsPage() {
                     ) : (
                       <span />
                     )}
-                    <span className="flex shrink-0 items-center gap-1.5">
-                      <Badge variant={projectStatusVariant[proj.status] ?? "neutral"} className="capitalize">
-                        {proj.status}
-                      </Badge>
-                      <ArrowRight className="w-4 h-4 -translate-x-1 text-brand-600 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" />
-                    </span>
+                    <Badge
+                      variant={projectStatusVariant[proj.status] ?? "neutral"}
+                      className="shrink-0 capitalize"
+                    >
+                      {proj.status}
+                    </Badge>
                   </div>
 
                   <h3 className="mt-3 text-lg font-display font-bold leading-snug text-app-heading transition-colors group-hover:text-brand-700">
@@ -282,8 +282,9 @@ export default function ProjectsPage() {
                   )}
                 </div>
 
-                <div className="mt-5 border-t border-slate-100 pt-4">
+                <div className="mt-5 border-t border-slate-100 pt-4 flex items-center justify-between gap-3">
                   <TagList tags={proj.tags} />
+                  <ArrowRight className="w-4 h-4 shrink-0 -translate-x-1 text-brand-600 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" />
                 </div>
               </Link>
             ))}
