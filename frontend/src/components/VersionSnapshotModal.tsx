@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, History, GitCompare, Calendar, User } from "lucide-react";
+import { X, History, GitCompare, Calendar } from "lucide-react";
 import type { ObservationVersion, Observation } from "../lib/api";
 
 interface VersionSnapshotModalProps {
@@ -93,10 +93,6 @@ export const VersionSnapshotModal: React.FC<VersionSnapshotModalProps> = ({
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-slate-400" />
                   {new Date(version.editedAt).toLocaleString()}
-                </span>
-                <span className="flex items-center gap-1">
-                  <User className="w-3.5 h-3.5 text-slate-400" />
-                  Editor: {version.editedBy.slice(0, 8)}...
                 </span>
               </div>
             </div>
