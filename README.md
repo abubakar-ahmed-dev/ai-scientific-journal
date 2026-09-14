@@ -9,7 +9,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Docker](https://img.shields.io/badge/Container-Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
-**Status:** 🚧 In Development — built for the **Gen AI Academy APAC Edition** challenge (Cloud Run AI Challenge, label `dev-tutorial=cloud-run-ai-challenge`), deployed and usable.
+**Status:** Production ready and live on Google Cloud Run, built for the **Gen AI Academy APAC Edition** challenge (Cloud Run AI Challenge, label `dev-tutorial=cloud-run-ai-challenge`).
 
 ---
 
@@ -207,7 +207,8 @@ ai-scientific-journal/
 ├── firebase/          ← firestore.rules, indexes, config
 ├── infrastructure/    ← Cloud Run / IAM / secrets / monitoring configs
 ├── scripts/           ← dev utilities (seed, env validation, smoke tests)
-├── docs/              ← canonical documentation (below)
+├── docs/              ← canonical architecture, security, API, and deployment docs
+├── guides/            ← user guide, developer guide, competition blog, screenshots
 ├── .github/workflows/ ← CI (lint, typecheck, tests, build)
 │
 ├── Dockerfile
@@ -341,6 +342,19 @@ Full procedure and pre-launch checklists: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT
 
 ## Documentation
 
+### Guides and blog
+
+| Document | Purpose |
+| -------- | ------- |
+| [`guides/USER_GUIDE.md`](guides/USER_GUIDE.md) | User-facing guide to app workflows and features |
+| [`guides/DEVELOPER_GUIDE.md`](guides/DEVELOPER_GUIDE.md) | Engineering guide to architecture, implementation, testing, deployment, and operations |
+| [`guides/AI-Scientific-Journal-Blog.md`](guides/AI-Scientific-Journal-Blog.md) | Competition blog post focused on usability, stability, security, and authenticity |
+| [`guides/images/`](guides/images/) | Demo-data screenshots used by the guides and blog |
+
+Screenshots in the guides and blog use synthetic demo data. Some images may show reduced visual fidelity because of documentation scaling or compression; the live application is the best reference for the complete current interface and responsive design.
+
+### Canonical project docs
+
 | Document | Purpose |
 | -------- | ------- |
 | [`docs/PRD.md`](docs/PRD.md) | Product requirements and scope |
@@ -354,8 +368,6 @@ Full procedure and pre-launch checklists: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT
 | [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) | Monitoring, logging, metrics, alerts |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Production deployment |
 | [`docs/ADR.md`](docs/ADR.md) | Architecture Decision Records (ADR-001 … ADR-024) |
-| [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) | User-facing guide to app workflows and features |
-| [`docs/DEVELOPER_GUIDE.md`](docs/DEVELOPER_GUIDE.md) | Engineering guide to architecture, implementation, testing, and deployment |
 
 ---
 

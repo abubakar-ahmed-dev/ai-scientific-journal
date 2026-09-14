@@ -5,17 +5,19 @@
 
 This guide explains how the app is designed, built, tested, and deployed. It is a practical engineering map; the canonical specs remain the source of truth:
 
-- [PRD.md](./PRD.md)
-- [TECHNICAL_ARCHITECTURE.md](./TECHNICAL_ARCHITECTURE.md)
-- [SECURITY.md](./SECURITY.md)
-- [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md)
-- [API.md](./API.md)
-- [AI_ARCHITECTURE.md](./AI_ARCHITECTURE.md)
-- [AI_EVALUATION.md](./AI_EVALUATION.md)
-- [TESTING.md](./TESTING.md)
-- [OBSERVABILITY.md](./OBSERVABILITY.md)
-- [DEPLOYMENT.md](./DEPLOYMENT.md)
-- [ADR.md](./ADR.md)
+- [PRD.md](../docs/PRD.md)
+- [TECHNICAL_ARCHITECTURE.md](../docs/TECHNICAL_ARCHITECTURE.md)
+- [SECURITY.md](../docs/SECURITY.md)
+- [DATABASE_SCHEMA.md](../docs/DATABASE_SCHEMA.md)
+- [API.md](../docs/API.md)
+- [AI_ARCHITECTURE.md](../docs/AI_ARCHITECTURE.md)
+- [AI_EVALUATION.md](../docs/AI_EVALUATION.md)
+- [TESTING.md](../docs/TESTING.md)
+- [OBSERVABILITY.md](../docs/OBSERVABILITY.md)
+- [DEPLOYMENT.md](../docs/DEPLOYMENT.md)
+- [ADR.md](../docs/ADR.md)
+
+**Screenshot note:** The screenshots in this guide use synthetic demo data. Some images may look slightly different from the live product because of documentation scaling or compression; please visit the live app for the complete current interface and responsive design.
 
 ## Table of Contents
 

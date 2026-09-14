@@ -2,12 +2,16 @@
 
 > How I transformed the Personal Gemini Journal challenge into an evidence-aware workspace for recording observations, discovering connections, and planning better investigations.
 
-**Live application:** https://ai-scientific-journal-291307045855.asia-south1.run.app
-**Source code:** https://github.com/abubakar-ahmed-dev/ai-scientific-journal
-**Challenge:** [Gen AI Academy APAC](https://hack2skill.com/event/apac-genaiacademy?tab=cohort3&utm_source=hack2skill&utm_medium=homepage)  
-**Hashtag:** `#AccelerateAIwithCloudRun`
+- **Live application:** https://ai-scientific-journal-291307045855.asia-south1.run.app
+- **Source code:** https://github.com/abubakar-ahmed-dev/ai-scientific-journal
+- **Challenge:** [Gen AI Academy APAC](https://hack2skill.com/event/apac-genaiacademy?tab=cohort3&utm_source=hack2skill&utm_medium=homepage)
+- **Hashtag:** `#AccelerateAIwithCloudRun`
+
+**Screenshot note:** All screenshots in this article use synthetic demo data. Some captures may show reduced visual fidelity because of documentation scaling or image compression, so they should be treated as workflow illustrations. For the complete current interface and responsive design, please visit the live application.
 
 ![AI Scientific Journal home page](images/home-page.png)
+
+_Home page: the app positions the journal as an evidence-backed research workspace, not just a chat interface._
 
 ## 1. The Challenge: Build Beyond an AI Demo
 
@@ -51,7 +55,13 @@ This design gives users a low-friction starting point. They can record an idea i
 
 The result is a journal that adapts to the user instead of making the user adapt to the database structure.
 
+![Observation list showing diverse records, tags, statuses, and measurements](images/observation-list.png)
+
+_Observation list: saved records stay easy to browse, filter, and reopen._
+
 ![Observation form with measurements, hypothesis, tags, and location fields](images/observation-form.png)
+
+_Observation form: users can start simply, then add measurements, hypothesis, tags, location, and project context when needed._
 
 ## 3. Gemini as a Research Assistant
 
@@ -62,6 +72,8 @@ AI Scientific Journal uses Gemini for several connected capabilities rather than
 Users can have persistent conversations for reflection, brainstorming, or research discussion. A conversation can be general or linked to a particular observation, project, or analysis, allowing Gemini to respond within a meaningful context.
 
 ![AI chat with contextual conversation history](images/ai-chat.jpg)
+
+_AI Chat: conversations can stay general or connect to research context._
 
 ### 3.2 Structured observation analysis
 
@@ -79,6 +91,8 @@ These results are presented as AI-generated interpretations and stored separatel
 
 ![Structured AI analysis with findings, hypotheses, uncertainty, and suggested next steps](images/ai-analysis-viewer.jpg)
 
+_Structured AI analysis: Gemini output is shown as interpretation, with findings, hypotheses, uncertainty, and next steps separated._
+
 ### 3.3 Suggested investigations and research tasks
 
 Gemini can propose follow-up measurements, comparisons, photographs, questions, or experiments. However, a suggestion does not automatically become a task. The user decides whether it is useful and explicitly accepts it before it enters the research task list.
@@ -86,6 +100,12 @@ Gemini can propose follow-up measurements, comparisons, photographs, questions, 
 This preserves human control while still making AI recommendations actionable.
 
 ![AI suggestion accepted as a research task](images/ai-suggestion-to-task.jpg)
+
+_Suggestion acceptance: AI recommendations become tasks only when the user chooses to accept them._
+
+![Research tasks created from user work and accepted AI suggestions](images/research-tasks.jpg)
+
+_Research tasks: accepted suggestions and user-created work become trackable follow-up investigations._
 
 ### 3.4 Ask My Journal
 
@@ -106,7 +126,11 @@ This makes Ask My Journal more than semantic search and more than ordinary chat.
 
 ![Ask My Journal answer with evidence cards and source-observation links](images/ask-journal-evidence.png)
 
+_Ask My Journal with evidence: answers are grounded in the user's own saved observations._
+
 ![Ask My Journal clearly communicating that the available evidence is insufficient](images/ask-journal-insufficient-evidence.png)
+
+_Ask My Journal with insufficient evidence: the app can refuse to invent an answer when the journal does not support one._
 
 ## 4. Designing Around the Four Judging Criteria
 
@@ -134,9 +158,19 @@ The application also respects scientific authenticity. User observations remain 
 
 ![Observation detail page with the original record and related AI surfaces](images/observation-detail.png)
 
+_Observation detail: the original user record stays visible beside related analysis and research actions._
+
 ![Observation version history preserving record provenance](images/version-history.jpg)
 
+_Version history: edits preserve earlier snapshots instead of silently replacing the research record._
+
+![Media gallery showing uploaded evidence files attached to an observation](images/media-gallery-multiple-images.jpg)
+
+_Media gallery: uploaded evidence remains attached to the observation it supports._
+
 ![Research Map populated with synthetic demonstration observations](images/research-map-and-popup.jpg)
+
+_Research Map: location-aware observations can be explored spatially while respecting location privacy settings._
 
 ### 4.2 Usability: Start quickly and grow into advanced features
 
@@ -144,7 +178,15 @@ The application guides users from the moment they sign in with Google.
 
 For a first-time user, the dashboard offers clear starting actions such as **Record First Observation**, **Create Project**, and **Quick Capture**. Quick Capture requires only a title and description, so a passing idea can be saved as a draft in seconds. The user can then continue into the full form when ready.
 
+![New-user dashboard with first-start actions](images/dashboard-new-user.png)
+
+_New-user dashboard: first-time users get clear starting actions before they have existing records._
+
 For a returning user, the dashboard becomes a workspace for continuing research. It presents recent observations, active projects, open tasks, analyses, recent activity, and a suggested next action. If one dashboard section cannot load, that section provides its own retry option instead of making the entire page unusable or presenting failed data as an empty result.
+
+![Returning-user dashboard with Quick Capture, current research, and next action](images/dashboard-returning-user.png)
+
+_Returning-user dashboard: once data exists, the dashboard becomes a continuation space for active work._
 
 Navigation is supported by:
 
@@ -166,9 +208,9 @@ Destructive actions require confirmation, archived content remains manageable, a
 
 For a complete page-by-page walkthrough of the application and its everyday research workflows, see the [User Guide](USER_GUIDE.md).
 
-![Returning-user dashboard with Quick Capture, current research, and next action](images/dashboard-returning-user.png)
-
 ![Sidebar and command palette](images/sidebar-command-palette.jpg)
+
+_Navigation: sidebar groups and the command palette keep the larger app approachable._
 
 ### 4.3 Stability: Preserve the user’s work under real conditions
 
@@ -208,6 +250,8 @@ The application never claims that an observation was saved when persistence fail
 Stability here is not just uptime. It is the ability to fail safely, communicate clearly, and protect the user’s work.
 
 ![Dashboard loading and section-level resilience state](images/dashboard-low-fidelity-wireframes.jpg)
+
+_Loading state: dashboard sections can show progress independently instead of blocking the whole workspace._
 
 ### 4.4 Security: Privacy enforced at every layer
 
@@ -323,9 +367,9 @@ A typical research journey now looks like this:
 
 This journey gives Gemini a meaningful role at every stage while keeping the user in control of the original record and every action that affects their research workspace.
 
-![Research tasks created from user work and accepted AI suggestions](images/research-tasks.jpg)
+![Project detail page bringing related observations and tasks together](images/project-detail.jpg)
 
-![Media gallery backed by private object storage and signed read URLs](images/media-gallery-multiple-images.jpg)
+_Project detail: related observations and tasks can be reviewed together after the initial capture flow._
 
 ## 8. Final Result
 

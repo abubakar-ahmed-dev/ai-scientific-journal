@@ -7,6 +7,8 @@ AI Scientific Journal is a private workspace for recording observations and turn
 
 This guide explains what you can do in the app in plain language.
 
+**Screenshot note:** The screenshots in this guide use synthetic demo data. Some images may look slightly different from the live product because of documentation scaling or compression; please visit the live app for the complete current interface and responsive design.
+
 ## Table of Contents
 
 1. [The Big Idea](#the-big-idea)
