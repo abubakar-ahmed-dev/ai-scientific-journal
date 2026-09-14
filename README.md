@@ -13,6 +13,20 @@
 
 ---
 
+## Start Here
+
+The most helpful and complete walkthroughs of app are in the [`guides/`](guides/) folder:
+
+| Guide | Best for |
+| ----- | -------- |
+| [`User Guide`](guides/USER_GUIDE.md) | Understanding the app screens, workflows, and everyday features |
+| [`Developer Guide`](guides/DEVELOPER_GUIDE.md) | Understanding the architecture, implementation, testing, deployment, and operations |
+| [`Detailed Blog`](guides/AI-Scientific-Journal-Blog.md) | A judge-friendly overview focused on usability, stability, security, and authenticity |
+
+The screenshots in these guides use synthetic demo data. For the complete current interface and responsive design, visit the live application.
+
+---
+
 ## Overview
 
 The AI Scientific Journal is a responsive web application for anyone who observes the world and wants their records to *work for them* — naturalists, citizen scientists, hobby researchers, students, or anyone keeping a personal journal of observations.
