@@ -150,6 +150,16 @@ UI conventions:
 - User-authored messages are rendered as plain text; AI text uses the app's markdown renderer.
 - Form validation is custom where browser constraint validation is unreliable in jsdom tests, especially location and dynamic measurement rows.
 
+Visual references for the main frontend surfaces:
+
+![Returning user dashboard](images/dashboard-returning-user.png)
+
+![Observation list with filters](images/observation-list.png)
+
+![Observation form](images/observation-form.png)
+
+![Research tasks page](images/research-tasks.jpg)
+
 ## Backend
 
 Stack:
@@ -307,6 +317,14 @@ Prompt output is parsed, schema-validated, application-validated, and then persi
 
 `USE_FAKE_AI=true` selects the deterministic fake service for offline development and tests. Production validation rejects fake AI, sentinel Gemini keys, localhost CORS, and emulator host variables.
 
+Visual references for AI surfaces:
+
+![AI Chat conversation](images/ai-chat.jpg)
+
+![AI analysis viewer](images/ai-analysis-viewer.jpg)
+
+![AI suggestion accepted as a task](images/ai-suggestion-to-task.jpg)
+
 ## RAG and Search
 
 Ask My Journal and related-observation search use lexical retrieval over `users/{uid}/observationSearch`, per ADR-022.
@@ -337,6 +355,12 @@ Important settings in `backend/src/config/env.ts`:
 
 If evidence is missing or weak, `/ai/ask` returns a deterministic insufficient-evidence answer and does not invoke Gemini.
 
+Visual references for grounded answers:
+
+![Ask My Journal answer with evidence](images/ask-journal-evidence.png)
+
+![Ask My Journal insufficient evidence state](images/ask-journal-insufficient-evidence.png)
+
 ## Media and Location
 
 Media:
@@ -347,6 +371,8 @@ Media:
 - Default limits: image 10 MB, audio 25 MB, video 100 MB.
 - Signed read URLs last up to 15 minutes.
 - `storagePath` is never exposed to the frontend.
+
+![Media gallery with multiple images](images/media-gallery-multiple-images.jpg)
 
 Location:
 
@@ -361,6 +387,8 @@ Map implementation uses Leaflet and OpenStreetMap:
 - `frontend/src/pages/ResearchMapPage.tsx`
 - `frontend/src/components/ObservationMiniMap.tsx`
 - `frontend/src/lib/leafletSetup.ts`
+
+![Research map with observation popup](images/research-map-and-popup.jpg)
 
 ## Testing
 
@@ -583,21 +611,21 @@ Use synthetic/demo data only. Do not include secrets, real user content, raw IDs
 
 Needed captures:
 
-- Landing page.
-- New-user dashboard.
-- Returning-user dashboard.
-- Command palette.
-- Observation list.
-- Observation form.
-- Observation detail.
-- Version snapshot modal.
-- Media gallery.
-- Projects list and project detail.
-- Tasks board.
-- AI Chat.
-- Ask My Journal with evidence and insufficient evidence.
-- Research Map.
-- Settings.
+- Landing page: `images/landing-page.png`.
+- New-user dashboard: `images/dashboard-new-user.png`.
+- Returning-user dashboard: `images/dashboard-returning-user.png`.
+- Command palette: `images/sidebar-command-palette.jpg`.
+- Observation list: `images/observation-list.png`.
+- Observation form: `images/observation-form.png`.
+- Observation detail: `images/observation-detail.png`.
+- Version snapshot modal: `images/version-history.jpg`.
+- Media gallery: `images/media-gallery-multiple-images.jpg`.
+- Projects list and project detail: `images/projects-list.jpg`, `images/project-detail.jpg`.
+- Tasks board: `images/research-tasks.jpg`.
+- AI Chat: `images/ai-chat.jpg`.
+- Ask My Journal with evidence and insufficient evidence: `images/ask-journal-evidence.png`, `images/ask-journal-insufficient-evidence.png`.
+- Research Map: `images/research-map-and-popup.jpg`.
+- Settings: `images/settings-page.png`.
 
 ### Production Incident Notes
 
