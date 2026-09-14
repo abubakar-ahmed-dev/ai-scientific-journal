@@ -333,9 +333,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               </button>
             </div>
           </div>
-          <div className="pt-2 flex items-center justify-between text-[11px] text-slate-400">
+          <div className="pt-2 ml-5 flex items-center justify-between text-[11px] text-slate-400">
             <span>AI suggestions should be experimentally verified. Empirical observations remain authoritative ground truth.</span>
-            <span>AI replies use light markdown</span>
+            {/* <span>AI replies use light markdown</span> */}
           </div>
         </form>
       )}

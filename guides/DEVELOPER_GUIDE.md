@@ -5,17 +5,19 @@
 
 This guide explains how the app is designed, built, tested, and deployed. It is a practical engineering map; the canonical specs remain the source of truth:
 
-- [PRD.md](./PRD.md)
-- [TECHNICAL_ARCHITECTURE.md](./TECHNICAL_ARCHITECTURE.md)
-- [SECURITY.md](./SECURITY.md)
-- [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md)
-- [API.md](./API.md)
-- [AI_ARCHITECTURE.md](./AI_ARCHITECTURE.md)
-- [AI_EVALUATION.md](./AI_EVALUATION.md)
-- [TESTING.md](./TESTING.md)
-- [OBSERVABILITY.md](./OBSERVABILITY.md)
-- [DEPLOYMENT.md](./DEPLOYMENT.md)
-- [ADR.md](./ADR.md)
+- [PRD.md](../docs/PRD.md)
+- [TECHNICAL_ARCHITECTURE.md](../docs/TECHNICAL_ARCHITECTURE.md)
+- [SECURITY.md](../docs/SECURITY.md)
+- [DATABASE_SCHEMA.md](../docs/DATABASE_SCHEMA.md)
+- [API.md](../docs/API.md)
+- [AI_ARCHITECTURE.md](../docs/AI_ARCHITECTURE.md)
+- [AI_EVALUATION.md](../docs/AI_EVALUATION.md)
+- [TESTING.md](../docs/TESTING.md)
+- [OBSERVABILITY.md](../docs/OBSERVABILITY.md)
+- [DEPLOYMENT.md](../docs/DEPLOYMENT.md)
+- [ADR.md](../docs/ADR.md)
+
+**Screenshot note:** The screenshots in this guide use synthetic demo data. Some images may look slightly different from the live product because of documentation scaling or compression; please visit the live app for the complete current interface and responsive design.
 
 ## Table of Contents
 
@@ -33,7 +35,7 @@ This guide explains how the app is designed, built, tested, and deployed. It is 
 12. [Deployment](#deployment)
 13. [Observability](#observability)
 14. [Quick References](#quick-references)
-15. [Known Gaps and Drift](#known-gaps-and-drift)
+15. [Maintenance Notes](#maintenance-notes)
 
 ## Architecture
 
@@ -92,6 +94,7 @@ firebase/          Firestore rules and indexes
 infrastructure/    Cloud Run / Cloud Build deployment assets
 scripts/           Utility scripts, including production smoke testing
 docs/              Canonical architecture, API, security, and operations docs
+guides/            User-facing guides, developer guide, blog post, and screenshots
 plans/             Phase plans, implementation logs, and testing logs
 ```
 
@@ -149,6 +152,16 @@ UI conventions:
 - The mobile navigation drawer has Escape handling and a focus trap.
 - User-authored messages are rendered as plain text; AI text uses the app's markdown renderer.
 - Form validation is custom where browser constraint validation is unreliable in jsdom tests, especially location and dynamic measurement rows.
+
+Visual references for the main frontend surfaces:
+
+![Returning user dashboard](images/dashboard-returning-user.png)
+
+![Observation list with filters](images/observation-list.png)
+
+![Observation form](images/observation-form.png)
+
+![Research tasks page](images/research-tasks.jpg)
 
 ## Backend
 
@@ -307,6 +320,14 @@ Prompt output is parsed, schema-validated, application-validated, and then persi
 
 `USE_FAKE_AI=true` selects the deterministic fake service for offline development and tests. Production validation rejects fake AI, sentinel Gemini keys, localhost CORS, and emulator host variables.
 
+Visual references for AI surfaces:
+
+![AI Chat conversation](images/ai-chat.jpg)
+
+![AI analysis viewer](images/ai-analysis-viewer.jpg)
+
+![AI suggestion accepted as a task](images/ai-suggestion-to-task.jpg)
+
 ## RAG and Search
 
 Ask My Journal and related-observation search use lexical retrieval over `users/{uid}/observationSearch`, per ADR-022.
@@ -337,6 +358,12 @@ Important settings in `backend/src/config/env.ts`:
 
 If evidence is missing or weak, `/ai/ask` returns a deterministic insufficient-evidence answer and does not invoke Gemini.
 
+Visual references for grounded answers:
+
+![Ask My Journal answer with evidence](images/ask-journal-evidence.png)
+
+![Ask My Journal insufficient evidence state](images/ask-journal-insufficient-evidence.png)
+
 ## Media and Location
 
 Media:
@@ -347,6 +374,8 @@ Media:
 - Default limits: image 10 MB, audio 25 MB, video 100 MB.
 - Signed read URLs last up to 15 minutes.
 - `storagePath` is never exposed to the frontend.
+
+![Media gallery with multiple images](images/media-gallery-multiple-images.jpg)
 
 Location:
 
@@ -361,6 +390,8 @@ Map implementation uses Leaflet and OpenStreetMap:
 - `frontend/src/pages/ResearchMapPage.tsx`
 - `frontend/src/components/ObservationMiniMap.tsx`
 - `frontend/src/lib/leafletSetup.ts`
+
+![Research map with observation popup](images/research-map-and-popup.jpg)
 
 ## Testing
 
@@ -577,31 +608,9 @@ Backend runtime values are validated in `backend/src/config/env.ts`:
 | POST | `/api/v1/ai/ask` | Grounded journal Q&A |
 | POST | `/api/v1/ai/search` | Retrieval-only related observations |
 
-### Screenshot Checklist
+### Production Notes
 
-Use synthetic/demo data only. Do not include secrets, real user content, raw IDs, or signed media URLs in screenshots.
-
-Needed captures:
-
-- Landing page.
-- New-user dashboard.
-- Returning-user dashboard.
-- Command palette.
-- Observation list.
-- Observation form.
-- Observation detail.
-- Version snapshot modal.
-- Media gallery.
-- Projects list and project detail.
-- Tasks board.
-- AI Chat.
-- Ask My Journal with evidence and insufficient evidence.
-- Research Map.
-- Settings.
-
-### Production Incident Notes
-
-Recent production lessons to preserve:
+Keep these checks in mind when changing deployment, headers, media, maps, or AI configuration:
 
 - Vite `VITE_*` values are build-time config. Cloud Run runtime env cannot repair a frontend bundle built with demo Firebase values.
 - Cloud Run Secret Manager bindings are revision-pinned. Secret rotation needs a new revision, not an image rebuild.
@@ -610,17 +619,18 @@ Recent production lessons to preserve:
 - Leaflet basemaps use CARTO Positron tiles, so `img-src` needs `https://*.basemaps.cartocdn.com`; OSM's own tile servers block cloud-hosted Referers (`*.run.app`).
 - CARTO raster basemaps require a free API key (`VITE_CARTO_API_KEY`, carto.com/basemaps/apikey) — anonymous requests get an "API KEY REQUIRED" watermark baked into the tiles.
 - Runtime signed URLs require the Cloud Run service account to have the correct token-signing IAM permission.
-- Production Gemini calls should explicitly set a supported `AI_MODEL`; the current code default is `gemini-3.5-flash`.
+- Production Gemini calls should explicitly set a supported `AI_MODEL`; the current production pin is `gemini-3.5-flash`.
 
-## Known Gaps and Drift
+## Maintenance Notes
 
-The following notes were found while reading the current docs, phase logs, and implementation:
+The application is complete and production-deployed. These notes describe how to keep future changes aligned with the current architecture.
 
-- `frontend/README.md` is still the default Vite template, not an app-specific frontend guide.
-- ~~`backend/.env.example` currently lists `AI_MODEL=gemini-3.6-flash`~~ Resolved 2026-09-12: `.env.example` now matches the `env.ts` default `gemini-3.5-flash` and the production pin.
-- The canonical API documents idempotency broadly. Phase logs confirm explicit follow-up coverage for task acceptance, Ask My Journal, chat, and media, but any new write endpoint should still be checked before relying on idempotency behavior.
-- Phase 9 logs note 12 frontend lint warnings around state-setting-in-effect patterns; they were considered non-blocking and deferred to a future TanStack Query migration.
-- `TECHNICAL_ARCHITECTURE.md` still contains some older baseline examples in long sections; prefer the canonical ADRs, `API.md`, and `DATABASE_SCHEMA.md` where there is any conflict.
-- Project detail currently surfaces linked observations and research tasks. The data model supports broader project association for conversations and analyses, but the current project detail page does not present those as separate tabs.
-- Observation archiving is available through edit status, not as a dedicated archive/unarchive button on the detail page.
-- Production deployment logs note resolved incidents around CSP for `storage.googleapis.com` signed media URLs, `blob:` avatar previews, runtime service-account token signing, and model/env pinning. Future header, media, or secret changes should re-check those paths.
+| Area | Maintenance guidance |
+| --- | --- |
+| Environment configuration | Keep `backend/.env.example`, `backend/src/config/env.ts`, and Cloud Run variables aligned when changing model, CORS, Firebase, storage, or media settings. |
+| Idempotent writes | Review retry behavior before adding new write endpoints. Existing follow-up coverage includes task acceptance, Ask My Journal, chat, and media uploads. |
+| Frontend server state | Treat any future cleanup of effect-driven data synchronization as a focused TanStack Query refactor, not as part of unrelated feature work. |
+| Documentation precedence | When broad architecture documents and concrete contracts differ, prefer the latest ADRs, `docs/API.md`, and `docs/DATABASE_SCHEMA.md`. |
+| Project detail UI | The current project detail page emphasizes linked observations and research tasks. Project-linked conversations and analyses can be added as separate tabs in a future UI pass. |
+| Observation archiving | Archiving is available through the edit-status flow. A dedicated archive/unarchive action can be added later if user testing shows the current path is not discoverable enough. |
+| Production hardening | Re-check CSP and IAM after changing media, avatars, map tiles, Secret Manager bindings, or token signing. These paths are sensitive because they cross browser, Cloud Run, and Google Cloud boundaries. |

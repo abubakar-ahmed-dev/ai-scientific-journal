@@ -7,6 +7,8 @@ AI Scientific Journal is a private workspace for recording observations and turn
 
 This guide explains what you can do in the app in plain language.
 
+**Screenshot note:** The screenshots in this guide use synthetic demo data. Some images may look slightly different from the live product because of documentation scaling or compression; please visit the live app for the complete current interface and responsive design.
+
 ## Table of Contents
 
 1. [The Big Idea](#the-big-idea)
@@ -47,11 +49,11 @@ The app is built around four promises:
 
 AI can help summarize, suggest, and answer questions, but it does not become the truth of your journal. Your writing, notes, measurements, and uploaded evidence stay separate from AI-generated content.
 
-Screenshot placeholder: product landing page.
+![Scientific AI Journal home page](images/home-page.png)
 
 ## Sign In and Start
 
-Use the Google sign-in button on the landing page. Once you are signed in, you will see your private workspace.
+Use the Google sign-in button on the home page. Once you are signed in, you will see your private workspace.
 
 If this is your first time using the app, the dashboard gives you a few simple ways to begin:
 
@@ -64,7 +66,7 @@ If this is your first time using the app, the dashboard gives you a few simple w
 
 You do not need to create a project first. You can record observations now and organize them later.
 
-Screenshot placeholder: first signed-in dashboard.
+![New user dashboard](images/dashboard-new-user.png)
 
 ## Dashboard
 
@@ -85,7 +87,7 @@ If you see a plus sign beside a count, it means the app is showing a page of rec
 
 If one part of the dashboard fails to load, the app shows a retry option for that part. It should not pretend failed data is empty.
 
-Screenshot placeholder: returning-user dashboard.
+![Returning user dashboard with recent journal activity](images/dashboard-returning-user.png)
 
 ## Where Things Live
 
@@ -104,7 +106,7 @@ The sidebar is the quickest way to move around:
 
 You can also open the command palette with Ctrl+K or Cmd+K and search for pages, actions, or recent observations.
 
-Screenshot placeholder: sidebar and command palette.
+![Sidebar navigation and command palette](images/sidebar-command-palette.jpg)
 
 ## Observations
 
@@ -132,7 +134,7 @@ The list is paginated: the header shows how many records match (for example, "Sh
 
 Observation cards are clickable. They show useful hints such as tags, status, measurements, media count, and location label when available.
 
-Screenshot placeholder: observations list.
+![Observations list with filters and rich observation cards](images/observation-list.png)
 
 ### Create an Observation
 
@@ -163,7 +165,7 @@ Location privacy choices:
 
 Evidence files are attached from the observation detail page after the observation has been saved.
 
-Screenshot placeholder: observation form.
+![Observation form with scientific fields](images/observation-form.png)
 
 ### Quick Capture
 
@@ -176,7 +178,7 @@ You can:
 - Continue editing in the full form right away.
 - Or open the full form with your typed text carried over before saving.
 
-Screenshot placeholder: Quick Capture.
+![Dashboard quick capture area](images/dashboard-returning-user.png)
 
 ### Edit and Version History
 
@@ -184,7 +186,7 @@ When you edit an observation, the app keeps a version snapshot. Later, you can o
 
 If the same observation was changed in another session, the app may show a version conflict. Reload the record, review the latest version, and then apply your change again.
 
-Screenshot placeholder: version history and comparison.
+![Observation version history](images/version-history.jpg)
 
 ### Observation Detail
 
@@ -214,7 +216,9 @@ You can also:
 
 Archiving is done by editing the observation status. Deleting an observation also deletes its media and version snapshots. AI analyses that already referenced it are kept as historical AI records and show the source as deleted when needed.
 
-Screenshot placeholder: observation detail and media gallery.
+![Observation detail page](images/observation-detail.png)
+
+![Observation media gallery with multiple images](images/media-gallery-multiple-images.jpg)
 
 ## Projects
 
@@ -233,7 +237,9 @@ The project detail page currently focuses on linked observations and linked rese
 
 Deleting a project does not delete your observations or tasks. They become unfiled so you can keep using them. AI analyses keep their historical project reference.
 
-Screenshot placeholder: projects page and project detail page.
+![Projects list](images/projects-list.jpg)
+
+![Project detail page](images/project-detail.jpg)
 
 ## Research Tasks
 
@@ -260,7 +266,7 @@ On the Tasks page you can:
 
 The dashboard updates from your task list, so completed and open work stay visible in your workspace.
 
-Screenshot placeholder: tasks page.
+![Research tasks page](images/research-tasks.jpg)
 
 ## AI Chat
 
@@ -279,7 +285,7 @@ Press Enter to send. Use Shift+Enter for a new line.
 
 If sending fails, your text is preserved and you can retry AI generation. Archived conversations are read-only until you unarchive them.
 
-Screenshot placeholder: AI Chat.
+![AI Chat conversation](images/ai-chat.jpg)
 
 ## Ask My Journal
 
@@ -302,8 +308,9 @@ The app looks through your own records, chooses relevant observations, and asks 
 
 Sometimes the best answer is that your journal does not contain enough evidence yet. In that case, the app says so instead of inventing a confident answer.
 
-Screenshot placeholder: Ask My Journal with evidence.
-Screenshot placeholder: Ask My Journal with insufficient evidence.
+![Ask My Journal answer with evidence](images/ask-journal-evidence.png)
+
+![Ask My Journal insufficient evidence answer](images/ask-journal-insufficient-evidence.png)
 
 ## AI Analyses
 
@@ -329,7 +336,9 @@ Suggested next steps can be accepted as research tasks. You stay in control of w
 
 Running AI again creates a new analysis. It does not rewrite your previous analysis or change what you originally observed.
 
-Screenshot placeholder: AI analysis viewer.
+![AI analysis viewer with findings and next steps](images/ai-analysis-viewer.jpg)
+
+![AI suggestion accepted as a research task](images/ai-suggestion-to-task.jpg)
 
 ## Research Map
 
@@ -345,7 +354,7 @@ Map markers open details and link back to the observation page.
 
 Hidden locations are not shown on the map. Approximate locations are shown less precisely. Exact locations are shown as recorded.
 
-Screenshot placeholder: research map.
+![Research map with observation popup](images/research-map-and-popup.jpg)
 
 ## Settings
 
@@ -363,7 +372,7 @@ Sign-out is available from the app header and mobile menu. The app asks for conf
 
 The current Settings page does not show a self-service account deletion button. You can delete individual observations, projects, media, conversations, and tasks from their own screens where supported.
 
-Screenshot placeholder: settings page.
+![Settings page](images/settings-page.png)
 
 ## Everyday Workflows
 
