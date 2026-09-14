@@ -33,7 +33,7 @@ This guide explains how the app is designed, built, tested, and deployed. It is 
 12. [Deployment](#deployment)
 13. [Observability](#observability)
 14. [Quick References](#quick-references)
-15. [Known Gaps and Drift](#known-gaps-and-drift)
+15. [Maintenance Notes](#maintenance-notes)
 
 ## Architecture
 
@@ -92,6 +92,7 @@ firebase/          Firestore rules and indexes
 infrastructure/    Cloud Run / Cloud Build deployment assets
 scripts/           Utility scripts, including production smoke testing
 docs/              Canonical architecture, API, security, and operations docs
+guides/            User-facing guides, developer guide, blog post, and screenshots
 plans/             Phase plans, implementation logs, and testing logs
 ```
 
@@ -605,31 +606,9 @@ Backend runtime values are validated in `backend/src/config/env.ts`:
 | POST | `/api/v1/ai/ask` | Grounded journal Q&A |
 | POST | `/api/v1/ai/search` | Retrieval-only related observations |
 
-### Screenshot Checklist
+### Production Notes
 
-Use synthetic/demo data only. Do not include secrets, real user content, raw IDs, or signed media URLs in screenshots.
-
-Needed captures:
-
-- Landing page: `images/landing-page.png`.
-- New-user dashboard: `images/dashboard-new-user.png`.
-- Returning-user dashboard: `images/dashboard-returning-user.png`.
-- Command palette: `images/sidebar-command-palette.jpg`.
-- Observation list: `images/observation-list.png`.
-- Observation form: `images/observation-form.png`.
-- Observation detail: `images/observation-detail.png`.
-- Version snapshot modal: `images/version-history.jpg`.
-- Media gallery: `images/media-gallery-multiple-images.jpg`.
-- Projects list and project detail: `images/projects-list.jpg`, `images/project-detail.jpg`.
-- Tasks board: `images/research-tasks.jpg`.
-- AI Chat: `images/ai-chat.jpg`.
-- Ask My Journal with evidence and insufficient evidence: `images/ask-journal-evidence.png`, `images/ask-journal-insufficient-evidence.png`.
-- Research Map: `images/research-map-and-popup.jpg`.
-- Settings: `images/settings-page.png`.
-
-### Production Incident Notes
-
-Recent production lessons to preserve:
+Keep these checks in mind when changing deployment, headers, media, maps, or AI configuration:
 
 - Vite `VITE_*` values are build-time config. Cloud Run runtime env cannot repair a frontend bundle built with demo Firebase values.
 - Cloud Run Secret Manager bindings are revision-pinned. Secret rotation needs a new revision, not an image rebuild.
@@ -638,17 +617,18 @@ Recent production lessons to preserve:
 - Leaflet basemaps use CARTO Positron tiles, so `img-src` needs `https://*.basemaps.cartocdn.com`; OSM's own tile servers block cloud-hosted Referers (`*.run.app`).
 - CARTO raster basemaps require a free API key (`VITE_CARTO_API_KEY`, carto.com/basemaps/apikey) — anonymous requests get an "API KEY REQUIRED" watermark baked into the tiles.
 - Runtime signed URLs require the Cloud Run service account to have the correct token-signing IAM permission.
-- Production Gemini calls should explicitly set a supported `AI_MODEL`; the current code default is `gemini-3.5-flash`.
+- Production Gemini calls should explicitly set a supported `AI_MODEL`; the current production pin is `gemini-3.5-flash`.
 
-## Known Gaps and Drift
+## Maintenance Notes
 
-The following notes were found while reading the current docs, phase logs, and implementation:
+The application is complete and production-deployed. These notes describe how to keep future changes aligned with the current architecture.
 
-- `frontend/README.md` is still the default Vite template, not an app-specific frontend guide.
-- ~~`backend/.env.example` currently lists `AI_MODEL=gemini-3.6-flash`~~ Resolved 2026-09-12: `.env.example` now matches the `env.ts` default `gemini-3.5-flash` and the production pin.
-- The canonical API documents idempotency broadly. Phase logs confirm explicit follow-up coverage for task acceptance, Ask My Journal, chat, and media, but any new write endpoint should still be checked before relying on idempotency behavior.
-- Phase 9 logs note 12 frontend lint warnings around state-setting-in-effect patterns; they were considered non-blocking and deferred to a future TanStack Query migration.
-- `TECHNICAL_ARCHITECTURE.md` still contains some older baseline examples in long sections; prefer the canonical ADRs, `API.md`, and `DATABASE_SCHEMA.md` where there is any conflict.
-- Project detail currently surfaces linked observations and research tasks. The data model supports broader project association for conversations and analyses, but the current project detail page does not present those as separate tabs.
-- Observation archiving is available through edit status, not as a dedicated archive/unarchive button on the detail page.
-- Production deployment logs note resolved incidents around CSP for `storage.googleapis.com` signed media URLs, `blob:` avatar previews, runtime service-account token signing, and model/env pinning. Future header, media, or secret changes should re-check those paths.
+| Area | Maintenance guidance |
+| --- | --- |
+| Environment configuration | Keep `backend/.env.example`, `backend/src/config/env.ts`, and Cloud Run variables aligned when changing model, CORS, Firebase, storage, or media settings. |
+| Idempotent writes | Review retry behavior before adding new write endpoints. Existing follow-up coverage includes task acceptance, Ask My Journal, chat, and media uploads. |
+| Frontend server state | Treat any future cleanup of effect-driven data synchronization as a focused TanStack Query refactor, not as part of unrelated feature work. |
+| Documentation precedence | When broad architecture documents and concrete contracts differ, prefer the latest ADRs, `docs/API.md`, and `docs/DATABASE_SCHEMA.md`. |
+| Project detail UI | The current project detail page emphasizes linked observations and research tasks. Project-linked conversations and analyses can be added as separate tabs in a future UI pass. |
+| Observation archiving | Archiving is available through the edit-status flow. A dedicated archive/unarchive action can be added later if user testing shows the current path is not discoverable enough. |
+| Production hardening | Re-check CSP and IAM after changing media, avatars, map tiles, Secret Manager bindings, or token signing. These paths are sensitive because they cross browser, Cloud Run, and Google Cloud boundaries. |

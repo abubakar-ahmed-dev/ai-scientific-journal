@@ -47,11 +47,11 @@ The app is built around four promises:
 
 AI can help summarize, suggest, and answer questions, but it does not become the truth of your journal. Your writing, notes, measurements, and uploaded evidence stay separate from AI-generated content.
 
-![Scientific AI Journal landing page](images/landing-page.png)
+![Scientific AI Journal home page](images/home-page.png)
 
 ## Sign In and Start
 
-Use the Google sign-in button on the landing page. Once you are signed in, you will see your private workspace.
+Use the Google sign-in button on the home page. Once you are signed in, you will see your private workspace.
 
 If this is your first time using the app, the dashboard gives you a few simple ways to begin:
 

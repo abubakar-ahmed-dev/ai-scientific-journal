@@ -2,12 +2,12 @@
 
 > How I transformed the Personal Gemini Journal challenge into an evidence-aware workspace for recording observations, discovering connections, and planning better investigations.
 
-**Live application:** `[ADD CLOUD RUN URL]`  
-**Source code:** `[ADD GITHUB REPOSITORY URL]`  
+**Live application:** https://ai-scientific-journal-291307045855.asia-south1.run.app
+**Source code:** https://github.com/abubakar-ahmed-dev/ai-scientific-journal
 **Challenge:** [Gen AI Academy APAC](https://hack2skill.com/event/apac-genaiacademy?tab=cohort3&utm_source=hack2skill&utm_medium=homepage)  
 **Hashtag:** `#AccelerateAIwithCloudRun`
 
-`[HERO IMAGE: AI Scientific Journal landing page]`
+![AI Scientific Journal home page](images/home-page.png)
 
 ## 1. The Challenge: Build Beyond an AI Demo
 
@@ -22,6 +22,17 @@ At the center of the product is one clear loop:
 > **Observe → Record → Analyze → Organize → Discover → Investigate Further**
 
 Gemini adds intelligence to this loop, but the application remains responsible for identity, authorization, data, evidence, validation, privacy, and business rules. That separation was one of the most important decisions in the project.
+
+For judges, the short version is:
+
+| Judging criterion | How AI Scientific Journal addresses it |
+| --- | --- |
+| **Usability** | Quick Capture, optional scientific fields, dashboard continuity, search, filters, command palette, responsive navigation, and clear empty/error states. |
+| **Stability** | Validated AI outputs, bounded prompts, retry-safe flows, idempotency on important operations, independent UI loading states, health checks, and smoke tests. |
+| **Security** | Firebase Authentication, UID-scoped data, backend authorization, Firestore Rules, Secret Manager, private media, safe logging, and rate limits. |
+| **Authenticity** | Observation-first workflow, evidence media, version history, grounded Ask My Journal answers, user-approved tasks, and clear separation between user records and AI interpretation. |
+
+Unlike a normal AI journal, this app treats the user’s observations as evidence. Gemini can summarize, analyze, and suggest, but it cannot rewrite the original record or invent unsupported answers.
 
 ## 2. One Flexible Record: The Observation
 
@@ -40,7 +51,7 @@ This design gives users a low-friction starting point. They can record an idea i
 
 The result is a journal that adapts to the user instead of making the user adapt to the database structure.
 
-`[IMAGE: Observation form with measurements, hypothesis, tags, and location fields]`
+![Observation form with measurements, hypothesis, tags, and location fields](images/observation-form.png)
 
 ## 3. Gemini as a Research Assistant
 
@@ -49,6 +60,8 @@ AI Scientific Journal uses Gemini for several connected capabilities rather than
 ### 3.1 Multi-turn AI conversations
 
 Users can have persistent conversations for reflection, brainstorming, or research discussion. A conversation can be general or linked to a particular observation, project, or analysis, allowing Gemini to respond within a meaningful context.
+
+![AI chat with contextual conversation history](images/ai-chat.jpg)
 
 ### 3.2 Structured observation analysis
 
@@ -64,11 +77,15 @@ From an observation, users can request a structured analysis containing:
 
 These results are presented as AI-generated interpretations and stored separately from the original observation. Running an analysis never replaces what the user recorded.
 
+![Structured AI analysis with findings, hypotheses, uncertainty, and suggested next steps](images/ai-analysis-viewer.jpg)
+
 ### 3.3 Suggested investigations and research tasks
 
 Gemini can propose follow-up measurements, comparisons, photographs, questions, or experiments. However, a suggestion does not automatically become a task. The user decides whether it is useful and explicitly accepts it before it enters the research task list.
 
 This preserves human control while still making AI recommendations actionable.
+
+![AI suggestion accepted as a research task](images/ai-suggestion-to-task.jpg)
 
 ### 3.4 Ask My Journal
 
@@ -87,19 +104,19 @@ When the journal does not contain enough evidence, the application says so clear
 
 This makes Ask My Journal more than semantic search and more than ordinary chat. It turns a growing collection of personal records into a navigable body of knowledge.
 
-`[IMAGE: Ask My Journal answer with evidence cards and source-observation links]`
+![Ask My Journal answer with evidence cards and source-observation links](images/ask-journal-evidence.png)
 
-`[IMAGE: Ask My Journal clearly communicating that the available evidence is insufficient]`
+![Ask My Journal clearly communicating that the available evidence is insufficient](images/ask-journal-insufficient-evidence.png)
 
 ## 4. Designing Around the Four Judging Criteria
 
 The competition evaluates projects on **Authenticity, Usability, Stability, and Security**. I treated these as product requirements rather than labels to add after development.
 
-### 4.1 Authenticity: An original workflow beyond the starter journal
+### 4.1 Authenticity: A real workflow beyond the starter journal
 
 AI Scientific Journal expands the original brief into a complete observation-to-investigation workflow.
 
-Its originality comes from how the features work together:
+Its authenticity comes from how the features work together:
 
 - Structured observations combine freeform writing with measurements, hypotheses, evidence, and location.
 - Observation version history preserves the progression of edited records.
@@ -115,9 +132,11 @@ Together, these capabilities make the product feel like a personal research comp
 
 The application also respects scientific authenticity. User observations remain the source record. User-written hypotheses remain distinguishable from AI-generated hypotheses. Gemini can interpret, summarize, and suggest, but it cannot silently rewrite the evidence.
 
-`[IMAGE: Observation detail displaying the original record beside a structured AI analysis]`
+![Observation detail page with the original record and related AI surfaces](images/observation-detail.png)
 
-`[IMAGE: Research Map populated with synthetic demonstration observations]`
+![Observation version history preserving record provenance](images/version-history.jpg)
+
+![Research Map populated with synthetic demonstration observations](images/research-map-and-popup.jpg)
 
 ### 4.2 Usability: Start quickly and grow into advanced features
 
@@ -145,11 +164,11 @@ The interface also explains important decisions in plain language. For example, 
 
 Destructive actions require confirmation, archived content remains manageable, and observation editing includes version history and conflict protection. The user is consistently informed about what the application is doing and what will happen next.
 
-For a complete page-by-page walkthrough of the application and its everyday research workflows, see the [User Guide](USER_GUIDE_URL_PLACEHOLDER).
+For a complete page-by-page walkthrough of the application and its everyday research workflows, see the [User Guide](USER_GUIDE.md).
 
-`[IMAGE: Returning-user dashboard with Quick Capture, current research, and next action]`
+![Returning-user dashboard with Quick Capture, current research, and next action](images/dashboard-returning-user.png)
 
-`[IMAGE: Sidebar and command palette]`
+![Sidebar and command palette](images/sidebar-command-palette.jpg)
 
 ### 4.3 Stability: Preserve the user’s work under real conditions
 
@@ -188,7 +207,7 @@ The application never claims that an observation was saved when persistence fail
 
 Stability here is not just uptime. It is the ability to fail safely, communicate clearly, and protect the user’s work.
 
-`[IMAGE: Friendly retry state demonstrating that the rest of the workspace remains usable]`
+![Dashboard loading and section-level resilience state](images/dashboard-low-fidelity-wireframes.jpg)
 
 ### 4.4 Security: Privacy enforced at every layer
 
@@ -237,7 +256,7 @@ Security is reinforced through multiple controls:
 
 No single frontend check, database field, or AI instruction is treated as the entire security model.
 
-`[IMAGE: Simplified security flow from Firebase Authentication through Cloud Run to user-scoped Firestore data]`
+The security design is intentionally layered: the UI improves usability, but Firebase Authentication, Cloud Run backend checks, Firestore Rules, Secret Manager, private Storage paths, and safe logging form the actual trust boundary.
 
 ## 5. Right-Sized Production Engineering
 
@@ -264,11 +283,9 @@ Performance is addressed at the points where it matters: cursor pagination preve
 
 The backend remains stateless, so Cloud Run can replace or scale instances without losing sessions or journal data. Persistent state belongs in Firestore, media belongs in Cloud Storage, identity belongs in Firebase, and secrets belong in Secret Manager.
 
-Developers interested in the implementation, architecture, local setup, testing strategy, deployment process, and operational design can explore the [Developer Guide](DEVELOPER_GUIDE_URL_PLACEHOLDER).
+Developers interested in the implementation, architecture, local setup, testing strategy, deployment process, and operational design can explore the [Developer Guide](DEVELOPER_GUIDE.md).
 
 > Production engineering is not measured by how many services a system contains, but by how deliberately each service solves a real requirement.
-
-`[IMAGE: High-level architecture showing React, Cloud Run, Firestore, Gemini, Cloud Storage, and Secret Manager]`
 
 ## 6. A Security-First Development Workflow
 
@@ -289,10 +306,6 @@ The project then moved through a structured engineering workflow:
 
 This process helped turn an initial concept into a deployed application with documented architecture, API contracts, data schemas, security rules, testing guidance, and deployment instructions.
 
-`[IMAGE: Google AI Studio Custom Instructions focused on secure development]`
-
-`[IMAGE: Cloud Run service with successful deployment and the required challenge label]`
-
 ## 7. A Complete User Journey
 
 A typical research journey now looks like this:
@@ -310,9 +323,13 @@ A typical research journey now looks like this:
 
 This journey gives Gemini a meaningful role at every stage while keeping the user in control of the original record and every action that affects their research workspace.
 
+![Research tasks created from user work and accepted AI suggestions](images/research-tasks.jpg)
+
+![Media gallery backed by private object storage and signed read URLs](images/media-gallery-multiple-images.jpg)
+
 ## 8. Final Result
 
-AI Scientific Journal demonstrates what the Personal Gemini Journal concept can become when security, usability, stability, and originality are treated as first-class requirements.
+AI Scientific Journal demonstrates what the Personal Gemini Journal concept can become when security, usability, stability, and authenticity are treated as first-class requirements.
 
 - It is **authentic** because it introduces an original scientific workflow with observations, evidence, location, provenance, grounded retrieval, and research tasks.
 - It is **usable** because people can capture a simple note immediately and adopt advanced structure only when it helps.
@@ -323,7 +340,7 @@ Most importantly, it shows that Gemini can be more than a response generator. Wi
 
 > **AI Scientific Journal is a secure personal research workspace where Gemini helps turn observations into structured knowledge and better questions.**
 
-**Try the application:** `[ADD CLOUD RUN URL]`  
-**Explore the source:** `[ADD GITHUB REPOSITORY URL]`
+**Try the application:** https://ai-scientific-journal-291307045855.asia-south1.run.app
+**Explore the source:** https://github.com/abubakar-ahmed-dev/ai-scientific-journal
 
 `#AccelerateAIwithCloudRun`
